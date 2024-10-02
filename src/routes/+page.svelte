@@ -162,12 +162,13 @@
     />
   </div>
 
-  <div class="mb-3">
-    <FormylationSelector on:change={(e) => handleFormylationChange(e.detail)} />
-  </div>
-
-  <div class="mb-3">
-    <IonSelector on:change={(e) => handleAdductChange(e.detail)} />
+  <div class="mb-3 row">
+	<div class="col-md-6">
+	  <FormylationSelector on:change={(e) => handleFormylationChange(e.detail)} />
+	</div>
+	<div class="col-md-6">
+	  <IonSelector on:change={(e) => handleAdductChange(e.detail)} />
+	</div>
   </div>
 
   <div class="mb-3">

@@ -1,59 +1,30 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
-  
-    const dispatch = createEventDispatcher();
-  
-    // FormyType variable to hold the current radio selection
-    let fomyType = 'yes';
-  
-    // Handle change of radio input
-    function handleChange(event) {
-      const target = event.target;
-      fomyType = target.value;
-      dispatch('change', fomyType);
-    }
-  </script>
-  
-  <div class="form-check">
-    <label class="form-label fw-bold">Formylation</label>
-    
-    <div class="form-check">
-      <input
-        type="radio"
-        value="yes"
-        class="form-check-input"
-        bind:group={fomyType}
-        on:change={handleChange}
-      />
-      <label class="form-check-label">Yes</label>
-    </div>
-    
-    <div class="form-check">
-      <input
-        type="radio"
-        value="no"
-        class="form-check-input"
-        bind:group={fomyType}
-        on:change={handleChange}
-      />
-      <label class="form-check-label">No</label>
-    </div>
-    
-    <div class="form-check">
-      <input
-        type="radio"
-        value="unknown"
-        class="form-check-input"
-        bind:group={fomyType}
-        on:change={handleChange}
-      />
-      <label class="form-check-label">Unknown</label>
-    </div>
-  </div>
-  
-  <style>
-    .form-check {
-      margin-bottom: 10px;
-    }
-  </style>
-  
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+
+  // FormyType variable to hold the current dropdown selection
+  let fomyType = 'yes';
+
+  // Handle change of select input
+  function handleChange(event) {
+    fomyType = event.target.value;
+    dispatch('change', fomyType);
+  }
+</script>
+
+<div class="form-group">
+  <label class="form-label fw-bold" for="formylationSelect">Formylation</label>
+  <select id="formylationSelect" class="form-select" bind:value={fomyType} on:change={handleChange}>
+    <option value="yes">Yes</option>
+    <option value="no">No</option>
+    <option value="unknown">Unknown</option>
+  </select>
+</div>
+
+
+<style>
+  .form-group {
+    margin-bottom: 10px;
+  }
+</style>
