@@ -34,7 +34,7 @@
 
   // 상태 관리 변수들
   let detectedMass = null;
-  let essentialSequence = '';
+  let knownSequence = '';
   let formylation = 'yes';
   let adduct = 'H';
   let selectedAminos = { ...aminoMap };
@@ -57,7 +57,7 @@
 
         bestSolutions = MassFinderHelper.calcByIonType(
 		  detectedMass,
-          essentialSequence,
+          knownSequence,
           formylation,
           adduct,
           aminoMapMerged
@@ -99,20 +99,20 @@
       return false;
     }
 
-    if (!validateEssentialSequence()) {
-      alert('Please enter the correct Essential Sequence');
+    if (!validateknownSequence()) {
+      alert('Please enter the correct KnownSequence');
       return false;
     }
 
     return true;
   }
 
-  function validateEssentialSequence() {
+  function validateknownSequence() {
     let filteredNcAA = Object.fromEntries(
       Object.entries(ncAA).filter(([key, value]) => value !== 0)
     );
 
-    for (let char of essentialSequence) {
+    for (let char of knownSequence) {
       if (!aminoMap[char] && !filteredNcAA[char]) {
         return false;
       }
@@ -120,9 +120,9 @@
     return true;
   }
 
-  function handleEssentialSequenceInput(event) {
+  function handleknownSequenceInput(event) {
     const input = event.target;
-    essentialSequence = input.value.toUpperCase();
+    knownSequence = input.value.toUpperCase();
   }
 </script>
 
@@ -151,14 +151,14 @@
   </div>
 
   <div class="mb-3">
-    <label for="essential-sequence" class="form-label">Essential Sequence (Optional)</label>
+    <label for="essential-sequence" class="form-label">Known Sequence (Optional)</label>
     <input
       type="text"
       id="essential-sequence"
-      bind:value={essentialSequence}
+      bind:value={knownSequence}
       class="form-control"
-      placeholder="Essential Sequence"
-      on:input={handleEssentialSequenceInput}
+      placeholder="Known Sequence"
+      on:input={handleknownSequenceInput}
     />
   </div>
 
