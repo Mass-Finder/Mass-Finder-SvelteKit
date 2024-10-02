@@ -33,7 +33,7 @@
   };
 
   // 상태 관리 변수들
-  let exactMass = null;
+  let detectedMass = null;
   let essentialSequence = '';
   let formylation = 'yes';
   let adduct = 'H';
@@ -56,7 +56,7 @@
         const aminoMapMerged = { ...selectedAminos, ...filteredNcAA };
 
         bestSolutions = MassFinderHelper.calcByIonType(
-          exactMass,
+		  detectedMass,
           essentialSequence,
           formylation,
           adduct,
@@ -94,8 +94,8 @@
   }
 
   function validate() {
-    if (exactMass === null) {
-      alert('Please Input Exact Mass');
+    if (detectedMass === null) {
+      alert('Please Input Detected Mass');
       return false;
     }
 
@@ -140,13 +140,13 @@
   </div>
 
   <div class="mb-3">
-    <label for="exact-mass" class="form-label">Exact Mass</label>
+    <label for="detected-mass" class="form-label">Detected Mass</label>
     <input
       type="number"
-      id="exact-mass"
-      bind:value={exactMass}
+      id="detected-mass"
+      bind:value={detectedMass}
       class="form-control"
-      placeholder="Exact Mass"
+      placeholder="Detected Mass"
     />
   </div>
 
@@ -183,7 +183,7 @@
     Calculate!
   </button>
 
-  {#if exactMass !== null && bestSolutions.length > 0}
-    <ResultTable {bestSolutions} {exactMass} />
+  {#if detectedMass !== null && bestSolutions.length > 0}
+    <ResultTable {bestSolutions} {detectedMass} />
   {/if}
 </div>
