@@ -51,8 +51,27 @@
   
     function toggleStrep() {
       const strep = ['W', 'S', 'H', 'P', 'Q', 'F', 'E', 'K'];
-      for (let key in selectedAminos) {
-        selectedAminos[key] = strep.includes(key);
+      _toggle(strep);
+    }
+
+    function toggleFlag() {
+      const flag = ['D', 'Y', 'K'];
+      _toggle(flag);
+    }
+
+    function toggleHA() {
+      const ha = ['Y', 'P', 'D', 'V', 'A'];
+      _toggle(ha);
+    }
+
+    function toggleCmyc() {
+      const cmyc = ['E', 'Q', 'L', 'K', 'I', 'S', 'D'];
+      _toggle(cmyc);
+    }
+
+    function _toggle(target){
+        for (let key in selectedAminos) {
+        selectedAminos[key] = target.includes(key);
       }
       dispatch('changeAminos', selectedAminos);
       checkButtonAllSelected();
@@ -67,7 +86,10 @@
         </div>
 		<div class="buttons mb-2 text-end col-md-6" id="ncaa-btn">
 			<button class="btn btn-primary" type="button" on:click={toggleAllAminos}>{buttonAllCheck ? 'All Uncheck' : 'All Check'}</button>
-			<button class="btn btn-primary"type="button" on:click={toggleStrep}>STREP</button>
+			<button class="btn btn-primary"type="button" on:click={toggleStrep}>StrepII</button>
+			<button class="btn btn-primary"type="button" on:click={toggleFlag}>Flag</button>
+			<button class="btn btn-primary"type="button" on:click={toggleHA}>HA</button>
+			<button class="btn btn-primary"type="button" on:click={toggleCmyc}>cMyc</button>
 		</div>
 	</div>
 
