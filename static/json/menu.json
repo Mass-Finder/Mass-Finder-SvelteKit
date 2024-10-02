@@ -1,0 +1,194 @@
+[
+    {
+        "title": "회사소개",
+        "link": "/company",
+        "submenus": [
+            {
+                "title": "인사말",
+                "link": "/company/greeting"
+            },
+            {
+                "title": "오시는길",
+                "link": "/company/location"
+            }
+        ]
+    },
+    {
+        "title": "제품소개",
+        "link": "/products",
+        "submenus": [
+            {
+                "title": "무단변속기",
+                "link": "/products/cvt",
+                "submenus": [
+                    {
+                        "title": "양축형",
+                        "link": "/products/cvt/dual-shaft"
+                    },
+                    {
+                        "title": "수직형",
+                        "link": "/products/cvt/vertical"
+                    },
+                    {
+                        "title": "중부하용",
+                        "link": "/products/cvt/heavy-duty"
+                    },
+                    {
+                        "title": "버티컬2단",
+                        "link": "/products/cvt/vertical-2stage"
+                    }
+                ]
+            },
+            {
+                "title": "모델선정표",
+                "link": "/products/selection",
+                "submenus": [
+                    {
+                        "title": "1단 전동기 직결형 4극",
+                        "link": "/products/selection/1stage-4p"
+                    },
+                    {
+                        "title": "1단 전동기 직결형 6극",
+                        "link": "/products/selection/1stage-6p"
+                    },
+                    {
+                        "title": "2단 전동기 직결형 4극",
+                        "link": "/products/selection/2stage-4p"
+                    }
+                ]
+            },
+            {
+                "title": "기어박스",
+                "link": "/products/gearbox"
+            },
+            {
+                "title": "전동기 직결형",
+                "link": "/products/motor-direct",
+                "submenus": [
+                    {
+                        "title": "수평1단 전동기 직결형",
+                        "link": "/products/motor-direct/h1-1stage"
+                    },
+                    {
+                        "title": "수평2단 전동기 직결형",
+                        "link": "/products/motor-direct/h1-2stage"
+                    }
+                ]
+            },
+            {
+                "title": "수직형,양축형,라인파워형",
+                "link": "/products/v-d-l",
+                "submenus": [
+                    {
+                        "title": "수직1단 전동기 직결형",
+                        "link": "/products/v-d-l/v1-1stage"
+                    },
+                    {
+                        "title": "수직2단 전동기 직결형",
+                        "link": "/products/v-d-l/v1-2stage"
+                    },
+                    {
+                        "title": "수평1단 양축형",
+                        "link": "/products/v-d-l/h2-1stage"
+                    },
+                    {
+                        "title": "수평2단 양축형",
+                        "link": "/products/v-d-l/h2-2stage"
+                    },
+                    {
+                        "title": "수직1단 라인파워",
+                        "link": "/products/v-d-l/v1-line"
+                    }
+                ]
+            },
+            {
+                "title": "수입 및 수리품목",
+                "link": "/products/import-repair",
+                "submenus": [
+                    {
+                        "title": "바이엘 싸이크로",
+                        "link": "/products/import-repair/bayer"
+                    },
+                    {
+                        "title": "코프 무단변속기",
+                        "link": "/products/import-repair/kopf"
+                    }
+                ]
+            },
+            {
+                "title": "제품 사진",
+                "link": "/products/photos"
+            },
+            {
+                "title": "제품 카탈로그",
+                "link": "/products/catalog"
+            }
+        ]
+    },
+    {
+        "title": "기술자료",
+        "link": "/tech",
+        "submenus": [
+            {
+                "title": "무단변속기",
+                "link": "/tech/cvt",
+                "submenus": [
+                    {
+                        "title": "싸이크로 감속기",
+                        "link": "/tech/cvt/cyclo",
+                        "submenus": [
+                            {
+                                "title": "특징",
+                                "link": "/tech/cvt/cyclo/features"
+                            },
+                            {
+                                "title": "토로크 리미터",
+                                "link": "/tech/cvt/cyclo/torque"
+                            },
+                            {
+                                "title": "형식기호설명",
+                                "link": "/tech/cvt/cyclo/symbols"
+                            },
+                            {
+                                "title": "표준기호",
+                                "link": "/tech/cvt/cyclo/standards"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "참고자료",
+        "link": "/reference",
+        "submenus": [
+            {
+                "title": "변속기 선정방법",
+                "link": "/reference/selection"
+            },
+            {
+                "title": "감속기 구조도",
+                "link": "/reference/diagram"
+            },
+            {
+                "title": "윤활유",
+                "link": "/reference/lubricant"
+            },
+            {
+                "title": "고장원인 및 조치요령",
+                "link": "/reference/failure"
+            }
+        ]
+    },
+    {
+        "title": "온라인 견적",
+        "link": "/quote",
+        "submenus": [
+            {
+                "title": "제작의뢰",
+                "link": "/quote/request"
+            }
+        ]
+    }
+]
