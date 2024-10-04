@@ -4,7 +4,9 @@
     import { createEventDispatcher } from 'svelte';
     import Modal from '$lib/components/Modal.svelte';
     import MolecularListItem from '$lib/components/MolecularListItem.svelte';
-  
+    import NcAaSelectItem from './NcAASelectItem.svelte';
+
+
     const dispatch = createEventDispatcher();
   
     let savedData = writable([]);
@@ -53,32 +55,46 @@
       selectData(_data);
       confirmSelection();
     }
+
+    function onCancelSelectData(targetKey) {
+      selectedData.update(currentData => {
+      if (currentData.hasOwnProperty(targetKey)) {
+        currentData[targetKey] = null;
+      }
+      return currentData;
+      });
+    }
   
     // Get keys of selectedData
     const keys = Object.keys($selectedData);
   </script>
   
   <div class="container mt-4">
-    <label for="selector" class="form-label fw-bold">Used non-canonical monomer</label>
-    <div id="selector" class="row">
+    <label for="selector" class="form-label fw-bold">Used Non-Canonical Monomer</label>
+    <div id="selector" class="row g-3">
       {#each keys as key}
         <div class="col-md-4">
-          <div class="mb-3">
-            <label class="form-label" for="select-btn">{key} :</label>
-            <button id="select-btn" class="btn btn-outline-secondary w-100" on:click={() => openModal(key)}>
+          <div class="card h-100">
+            <div class="card-body d-flex align-items-center justify-content-center">
               {#if $selectedData[key]}
-                <div>{$selectedData[key].molecularFormula}</div>
-                <div>{$selectedData[key].monoisotopicWeight}</div>
+                <NcAaSelectItem data={$selectedData[key]} {key} {onCancelSelectData}/>
               {:else}
-                Select
+                <button 
+                  id="select-btn-{key}" 
+                  class="btn btn-outline-secondary w-100"
+                  on:click={() => openModal(key)} 
+                  aria-label="Select {key} non-canonical monomer">
+                  Select
+                </button>
               {/if}
-            </button>
+            </div>
           </div>
         </div>
       {/each}
     </div>
   </div>
   
+
   {#if $showModal}
     <Modal onClose={closeModal}>
       <ul class="list-group">
@@ -95,5 +111,12 @@
     .list-group-item {
       cursor: pointer;
     }
+
+    .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
   </style>
   
