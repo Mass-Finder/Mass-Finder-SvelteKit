@@ -1,8 +1,9 @@
 <script>
   export let bestSolutions = [];
-  export let exactMass;
+  export let detectedMass;
 
   function calculateDifference(target, value) {
+    console.log('ghghgh ' + target + ', ' + value);
     return Math.abs(target - value);
   }
 </script>
@@ -26,7 +27,7 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.code}</td>
           <td>{solution.ionType}</td>
-          <td>{calculateDifference(exactMass, solution.weight).toFixed(3)}</td>
+          <td>{calculateDifference(detectedMass, solution.weight).toFixed(3)}</td>
         </tr>
       {/each}
     </tbody>

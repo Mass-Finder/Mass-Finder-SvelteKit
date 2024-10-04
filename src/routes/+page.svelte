@@ -56,7 +56,7 @@
         const aminoMapMerged = { ...selectedAminos, ...filteredNcAA };
 
         bestSolutions = MassFinderHelper.calcByIonType(
-		  detectedMass,
+		      detectedMass,
           knownSequence,
           formylation,
           adduct,

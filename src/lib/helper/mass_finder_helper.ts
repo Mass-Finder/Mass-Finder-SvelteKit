@@ -249,9 +249,14 @@ export class MassFinderHelper {
     
     static getIonWeight(ionType: IonType): number {
         switch (ionType) {
-            case 'H': return 1.008;
-            case 'Na': return 22.990;
-            case 'K': return 39.098;
+            case 'H': return 1.0073;
+            case 'Na': return 22.9892;
+            case 'K': return 38.9632;
+            case 'NH₄': return 18.03382;
+            case '-H': return -1.0073;
+            case '-Na': return -22.9892;
+            case '-K': return -38.9632;
+            case '-NH₄': return -18.03382;
             case 'unknown': return 0;
             default: return 0;
         }
