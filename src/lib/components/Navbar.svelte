@@ -49,14 +49,7 @@
               <a class="nav-link" href={menu.link}>{menu.title}</a>
             </li>
           {/each}
-        </ul>
-        <!-- Button aligned to the right -->
-        <button
-          on:click={onTapDraw}
-          class="btn btn-primary mx-5"
-        >
-          Draw
-        </button>
+        </ul>     
       </div>
     </div>
   </nav>
