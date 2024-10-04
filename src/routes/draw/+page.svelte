@@ -42,8 +42,10 @@
     }
   
     function saveData() {
+      if(!checkTitleValid()) return;
       calulateChemical();
       const dataSet = {
+        title: chemicalTitle,
         moleculeJson: $moleculeJson,
         molecularFormula: $molecularFormula,
         monoisotopicWeight: $monoisotopicWeight
@@ -66,6 +68,39 @@
       localStorage.setItem('moleculeData', JSON.stringify(storedData));
       loadSavedData();
     }
+
+    /// 입력된 타이틀이 저장 가능한지 체크
+    function checkTitleValid(){
+        if(!chemicalTitle) {
+            alert('Please enter a title to save.');
+            return false;
+        }
+        const hasSpace = chemicalTitle.includes(' ');
+        if(hasSpace) {
+            alert('Spaces cannot be entered.');
+            return false;
+        }
+        var onlyEnglish = /^[A-Za-z]+$/.test(chemicalTitle);
+        if(!onlyEnglish) {
+            alert('Please enter only English alphabets.');
+            return false;
+        }
+        if(checkTitleDuplicated()) {
+            alert('The name already exists.');
+            return false;
+        }
+        return true;
+    }
+
+    function checkTitleDuplicated() {
+        // localStorage에서 저장된 데이터를 가져옵니다.
+        const storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+        
+        // 새로운 타이틀이 기존 데이터의 타이틀 중 하나와 중복되는지 확인합니다.
+        const isDuplicate = storedData.some(data => data.title === chemicalTitle);
+        return isDuplicate;
+    }
+
   </script>
   
   <svelte:head>
