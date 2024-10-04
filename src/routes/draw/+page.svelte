@@ -9,7 +9,8 @@
     let monoisotopicWeight = writable('');
     let moleculeJson = writable({});
     let savedData = writable([]);
-  
+    let chemicalTitle = null;
+
     onMount(() => {
       // 기본 설정
       ChemDoodle.ELEMENT['H'].jmolColor = 'black';
@@ -77,12 +78,31 @@
   
   <main class="container mt-5 p-4 bg-light rounded shadow">
     <h1 class="text-center mb-4">Chemical Draw Canvas</h1>
-    <div class="text-center">
-        <canvas id="sketcher" class="border border-secondary rounded mb-3 shadow" width="500" height="500"></canvas>
-    </div>
-    <div class="buttons text-center mb-4">
-      <button class="btn btn-primary btn-lg" on:click={saveData}>Calculate & Save Data</button>
-    </div>
+    <div class="container">
+        <!-- Row를 사용하여 화면을 왼쪽과 오른쪽으로 나누기 -->
+        <div class="row align-items-start">
+          <!-- Canvas 영역: 왼쪽에 위치 -->
+          <div class="col-md-8 text-center">
+            <canvas id="sketcher" class="border border-secondary rounded mb-3 shadow" width="500" height="500"></canvas>
+          </div>
+      
+          <!-- Form 영역: 오른쪽에 위치 -->
+          <div class="col-md-4">
+            <div class="buttons text-start mb-4">
+              <label for="chemical-title" class="form-label fw-bold">Saved Title</label>
+              <input
+              type="text"
+              id="chemical-title"
+              bind:value={chemicalTitle}
+              class="form-control mb-3 w-100"
+              placeholder="Saved Title"
+            />
+            <button class="btn btn-primary btn-lg w-100" on:click={saveData}>Calculate & Save Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     {#if $molecularFormula || $monoisotopicWeight}
       <div class="results">
         {#if $molecularFormula}
