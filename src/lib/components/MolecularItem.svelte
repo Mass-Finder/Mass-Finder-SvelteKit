@@ -25,14 +25,25 @@
     });
   </script>
   
-  <div class="data-item card mb-3">
-    <div class="card-body d-flex align-items-center">
-      <div class="info me-3">
-        <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
-        <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
+  <div class="data-item card mb-3 shadow-sm">
+    <div class="row g-0 align-items-center">
+      <!-- Text Section -->
+      <div class="col-md-8">
+        <div class="card-body">
+          <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
+          <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
+          <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
+        </div>
       </div>
-      <canvas id={`canvas-${index}`} width="150" height="150" class="border rounded me-3" />
-      <button class="btn btn-danger" on:click={() => deleteData(index)}>X</button>
+      <!-- Canvas Section -->
+      <div class="col-md-2 d-flex justify-content-end">
+        <canvas id={`canvas-${index}`} width="150" height="150" class="border rounded me-3" />
+      </div>
+      <div class="col-md-1"></div>
+      <!-- Delete Button -->
+      <div class="col-md-1">
+        <button class="btn btn-danger" on:click={() => deleteData(index)}>X</button>
+      </div>
     </div>
   </div>
   
@@ -41,14 +52,12 @@
       width: 100%;
     }
   
-    .card-body {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-  
     canvas {
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  
+    .card-title {
+      font-size: 1.25rem;
     }
   </style>
   
