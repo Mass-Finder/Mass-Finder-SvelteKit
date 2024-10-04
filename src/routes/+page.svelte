@@ -1,5 +1,5 @@
 <script>
-  import IonSelector from '$lib/components/IonSelector.svelte';
+  import AdductSelector from '$lib/components/AdductSelector.svelte';
   import FormylationSelector from '$lib/components/FormylationSelector.svelte';
   import AminoMapSelector from '$lib/components/AminoMapSelector.svelte';
   import NcAASelector from '$lib/components/NcAASelector.svelte';
@@ -167,7 +167,7 @@
 	  <FormylationSelector on:change={(e) => handleFormylationChange(e.detail)} />
 	</div>
 	<div class="col-md-6">
-	  <IonSelector on:change={(e) => handleAdductChange(e.detail)} />
+	  <AdductSelector on:change={(e) => handleAdductChange(e.detail)} />
 	</div>
   </div>
 
