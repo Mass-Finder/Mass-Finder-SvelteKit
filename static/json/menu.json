@@ -4,15 +4,15 @@
         "link": "/manual"
     },
     {
-        "title": "Mass To Sequence",
+        "title": "Mass to Sequence",
         "link": "/"
     },
     {
-        "title": "Sequence To Mass",
+        "title": "Sequence to Mass",
         "link": "/stm"
     },
     {
-        "title": "Draw",
+        "title": "Chemical Draw",
         "link": "/draw"
     }
 ]
