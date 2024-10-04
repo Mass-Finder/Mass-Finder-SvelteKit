@@ -14,7 +14,7 @@
 </script>
 
 <div class="form-group">
-  <label class="form-label fw-bold" for="formylationSelect">Formylation</label>
+  <label class="form-label fw-bold" for="formylationSelect">Formylation (f)</label>
   <select id="formylationSelect" class="form-select" bind:value={fomyType} on:change={handleChange}>
     <option value="yes">Yes</option>
     <option value="no">No</option>

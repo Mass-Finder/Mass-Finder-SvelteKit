@@ -59,13 +59,13 @@
   </script>
   
   <div class="container mt-4">
-    <label class="form-label fw-bold">ncAA Selector</label>
-    <div class="row">
+    <label for="selector" class="form-label fw-bold">Used non-canonical monomer</label>
+    <div id="selector" class="row">
       {#each keys as key}
         <div class="col-md-4">
           <div class="mb-3">
-            <label class="form-label">{key} :</label>
-            <button class="btn btn-outline-secondary w-100" on:click={() => openModal(key)}>
+            <label class="form-label" for="select-btn">{key} :</label>
+            <button id="select-btn" class="btn btn-outline-secondary w-100" on:click={() => openModal(key)}>
               {#if $selectedData[key]}
                 <div>{$selectedData[key].molecularFormula}</div>
                 <div>{$selectedData[key].monoisotopicWeight}</div>
@@ -77,7 +77,6 @@
         </div>
       {/each}
     </div>
-    <button class="btn btn-primary" on:click={confirmSelection}>Confirm</button>
   </div>
   
   {#if $showModal}
