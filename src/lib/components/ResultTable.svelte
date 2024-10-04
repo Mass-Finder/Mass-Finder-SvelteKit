@@ -1,9 +1,10 @@
 <script>
+  import { adductPrintName } from '$lib/helper/amino_mapper';
+
   export let bestSolutions = [];
   export let detectedMass;
 
   function calculateDifference(target, value) {
-    console.log('ghghgh ' + target + ', ' + value);
     return Math.abs(target - value);
   }
 </script>
@@ -26,7 +27,7 @@
           <td>{index + 1}</td>
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.code}</td>
-          <td>{solution.ionType}</td>
+          <td>{adductPrintName(solution.ionType)}</td>
           <td>{calculateDifference(detectedMass, solution.weight).toFixed(3)}</td>
         </tr>
       {/each}
