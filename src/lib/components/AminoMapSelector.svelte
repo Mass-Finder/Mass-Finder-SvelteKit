@@ -79,36 +79,34 @@
     }
   </script>
 
-<div>
-    <div class="amino-acids-header row">
-      <div class="col-md-6">
-        <label class="form-label fw-bold mb-2" for="ncaa-btn">Used Amino Acids</label>
-      </div>
-      <div class="buttons mb-2 text-end col-md-6" id="ncaa-btn">
-        <button class="btn btn-primary" type="button" on:click={toggleAllAminos}>{buttonAllCheck ? 'All Uncheck' : 'All Check'}</button>
-        <button class="btn btn-primary" type="button" on:click={toggleStrep}>StrepII</button>
-        <button class="btn btn-primary" type="button" on:click={toggleFlag}>Flag</button>
-        <button class="btn btn-primary" type="button" on:click={toggleHA}>HA</button>
-        <button class="btn btn-primary" type="button" on:click={toggleCmyc}>cMyc</button>
-      </div>
+<div class="amino-acids-header row">
+    <div class="col-md-6">
+      <label class="form-label fw-bold mb-2" for="ncaa-btn">Used Amino Acids</label>
     </div>
-  
-    <!-- Use Bootstrap grid to arrange checkboxes in columns -->
-    <div class="amino-acids row">
-      {#each Object.keys(selectedAminos) as key}
-        <div class="form-check col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
-          <input 
-            class="form-check-input" 
-            type="checkbox" 
-            id="flexCheckDefault-{key}" 
-            bind:checked={selectedAminos[key]}
-            on:change={(e) => handleCheckboxChange(key, e.target.checked)}
-          >
-          <label class="form-check-label" for="flexCheckDefault-{key}">
-            {key}({shortToLong(key)})
-          </label>
-        </div>
-      {/each}
+    <div class="buttons mb-2 text-end col-md-6" id="ncaa-btn">
+      <button class="btn btn-primary" type="button" on:click={toggleAllAminos}>{buttonAllCheck ? 'All Uncheck' : 'All Check'}</button>
+      <button class="btn btn-primary" type="button" on:click={toggleStrep}>StrepII</button>
+      <button class="btn btn-primary" type="button" on:click={toggleFlag}>Flag</button>
+      <button class="btn btn-primary" type="button" on:click={toggleHA}>HA</button>
+      <button class="btn btn-primary" type="button" on:click={toggleCmyc}>cMyc</button>
     </div>
+  </div>
+
+  <!-- Use Bootstrap grid to arrange checkboxes in columns -->
+  <div class="amino-acids row m-2 ">
+    {#each Object.keys(selectedAminos) as key}
+      <div class="form-check col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+        <input 
+          class="form-check-input" 
+          type="checkbox" 
+          id="flexCheckDefault-{key}" 
+          bind:checked={selectedAminos[key]}
+          on:change={(e) => handleCheckboxChange(key, e.target.checked)}
+        >
+        <label class="form-check-label" for="flexCheckDefault-{key}">
+          {key}({shortToLong(key)})
+        </label>
+      </div>
+    {/each}
   </div>
   
