@@ -1,7 +1,7 @@
 <script>
 	import '../app.css';
 	import Navbar from '$lib/components/Navbar.svelte';
-	// import Footer from '$lib/components/Footer.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import { writable } from 'svelte/store';
 	import { setContext } from 'svelte';
   
@@ -27,7 +27,7 @@
   
   <Navbar />
   <slot />
-  <!-- <Footer /> -->
+  <Footer />
   
   <style>
 	.loading-overlay {
