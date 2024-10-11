@@ -7,6 +7,8 @@
 
     let selectedAminos = { ...aminoMap };
 
+    let proteinSeq = '';
+
     // 선택된 ncaa
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
 
@@ -38,8 +40,23 @@
     }
 
     function _onTapCalcButton() {
-        
+        if(!_validateCheck()) return;
     }
+
+    function _validateCheck(){
+        // 입력값 없는 경우
+        if(!proteinSeq){
+            alert('Please enter RNA or DNA or Protein.');
+            return false;
+        }
+        if(proteinSeq.includes('?')){
+            alert('Please enter the correct sequence.');
+            return false;
+        }
+    }
+
+
+
 
 </script>
 
@@ -57,7 +74,7 @@
 
     <div class="mb-3">
         <label for="detected-mass" class="form-label fw-bold">Sequnece</label>
-        <SeqConverter></SeqConverter>
+        <SeqConverter bind:proteinSeq={proteinSeq}></SeqConverter>
     </div>
 
     <div class="mb-3">

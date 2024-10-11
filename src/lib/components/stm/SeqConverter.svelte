@@ -6,7 +6,7 @@
     let inputValue = ''; // 입력받을 값
     let rnaSeq = '';
     let dnaSeq = '';
-    let proteinSeq = '';
+    export let proteinSeq;
   
     // 시퀀스 변환 함수들
     // function translateRNAtoDNA(rna) {
@@ -36,6 +36,9 @@
     function updateSequences() {
         // 인풋값이 빈값이면 그냥 공백처리
         if(!inputValue) return proteinSeq = '';
+        // 일단 대문자 만들어놓고 시작
+        handleInputToUpper();
+
         if (selectedType === 'RNA') {
             proteinSeq = translateRNAtoProtein(inputValue);
         } else if (selectedType === 'DNA') {
@@ -43,6 +46,11 @@
         } else {
             proteinSeq = translateInputToProtein(inputValue);
         }
+    }
+
+    // 입력값 대문자로
+    function handleInputToUpper() {
+      inputValue = inputValue.toUpperCase();
     }
   </script>
   
@@ -84,11 +92,6 @@
   </div>
   
   <style>
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
-  
     .card {
       min-height: 100px;
     }
