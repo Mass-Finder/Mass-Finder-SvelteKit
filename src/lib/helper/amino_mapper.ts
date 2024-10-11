@@ -93,7 +93,7 @@ export const codonTableRtoS = {
     // Tyrosine (Y)
     UAU: 'Y', UAC: 'Y',
     // Stop codons
-    UAA: 'Stop', UAG: 'Stop', UGA: 'Stop',
+    UAA: '[Stop]', UAG: '[Stop]', UGA: '[Stop]',
     // Histidine (H)
     CAU: 'H', CAC: 'H',
     // Glutamine (Q)
@@ -140,7 +140,7 @@ export const codonTableRtoS = {
     // Tyrosine (Y)
     TAT: 'Y', TAC: 'Y',
     // Stop codons
-    TAA: 'Stop', TAG: 'Stop', TGA: 'Stop',
+    TAA: '[Stop]', TAG: '[Stop]', TGA: '[Stop]',
     // Histidine (H)
     CAT: 'H', CAC: 'H',
     // Glutamine (Q)
