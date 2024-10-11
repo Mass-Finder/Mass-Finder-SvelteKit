@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { browser } from '$app/environment';
-    import { menuStore } from '$lib/stores/menuStore';
+    // import { menuStore } from '$lib/stores/menuStore';
     import { goto } from '$app/navigation';
   
     let menus = [];
@@ -10,7 +10,7 @@
       if (browser) {
         const response = await fetch('/json/menu.json');
         menus = await response.json();
-        menuStore.set(menus);
+        // menuStore.set(menus);
       }
     });
   
