@@ -49,13 +49,35 @@
             alert('Please enter RNA or DNA or Protein.');
             return false;
         }
+        // 잘못된 입력값 있는경우
         if(proteinSeq.includes('?')){
             alert('Please enter the correct sequence.');
             return false;
         }
+        checkNonZeroAndNullValues();
+
     }
 
+    // ncaa가 선택이 된것중에 title이 모두 잘 들어가 있는지 체크
+    function checkNonZeroAndNullValues() {
+        // ncAA에서 value가 0이 아닌 key를 모음
+        let nonZeroKeys = Object.keys(ncAA).filter(key => ncAA[key] !== 0);
 
+       // codonTitle 값을 직접 구독해서 값 확인
+        let currentCodonTitle = $codonTitle;  // $를 사용해 값을 바로 가져옴
+
+        nonZeroKeys.forEach(key => {
+            if (currentCodonTitle[key] === null) {
+                console.log(`${key}의 codonTitle 값이 null입니다.`);
+            } else {
+                console.log(`${key}의 codonTitle 값이 null이 아닙니다: ${currentCodonTitle[key]}`);
+            }
+        });
+    }
+
+    function onChangeCodonTitle(upperValue, key){
+        $codonTitle[key] = upperValue;
+    }
 
 
 </script>
@@ -82,7 +104,7 @@
     </div>
 
     <div class="mb-3">
-        <NcAACodonSelector on:changeNcAA={handleNcAAChange} {codonTitle} />
+        <NcAACodonSelector on:changeNcAA={handleNcAAChange} bind:codonTitle={codonTitle} {onChangeCodonTitle} />
     </div>
 
     <button type="button" class="btn btn-primary w-100" on:click={_onTapCalcButton}>

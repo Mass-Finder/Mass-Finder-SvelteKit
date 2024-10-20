@@ -11,7 +11,7 @@
     const dispatch = createEventDispatcher();
   
     export let codonTitle;
-
+    export let onChangeCodonTitle;
     /// 로컬 스토리지에 저장된 분자들
     let savedData = writable([]);
 
@@ -93,6 +93,10 @@
       });
     }
   
+    function onChangeTitle(upperValue, key){
+      onChangeCodonTitle(upperValue, key);
+    }
+
     // Get keys of selectedData
     const keys = Object.keys($selectedData);
   </script>
@@ -105,7 +109,7 @@
           <div class="card h-100">
             <div class="card-body d-flex align-items-center justify-content-center">
               {#if $selectedData[key]}
-                <NcAACodonSelectItem data={$selectedData[key]} {key} {onCancelSelectData} customCodonTitle={codonTitle[key]}/>
+                <NcAACodonSelectItem data={$selectedData[key]} {key} {onCancelSelectData} customCodonTitle={codonTitle[key]} {onChangeTitle}/>
               {:else}
                 <button 
                   id="select-btn-{key}" 

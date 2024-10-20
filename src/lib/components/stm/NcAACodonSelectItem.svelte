@@ -4,6 +4,7 @@
     export let data;
     export let key;
     export let onCancelSelectData;
+    export let onChangeTitle;
     export let customCodonTitle;
 
     onMount(() => {
@@ -30,6 +31,7 @@
     function handleInputToUpper(event) {
       const input = event.target;
       customCodonTitle = input.value.toUpperCase();
+      onChangeTitle(customCodonTitle, key);
     }
 
   </script>
