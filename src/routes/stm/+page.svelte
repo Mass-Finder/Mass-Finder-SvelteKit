@@ -42,7 +42,7 @@
 
     function _onTapCalcButton() {
         if (!_validateCheck()) return;
-        StmHelper.calc(proteinSeq, removeZeroValueNcAA(), removeNullCodonTitle());
+        StmHelper.calc(proteinSeq, removeZeroValueNcAA(), removeNullCodonTitle(), selectedAminos);
     }
 
     function _validateCheck() {
