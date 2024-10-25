@@ -6,10 +6,12 @@
     import { writable, get } from "svelte/store";
     import { codonTableRtoS } from "$lib/helper/amino_mapper";
     import { StmHelper } from "$lib/helper/stm_helper";
+    import StmResultTable from '$lib/components/stm/StmResultTable.svelte';
 
     let selectedAminos = { ...aminoMap };
 
     let proteinSeq = "";
+    let possibilities = [];
 
     // 선택된 ncaa
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
@@ -42,7 +44,12 @@
 
     function _onTapCalcButton() {
         if (!_validateCheck()) return;
-        StmHelper.calc(proteinSeq, removeZeroValueNcAA(), removeNullCodonTitle(), selectedAminos);
+        possibilities = StmHelper.calc(
+            proteinSeq,
+            removeZeroValueNcAA(),
+            removeNullCodonTitle(),
+            selectedAminos,
+        );
     }
 
     function _validateCheck() {
@@ -232,4 +239,8 @@
     >
         Predict Mass!
     </button>
+
+    {#if proteinSeq !== null && possibilities.length > 0}
+        <StmResultTable {possibilities}/>
+    {/if}
 </div>
