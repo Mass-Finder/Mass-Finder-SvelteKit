@@ -1,6 +1,5 @@
 import { codonTableRtoS } from './amino_mapper';
 
-
 export class StmHelper {
     // 입력받은 데이터를 기반으로 경우의 수를 계산하는 메서드
     static calc(
@@ -10,7 +9,7 @@ export class StmHelper {
         aminoMap: { [key: string]: number }
     ) {
         // 경우의 수를 저장할 배열
-        let possibilities: Array<{ sequence: (string | string[])[], reason?: string }> = [];
+        let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number }> = [];
         let hasTruncated = false;
 
         // 기본 시퀀스 추가
@@ -42,12 +41,38 @@ export class StmHelper {
             }
         }
 
+        // 각 경우의 수에 대한 무게 합산 계산
+        possibilities = possibilities.map(possibility => {
+            let totalWeight = 0;
+
+            // 각 아미노산을 순회하며 무게 계산
+            possibility.sequence.forEach(item => {
+                const aminoAcid = item[0];
+
+                // aminoMap에 있는 아미노산의 경우 그 무게를 사용
+                if (aminoMap[aminoAcid]) {
+                    totalWeight += aminoMap[aminoAcid];
+                }
+                // truncated된 아미노산의 경우 ncAAMap의 monoisotopicWeight 사용
+                else {
+                    for (const key in ncAAMap) {
+                        if (ncAAMap[key].title === aminoAcid) {
+                            totalWeight += parseFloat(ncAAMap[key].monoisotopicWeight);
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // 무게를 possibility 객체에 추가
+            return { ...possibility, weight: totalWeight };
+        });
+
         // 결과 출력
-        console.log("Generated Possibilities:");
+        console.log("Generated Possibilities with Weights:");
         console.table(possibilities);
         return possibilities;
     }
-
 
     // RNA 시퀀스를 아미노산 문자로 번역하는 메서드
     static translateRNAtoAmino(rna: string): string | undefined {
