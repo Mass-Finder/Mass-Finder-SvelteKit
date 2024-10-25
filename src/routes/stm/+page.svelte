@@ -66,7 +66,11 @@
             return false;
         }
         // ncaa 의 codon 으로 입력된 값이 codonTableRtoS 에 매핑되지 않을때
-        if (checkCustomCodonTitle2()) {
+        if (!checkCustomCodonTitle2()) {
+            return false;
+        }
+
+        if(!checkSeqValidate()) {
             return false;
         }
     }
@@ -110,6 +114,44 @@
         });
         if (msg) {
             alert(msg);
+            return false;
+        }
+        return true;
+    }
+
+    /// selectedAminos 값과 ncaa 를 합쳐서 proteinSeq 의 모든 글자가 사용 아미노산에 등록이 된건지 체크
+    function checkSeqValidate() {
+        // codonTitle의 현재 상태를 가져오기 위해 get 함수 사용
+        let current = get(codonTitle);
+
+        // ncAA에서 value가 0이 아닌 key를 모음
+        let nonZeroKeys = Object.keys(ncAA).filter((key) => ncAA[key] !== 0);
+        let deepCopiedAminos = structuredClone(selectedAminos);
+        nonZeroKeys.forEach((key) => {
+            if (key in current) {
+                let value = current[key];
+                let seqValue = codonTableRtoS[value];
+                // key 리스트에만 넣기 위해  value는 아무거나 넣음
+                deepCopiedAminos[seqValue] = 1.0;
+            }
+        });
+
+        let allExist = true; // 모든 글자가 존재하는지 여부를 저장
+        let missingKeys = []; // 존재하지 않는 글자를 저장할 배열
+
+        // 문자열을 한 글자씩 순회
+        for (let i = 0; i < proteinSeq.length; i++) {
+            let char = proteinSeq[i];
+
+            // deepCopiedAminos에 해당 글자가 key로 존재하는지 체크
+            if (!(char in deepCopiedAminos)) {
+                allExist = false; // 한 글자라도 존재하지 않으면 false
+                missingKeys.push(char); // 존재하지 않는 글자를 배열에 추가
+            }
+        }
+
+        if(allExist === false){
+            alert("\""+missingKeys + "\" cannot be used.");
             return false;
         }
         return true;
