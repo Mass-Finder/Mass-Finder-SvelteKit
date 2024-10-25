@@ -10,7 +10,7 @@ export class StmHelper {
         aminoMap: { [key: string]: number }
     ) {
         // 경우의 수를 저장할 배열
-        let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number }> = [];
+        let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: string }> = [];
         const baseSeq = Array.from(inputSeq).map(char => [char]); // 각 아미노산을 배열로 저장하여 기본 시퀀스로 만듦
 
         // Recursive function to generate all possibilities
@@ -24,7 +24,6 @@ export class StmHelper {
 
             // 현재 위치의 아미노산
             const aminoAcid = inputSeq[index];
-            let hasTruncated = false;
 
             // 기본 아미노산으로 진행
             generatePossibilities([...currentSeq, [aminoAcid]], index + 1);
@@ -35,16 +34,21 @@ export class StmHelper {
                 const translatedAmino = this.translateRNAtoAmino(rna);
 
                 if (aminoAcid === translatedAmino) {
-                    hasTruncated = true;
                     const truncatedSeq = [...currentSeq, [ncAAMap[key].title]];
-                    generatePossibilities(truncatedSeq, index + 1);
+                    
+                    // reason 필드에 'truncated' 추가
+                    const reason = "Truncated";
+                    possibilities.push({ sequence: truncatedSeq, weight: this.calculateWeight(truncatedSeq, aminoMap, ncAAMap), reason });
                 }
             }
         };
 
         // 가능한 시퀀스 생성 시작
         generatePossibilities([], 0);
-
+        
+        // 포밀레이션 경우의 수 추가
+        possibilities = this.addFormylation(possibilities);
+        
         // 결과 출력
         console.log("Generated Possibilities with Weights:");
         console.table(possibilities);
@@ -75,6 +79,22 @@ export class StmHelper {
         // 총 무게의 합에 물 증발량 반영
         return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
     }
+
+    // Formylation이 붙을 수 있는 경우의 수를 추가하고 possibilities 반환
+    static addFormylation(possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number }>) {
+        const fWeight = 27.99;
+
+        // f가 앞에 붙은 경우의 수를 생성
+        const newPossibilities = possibilities.map(possibility => {
+            const newSequence = [["f"], ...possibility.sequence];  // f를 맨 앞에 추가
+            const newWeight = (possibility.weight || 0) + fWeight;  // 기존 weight에 27.99를 더함
+            const newReason = possibility.reason ? `${possibility.reason}, Formylation` : "Formylation"; // 기존 reason에 추가
+
+            return { sequence: newSequence, reason: newReason, weight: newWeight };
+        });
+
+        // 새로운 가능성을 기존 possibilities에 추가하고 반환
+        possibilities.push(...newPossibilities);
+        return possibilities;
+    }
 }
-
-
