@@ -3,8 +3,10 @@
 export class StmHelper {
 
     // [inputSeq] 사용자가 입력한 아미노산 seq
-    static calc(inputSeq : string, ncAAMap: {[key: string]: string}){
-
+    static calc(inputSeq: string, ncAAMap: { [key: string]: string }, aminoMap: { [key: string]: number } ) {
+        console.log(inputSeq);
+        console.table(ncAAMap);
+        console.table(aminoMap);
     }
 }
 
@@ -13,4 +15,3 @@ export class StmHelper {
 // ncaa에 커스텀 아미노산 적용함
 
 
-// 만약사용될 아미노산에도 없고 ncaa에도 입력안된 값이 seq 로 입력되면 에러처리

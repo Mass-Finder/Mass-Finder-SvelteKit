@@ -80,7 +80,7 @@
     function onCancelSelectData(targetKey) {
       selectedData.update(currentData => {
       if (currentData.hasOwnProperty(targetKey)) {
-        currentData[targetKey] = null;
+        currentData[targetKey] = 0.0;
       }
       return currentData;
       });
@@ -91,6 +91,7 @@
       }
       return currentData;
       });
+      confirmSelection();
     }
   
     function onChangeTitle(upperValue, key){

@@ -5,6 +5,7 @@
     import { aminoMap } from "$lib/helper/amino_mapper";
     import { writable, get } from "svelte/store";
     import { codonTableRtoS } from "$lib/helper/amino_mapper";
+    import { StmHelper } from "$lib/helper/stm_helper";
 
     let selectedAminos = { ...aminoMap };
 
@@ -45,6 +46,7 @@
 
     function _onTapCalcButton() {
         if (!_validateCheck()) return;
+        StmHelper.calc(proteinSeq, removeZeroValueNcAA(), removeNullCodonTitle());
     }
 
     function _validateCheck() {
@@ -70,9 +72,11 @@
             return false;
         }
 
-        if(!checkSeqValidate()) {
+        if (!checkSeqValidate()) {
             return false;
         }
+
+        return true;
     }
 
     // ncaa가 선택이 된것중에 title이 모두 잘 들어가 있는지 체크
@@ -150,11 +154,33 @@
             }
         }
 
-        if(allExist === false){
-            alert("\""+missingKeys + "\" cannot be used.");
+        if (allExist === false) {
+            alert('"' + missingKeys + '" cannot be used.');
             return false;
         }
         return true;
+    }
+
+    // codonTitle 에서 null 제거
+    function removeNullCodonTitle() {
+        // 현재 codonTitle 값을 가져오기
+        let current = get(codonTitle);
+
+        // null이 아닌 값만 새로운 객체에 저장
+        let filteredCodonTitle = Object.fromEntries(
+            Object.entries(current).filter(([key, value]) => value !== null),
+        );
+
+        return filteredCodonTitle;
+    }
+
+    // ncAA 에서 value 가 0 인거 제거
+    function removeZeroValueNcAA() {
+        // null이 아닌 값만 새로운 객체에 저장
+        let filtedData = Object.fromEntries(
+            Object.entries(ncAA).filter(([key, value]) => value !== 0.0),
+        );
+        return filtedData;
     }
 </script>
 
