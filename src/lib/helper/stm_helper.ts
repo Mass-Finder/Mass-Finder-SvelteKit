@@ -1,4 +1,5 @@
 import { codonTableRtoS } from './amino_mapper';
+import { MassFinderHelper } from './mass_finder_helper';
 
 export class StmHelper {
     // 입력받은 데이터를 기반으로 경우의 수를 계산하는 메서드
@@ -71,7 +72,8 @@ export class StmHelper {
                 }
             }
         });
-        return totalWeight;
+        // 총 무게의 합에 물 증발량 반영
+        return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
     }
 }
 
