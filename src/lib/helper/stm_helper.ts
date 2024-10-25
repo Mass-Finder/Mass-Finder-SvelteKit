@@ -10,63 +10,39 @@ export class StmHelper {
     ) {
         // 경우의 수를 저장할 배열
         let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number }> = [];
-        let hasTruncated = false;
+        const baseSeq = Array.from(inputSeq).map(char => [char]); // 각 아미노산을 배열로 저장하여 기본 시퀀스로 만듦
 
-        // 기본 시퀀스 추가
-        const baseSeq = Array.from(inputSeq).map(char => [char]);  // 각 아미노산을 배열 형태로 저장
-        possibilities.push({ sequence: baseSeq });
+        // Recursive function to generate all possibilities
+        const generatePossibilities = (currentSeq: (string | string[])[], index: number) => {
+            if (index === inputSeq.length) {
+                // 무게 합산 및 결과 저장
+                const weight = this.calculateWeight(currentSeq, aminoMap, ncAAMap);
+                possibilities.push({ sequence: currentSeq, weight });
+                return;
+            }
 
-        // inputSeq의 각 문자에 대해 순회
-        for (let i = 0; i < inputSeq.length; i++) {
-            const aminoAcid = inputSeq[i];
+            // 현재 위치의 아미노산
+            const aminoAcid = inputSeq[index];
+            let hasTruncated = false;
 
-            // codonTitle을 순회하여 해당 아미노산의 truncated 여부를 체크
+            // 기본 아미노산으로 진행
+            generatePossibilities([...currentSeq, [aminoAcid]], index + 1);
+
+            // truncated 발생 가능한지 확인하고 처리
             for (const key in codonTitle) {
                 const rna = codonTitle[key];
-                const translatedAmino = this.translateRNAtoAmino(rna); // RNA를 아미노산으로 번역
+                const translatedAmino = this.translateRNAtoAmino(rna);
 
                 if (aminoAcid === translatedAmino) {
                     hasTruncated = true;
-
-                    // 새로운 시퀀스를 복사하고, 해당 위치에 아미노산 배열을 대체
-                    const newSeq = baseSeq.map((item, index) =>
-                        index === i ? [ncAAMap[key].title] : item
-                    );
-
-                    possibilities.push({
-                        sequence: newSeq,
-                        reason: "truncated"
-                    });
+                    const truncatedSeq = [...currentSeq, [ncAAMap[key].title]];
+                    generatePossibilities(truncatedSeq, index + 1);
                 }
             }
-        }
+        };
 
-        // 각 경우의 수에 대한 무게 합산 계산
-        possibilities = possibilities.map(possibility => {
-            let totalWeight = 0;
-
-            // 각 아미노산을 순회하며 무게 계산
-            possibility.sequence.forEach(item => {
-                const aminoAcid = item[0];
-
-                // aminoMap에 있는 아미노산의 경우 그 무게를 사용
-                if (aminoMap[aminoAcid]) {
-                    totalWeight += aminoMap[aminoAcid];
-                }
-                // truncated된 아미노산의 경우 ncAAMap의 monoisotopicWeight 사용
-                else {
-                    for (const key in ncAAMap) {
-                        if (ncAAMap[key].title === aminoAcid) {
-                            totalWeight += parseFloat(ncAAMap[key].monoisotopicWeight);
-                            break;
-                        }
-                    }
-                }
-            });
-
-            // 무게를 possibility 객체에 추가
-            return { ...possibility, weight: totalWeight };
-        });
+        // 가능한 시퀀스 생성 시작
+        generatePossibilities([], 0);
 
         // 결과 출력
         console.log("Generated Possibilities with Weights:");
@@ -78,4 +54,25 @@ export class StmHelper {
     static translateRNAtoAmino(rna: string): string | undefined {
         return codonTableRtoS[rna];
     }
+
+    // 각 시퀀스의 무게를 계산하는 메서드
+    static calculateWeight(sequence: (string | string[])[], aminoMap: { [key: string]: number }, ncAAMap: { [key: string]: any }): number {
+        let totalWeight = 0;
+        sequence.forEach(item => {
+            const aminoAcid = item[0];
+            if (aminoMap[aminoAcid]) {
+                totalWeight += aminoMap[aminoAcid];
+            } else {
+                for (const key in ncAAMap) {
+                    if (ncAAMap[key].title === aminoAcid) {
+                        totalWeight += parseFloat(ncAAMap[key].monoisotopicWeight);
+                        break;
+                    }
+                }
+            }
+        });
+        return totalWeight;
+    }
 }
+
+
