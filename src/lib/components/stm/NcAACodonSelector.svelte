@@ -17,12 +17,12 @@
 
     /// 선택된 ncaa 
     let selectedData = writable({
-      B: null,
-      J: null,
-      O: null,
-      U: null,
-      X: null,
-      Z: null
+      B: 0.0,
+      J: 0.0,
+      O: 0.0,
+      U: 0.0,
+      X: 0.0,
+      Z: 0.0
     });
 
     let showModal = writable(false);

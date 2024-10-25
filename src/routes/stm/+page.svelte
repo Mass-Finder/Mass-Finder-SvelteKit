@@ -33,11 +33,7 @@
     }
 
     function handleNcAAChange(e) {
-        let _data = Object.entries(e.detail).reduce((acc, [key, value]) => {
-            acc[key] = Number(value?.monoisotopicWeight ?? 0.0);
-            return acc;
-        }, {});
-        ncAA = _data;
+        ncAA = e.detail;
     }
 
     function onChangeCodonTitle(upperValue, key) {
