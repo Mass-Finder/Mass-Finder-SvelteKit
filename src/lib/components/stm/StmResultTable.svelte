@@ -24,7 +24,7 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.sequence}</td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
-          <td>{solution.reason || '-'}</td>
+          <td>{solution.reason || 'Theoretical value'}</td>
         </tr>
       {/each}
     </tbody>
