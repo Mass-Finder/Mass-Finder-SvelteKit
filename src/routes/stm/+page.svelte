@@ -47,6 +47,7 @@
 
     function _onTapCalcButton() {
         loading.set(true);
+        getSequenceBeforeStop();
         if (!_validateCheck()) return loading.set(false);
         try {
             possibilities = StmHelper.calc(
@@ -192,6 +193,19 @@
             Object.entries(ncAA).filter(([key, value]) => value !== 0.0),
         );
         return filtedData;
+    }
+
+
+    // RNA 와 DNA 에서는 [stop] seq 가 존재할수있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
+    function getSequenceBeforeStop() {
+        // 첫 번째 "[stop]"의 인덱스 찾기
+        const stopIndex = proteinSeq.indexOf("[Stop]");
+
+        // "[stop]"이 없는 경우 전체 문자열 반환
+        if (stopIndex === -1) return;
+
+        // "[stop]" 이전 부분만 반환
+        proteinSeq = proteinSeq.substring(0, stopIndex);
     }
 </script>
 
