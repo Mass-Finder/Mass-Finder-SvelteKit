@@ -1,12 +1,19 @@
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-static';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
-		// adapter-auto only supports some environments, see https://kit.svelte.dev/docs/adapter-auto for a list.
-		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
-		adapter: adapter()
+		adapter: adapter({
+			// Optional: 빌드 결과가 저장될 폴더 경로를 지정합니다. 기본값은 'build'입니다.
+			// pages: 'build',
+			// assets: 'build',
+			fallback: 'index.html',  // SPA 지원을 위한 fallback 페이지 설정
+		}),
+		// Optional: 경로 설정
+		paths: {
+			base: '',
+			assets: ''
+		}
 	}
 };
 
