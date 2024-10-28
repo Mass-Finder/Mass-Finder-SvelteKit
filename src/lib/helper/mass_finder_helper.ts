@@ -3,6 +3,7 @@ import { AminoModel } from '../model/AminoModel';
 import type { IonType, FormyType } from '../../type/Types';
 
 import {calculateSimilarity, sortAmino, removeDuplicates } from './mass_util';
+import { getIonWeight } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트
 let dataMap: { [key: string]: number } = {};
@@ -42,14 +43,14 @@ export class MassFinderHelper {
         switch (this.ionType) {
             case 'unknown':
                 for (const i of ['H', 'Na', 'K'] as IonType[]) {
-                    bestSolutions = bestSolutions.concat(this.calc(targetMass - this.getIonWeight(i), initAminos, fomyType, i, aminoMap));
+                    bestSolutions = bestSolutions.concat(this.calc(targetMass - getIonWeight(i), initAminos, fomyType, i, aminoMap));
                 }
-                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + this.getIonWeight(e.ionType ?? 'unknown') }));
+                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown') }));
                 bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, topSolutionsCount);
                 break;
             default:
-                bestSolutions = this.calc(targetMass - this.getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap);
-                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + this.getIonWeight(e.ionType ?? 'unknown') }));
+                bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap);
+                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown') }));
         }
         bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, similarity: calculateSimilarity(targetMass, e.weight ?? 0) }));
         return bestSolutions;
@@ -244,21 +245,5 @@ export class MassFinderHelper {
     /// FormyType, IonType, essential seq 붙여주는 부분
     static setMetaData(bestSolutions: AminoModel[], formyType: FormyType, ionType: IonType, essentialSeq: string): AminoModel[] {
         return bestSolutions.map(e => new AminoModel({ ...e, formyType, ionType, essentialSeq }));
-    }
-
-    
-    static getIonWeight(ionType: IonType): number {
-        switch (ionType) {
-            case 'H': return 1.0073;
-            case 'Na': return 22.9892;
-            case 'K': return 38.9632;
-            case 'NH₄': return 18.03382;
-            case '-H': return -1.0073;
-            case '-Na': return -22.9892;
-            case '-K': return -38.9632;
-            case '-NH₄': return -18.03382;
-            case 'unknown': return 0;
-            default: return 0;
-        }
     }
 }

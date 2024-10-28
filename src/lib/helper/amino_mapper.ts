@@ -1,3 +1,4 @@
+import type { IonType } from '../../type/Types';
 
 
 /// 아미노선 1글자와 3글자 이름 매핑
@@ -162,4 +163,19 @@ export const codonTableRtoS = {
     // Glycine (G)
     GGT: 'G', GGC: 'G', GGA: 'G', GGG: 'G'
   };
+
+  export function getIonWeight(ionType: IonType): number {
+    switch (ionType) {
+        case 'H': return 1.0073;
+        case 'Na': return 22.9892;
+        case 'K': return 38.9632;
+        case 'NH₄': return 18.03382;
+        case '-H': return -1.0073;
+        case '-Na': return -22.9892;
+        case '-K': return -38.9632;
+        case '-NH₄': return -18.03382;
+        case 'unknown': return 0;
+        default: return 0;
+    }
+}
   
