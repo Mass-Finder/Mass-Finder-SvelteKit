@@ -1,5 +1,7 @@
 import { codonTableRtoS } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
+import { getIonWeight } from './amino_mapper';
+import type { IonType } from '../../type/Types';
 
 export class StmHelper {
     // 입력받은 데이터를 기반으로 경우의 수를 계산하는 메서드
@@ -10,7 +12,7 @@ export class StmHelper {
         aminoMap: { [key: string]: number }
     ) {
         // 경우의 수를 저장할 배열
-        let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: string }> = [];
+        let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }> = [];
         const baseSeq = Array.from(inputSeq).map(char => [char]); // 각 아미노산을 배열로 저장하여 기본 시퀀스로 만듦
 
         // Recursive function to generate all possibilities
@@ -35,7 +37,7 @@ export class StmHelper {
 
                 if (aminoAcid === translatedAmino) {
                     const truncatedSeq = [...currentSeq, [ncAAMap[key].title]];
-                    
+
                     // reason 필드에 'truncated' 추가
                     const reason = "Truncated";
                     possibilities.push({ sequence: truncatedSeq, weight: this.calculateWeight(truncatedSeq, aminoMap, ncAAMap), reason });
@@ -45,10 +47,13 @@ export class StmHelper {
 
         // 가능한 시퀀스 생성 시작
         generatePossibilities([], 0);
-        
+
         // 포밀레이션 경우의 수 추가
         possibilities = this.addFormylation(possibilities);
-        
+
+        // 모든 Adduct 경우의 수 추가
+        possibilities = this.addAdductPossibilities(possibilities);
+
         // 결과 출력
         console.log("Generated Possibilities with Weights:");
         console.table(possibilities);
@@ -81,7 +86,7 @@ export class StmHelper {
     }
 
     // Formylation이 붙을 수 있는 경우의 수를 추가하고 possibilities 반환
-    static addFormylation(possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number }>) {
+    static addFormylation(possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }>) {
         const fWeight = 27.99;
 
         // f가 앞에 붙은 경우의 수를 생성
@@ -90,11 +95,28 @@ export class StmHelper {
             const newWeight = (possibility.weight || 0) + fWeight;  // 기존 weight에 27.99를 더함
             const newReason = possibility.reason ? `${possibility.reason}, Formylation` : "Formylation"; // 기존 reason에 추가
 
-            return { sequence: newSequence, reason: newReason, weight: newWeight };
+            return { sequence: newSequence, reason: newReason, weight: newWeight, adduct: possibility.adduct };
         });
 
         // 새로운 가능성을 기존 possibilities에 추가하고 반환
         possibilities.push(...newPossibilities);
         return possibilities;
+    }
+
+    // 모든 Adduct 경우의 수를 추가하는 메서드
+    static addAdductPossibilities(possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }>) {
+        const ionTypes: IonType[] = ['H', 'Na', 'K', 'NH₄', '-H', '-Na', '-K', '-NH₄'];
+
+        const adductedPossibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }> = [];
+
+        possibilities.forEach(possibility => {
+            ionTypes.forEach(adduct => {
+                const newWeight = (possibility.weight || 0) + getIonWeight(adduct);
+                const newValue = { sequence: possibility.sequence, reason: possibility.reason, weight: newWeight, adduct: adduct };
+                adductedPossibilities.push(newValue);
+            });
+        });
+
+        return adductedPossibilities;
     }
 }
