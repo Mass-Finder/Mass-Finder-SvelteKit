@@ -6,7 +6,8 @@
     import { writable, get } from "svelte/store";
     import { codonTableRtoS } from "$lib/helper/amino_mapper";
     import { StmHelper } from "$lib/helper/stm_helper";
-    import StmResultTable from '$lib/components/stm/StmResultTable.svelte';
+    import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
+    import { getContext } from "svelte";
 
     let selectedAminos = { ...aminoMap };
 
@@ -26,6 +27,8 @@
         Z: null,
     });
 
+    const loading = getContext("loading");
+
     function handleAminoMapChange(newAminos) {
         selectedAminos = Object.fromEntries(
             Object.entries(newAminos)
@@ -43,13 +46,18 @@
     }
 
     function _onTapCalcButton() {
-        if (!_validateCheck()) return;
-        possibilities = StmHelper.calc(
-            proteinSeq,
-            removeZeroValueNcAA(),
-            removeNullCodonTitle(),
-            selectedAminos,
-        );
+        loading.set(true);
+        if (!_validateCheck()) return loading.set(false);
+        try {
+            possibilities = StmHelper.calc(
+                proteinSeq,
+                removeZeroValueNcAA(),
+                removeNullCodonTitle(),
+                selectedAminos,
+            );
+        } finally {
+            loading.set(false);
+        }
     }
 
     function _validateCheck() {
@@ -241,6 +249,6 @@
     </button>
 
     {#if proteinSeq !== null && possibilities.length > 0}
-        <StmResultTable {possibilities}/>
+        <StmResultTable {possibilities} />
     {/if}
 </div>
