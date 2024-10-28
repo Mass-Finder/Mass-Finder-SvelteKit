@@ -16,6 +16,7 @@
   let adduct = 'H';
   let selectedAminos = { ...aminoMap };
   let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
+  let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext('loading');
   let bestSolutions = [];
 
@@ -55,6 +56,7 @@
   }
 
   function handleNcAAChange(e) {
+    fullNcAA = e.detail;
     let _data = Object.entries(e.detail).reduce((acc, [key, value]) => {
       acc[key] = Number(value?.monoisotopicWeight ?? 0.0);
       return acc;
@@ -161,6 +163,6 @@
   </button>
 
   {#if detectedMass !== null && bestSolutions.length > 0}
-    <ResultTable {bestSolutions} {detectedMass} />
+    <ResultTable {bestSolutions} {detectedMass} {fullNcAA}/>
   {/if}
 </div>
