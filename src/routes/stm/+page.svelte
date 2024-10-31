@@ -209,27 +209,6 @@
     }
 </script>
 
-<svelte:head>
-    <link
-        rel="stylesheet"
-        href="chem_doodle/install/ChemDoodleWeb.css"
-        type="text/css"
-    />
-    <script
-        type="text/javascript"
-        src="chem_doodle/install/ChemDoodleWeb.js"
-    ></script>
-    <link
-        rel="stylesheet"
-        href="chem_doodle/install/uis/jquery-ui-1.11.4.css"
-        type="text/css"
-    />
-    <script
-        type="text/javascript"
-        src="chem_doodle/install/uis/ChemDoodleWeb-uis.js"
-    ></script>
-</svelte:head>
-
 <div class="container mt-5">
     <div class="text-center mb-4">
         <h1>Sequence to Mass</h1>
