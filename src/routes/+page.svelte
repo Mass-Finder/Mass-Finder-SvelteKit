@@ -142,17 +142,38 @@
 	</div>
   </div>
 
+  <!-- 필수 아미노산 선택 -->
   <div class="mb-3">
     <AminoMapSelector on:changeAminos={(e) => handleAminoMapChange(e.detail)} />
   </div>
 
+  <!-- 커스텀 아미노산 선택 -->
   <div class="mb-3">
     <NcAASelector on:changeNcAA={handleNcAAChange} />
   </div>
 
+  <!-- 계산 버튼 -->
   <button type="button" class="btn btn-primary w-100" on:click={handleCalculate}>
     Calculate!
   </button>
+  
+  <!-- 최대 결과 개수 선택 -->
+  <div class="mt-3 d-flex justify-content-end">
+    <div class="w-20">
+      <label for="solution-count" class="form-label">Max Result Count</label>
+      <select 
+        id="solution-count" 
+        class="form-select mb-3" 
+        on:change={(e) => {
+          MassFinderHelper.topSolutionsCount = parseInt(e.target.value);
+        }}
+      >
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
 
   {#if detectedMass !== null && bestSolutions.length > 0}
     <ResultTable {bestSolutions} {detectedMass} {fullNcAA}/>
