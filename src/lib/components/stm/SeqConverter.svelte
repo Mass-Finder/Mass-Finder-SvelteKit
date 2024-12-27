@@ -4,10 +4,13 @@
     codonTableDtoS,
     shortToLongMapper,
   } from "$lib/helper/amino_mapper";
+  import SaveDialog from './SeqSaveDialog.svelte';
 
   let selectedType = "RNA"; // 초기값 RNA
   let inputValue = ""; // 입력받을 값
   export let proteinSeq;
+
+  let showSaveDialog = false;
 
   function translateRNAtoProtein(rna) {
     return rna
@@ -46,6 +49,17 @@
   function replaceTwithU(sequence) {
     return sequence.replace(/T/g, "U");
   }
+
+  function openSavePopup() {
+    showSaveDialog = true;
+  }
+
+  function handleSave(event) {
+    const { title, content } = event.detail;
+    const savedRnaSeqs = JSON.parse(localStorage.getItem("savedRnaSeqs")) || [];
+    savedRnaSeqs.push({ title, content });
+    localStorage.setItem("savedRnaSeqs", JSON.stringify(savedRnaSeqs));
+  }
 </script>
 
 <!-- RNA/DNA/Protein 선택 섹션 -->
@@ -79,7 +93,7 @@
 
   <!-- 저장과 불러오기 버튼 -->
   <div class="col-md-2 d-flex align-items-end">
-    <button class="btn btn-light me-2" title="Save">
+    <button class="btn btn-light me-2" title="Save" on:click={openSavePopup}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
@@ -117,6 +131,12 @@
     </button>
   </div>
 </div>
+
+<SaveDialog
+  bind:showDialog={showSaveDialog}
+  initialContent={inputValue}
+  on:save={handleSave}
+/>
 
 <!-- 결과 출력 섹션 -->
 <div class="row mt-4">
