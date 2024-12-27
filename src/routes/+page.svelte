@@ -160,7 +160,7 @@
   <!-- 최대 결과 개수 선택 -->
   <div class="mt-3 d-flex justify-content-end">
     <div class="w-20">
-      <label for="solution-count" class="form-label">Max Result Count</label>
+      <label for="solution-count" class="form-label fw-bold">Max Result Count</label>
       <select 
         id="solution-count" 
         class="form-select mb-3" 
