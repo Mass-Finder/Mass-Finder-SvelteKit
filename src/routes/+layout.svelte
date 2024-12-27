@@ -26,7 +26,9 @@
   {/if}
   
   <Navbar />
-  <slot />
+  <div class="content-container">
+    <slot />
+  </div>
   <Footer />
   
   <style>
@@ -57,6 +59,13 @@
 	  100% {
 		transform: rotate(360deg);
 	  }
+	}
+
+	.content-container {
+	  max-width: 1200px;
+	  margin: 0 auto;
+	  padding: 0 5rem; /* 화면 좌우 여백 */
+	  width: 100%;
 	}
   </style>
   
