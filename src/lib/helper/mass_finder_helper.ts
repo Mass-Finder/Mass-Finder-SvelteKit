@@ -7,8 +7,6 @@ import { getIonWeight } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트
 let dataMap: { [key: string]: number } = {};
-// 몇개의 결과를 도출할건지에 대한 값
-const topSolutionsCount = 20;
 // 시뮬레이티드 어닐링 반복 횟수
 const saIterations = 100;
 // 초기 온도
@@ -27,6 +25,9 @@ const fWeight = 27.99;
  * 
  */
 export class MassFinderHelper {
+    // 몇개의 결과를 도출할건지에 대한 값
+    static topSolutionsCount: number = 20;
+
     static formyType: FormyType = 'unknown';
     static ionType: IonType = 'unknown';
 
@@ -46,7 +47,7 @@ export class MassFinderHelper {
                     bestSolutions = bestSolutions.concat(this.calc(targetMass - getIonWeight(i), initAminos, fomyType, i, aminoMap));
                 }
                 bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown') }));
-                bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, topSolutionsCount);
+                bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, MassFinderHelper.topSolutionsCount);
                 break;
             default:
                 bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap);
@@ -72,7 +73,7 @@ export class MassFinderHelper {
             bestSolutions = bestSolutions.concat(solutions);
         }
 
-        bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, topSolutionsCount);
+        bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, MassFinderHelper.topSolutionsCount);
         bestSolutions = this.setInitAminoToResult(bestSolutions, initAminos, initAminoWeight);
         bestSolutions = this.setMetaData(bestSolutions, this.formyType, ionType, initAminos);
 
