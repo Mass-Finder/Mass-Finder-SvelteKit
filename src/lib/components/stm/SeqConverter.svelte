@@ -4,27 +4,12 @@
 
     let selectedType = 'RNA'; // 초기값 RNA
     let inputValue = ''; // 입력받을 값
-    let rnaSeq = '';
-    let dnaSeq = '';
     export let proteinSeq;
-  
-    // 시퀀스 변환 함수들
-    // function translateRNAtoDNA(rna) {
-    //   return rna.replace(/U/g, 'T');
-    // }
-  
-    // function translateDNAtoRNA(dna) {
-    //   return dna.replace(/T/g, 'U');
-    // }
   
     function translateRNAtoProtein(rna) {
       return rna.match(/.{1,3}/g).map(codon => codonTableRtoS[codon] || '?').join('');
     }
   
-    function translateDNAtoProtein(dna) {
-        return dna.match(/.{1,3}/g).map(codon => codonTableDtoS[codon] || '?').join('');
-    }
-
     function translateInputToProtein(protein) {
         return protein
             .match(/.{1,1}/g)
@@ -40,9 +25,8 @@
         handleInputToUpper();
 
         if (selectedType === 'RNA') {
+            inputValue = replaceTwithU(inputValue);
             proteinSeq = translateRNAtoProtein(inputValue);
-        } else if (selectedType === 'DNA') {
-            proteinSeq = translateDNAtoProtein(inputValue);
         } else {
             proteinSeq = translateInputToProtein(inputValue);
         }
@@ -52,6 +36,11 @@
     function handleInputToUpper() {
       inputValue = inputValue.toUpperCase();
     }
+
+  function replaceTwithU(sequence) {
+    return sequence.replace(/T/g, 'U');
+  }
+    
   </script>
   
 <!-- RNA/DNA/Protein 선택 섹션 -->
@@ -60,7 +49,6 @@
       <label for="sequence-type" class="form-label fw-bold">Select Type</label>
       <select id="sequence-type" class="form-select" bind:value={selectedType} on:change={updateSequences}>
         <option value="RNA">RNA</option>
-        <option value="DNA">DNA</option>
         <option value="Protein">Protein</option>
       </select>
     </div>
