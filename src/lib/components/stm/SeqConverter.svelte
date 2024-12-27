@@ -5,12 +5,14 @@
     shortToLongMapper,
   } from "$lib/helper/amino_mapper";
   import SaveDialog from './SeqSaveDialog.svelte';
+  import LoadDialog from './SeqLoadDialog.svelte';
 
   let selectedType = "RNA"; // 초기값 RNA
   let inputValue = ""; // 입력받을 값
   export let proteinSeq;
 
   let showSaveDialog = false;
+  let showLoadDialog = false;
 
   function translateRNAtoProtein(rna) {
     return rna
@@ -59,6 +61,15 @@
     const savedRnaSeqs = JSON.parse(localStorage.getItem("savedRnaSeqs")) || [];
     savedRnaSeqs.push({ title, content });
     localStorage.setItem("savedRnaSeqs", JSON.stringify(savedRnaSeqs));
+  }
+
+  function openLoadDialog() {
+    showLoadDialog = true;
+  }
+
+  function handleLoad(event) {
+    inputValue = event.detail.content;
+    updateSequences();
   }
 </script>
 
@@ -112,7 +123,7 @@
         <polyline points="7 3 7 8 15 8" />
       </svg>
     </button>
-    <button class="btn btn-light" title="Load">
+    <button class="btn btn-light" title="Load" on:click={openLoadDialog}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
@@ -136,6 +147,11 @@
   bind:showDialog={showSaveDialog}
   initialContent={inputValue}
   on:save={handleSave}
+/>
+
+<LoadDialog
+  bind:showDialog={showLoadDialog}
+  on:select={handleLoad}
 />
 
 <!-- 결과 출력 섹션 -->
