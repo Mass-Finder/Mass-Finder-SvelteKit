@@ -8,7 +8,7 @@
     import { StmHelper } from "$lib/helper/stm_helper";
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
     import { getContext } from "svelte";
-
+    import AdductSelector from "$lib/components/AdductSelector.svelte";
     let selectedAminos = { ...aminoMap };
 
     let proteinSeq = "";
@@ -16,6 +16,8 @@
 
     // 선택된 ncaa
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
+
+    let ionType = 'H';
 
     /// 선택된 ncaa를 어떤 코돈과 매핑할지 적어주는 부분
     let codonTitle = writable({
@@ -207,6 +209,10 @@
         // "[stop]" 이전 부분만 반환
         proteinSeq = proteinSeq.substring(0, stopIndex);
     }
+
+    function handleAdductChange(e) {
+        ionType = e.detail;
+    }
 </script>
 
 <div class="container mt-5">
@@ -217,6 +223,12 @@
     <div class="mb-3">
         <label for="detected-mass" class="form-label fw-bold">Sequnece</label>
         <SeqConverter bind:proteinSeq></SeqConverter>
+    </div>
+
+    <div class="mb-3 d-flex justify-content-start">
+        <AdductSelector
+            on:changeAdduct={handleAdductChange}
+        />
     </div>
 
     <div class="mb-3">
