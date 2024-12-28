@@ -9,18 +9,18 @@ export class StmHelper {
         inputSeq: string,
         ncAAMap: { [key: string]: any },
         codonTitle: { [key: string]: string },
-        aminoMap: { [key: string]: number }
+        aminoMap: { [key: string]: number },
+        ionType: IonType,
     ) {
         // 경우의 수를 저장할 배열
         let possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }> = [];
-        const baseSeq = Array.from(inputSeq).map(char => [char]); // 각 아미노산을 배열로 저장하여 기본 시퀀스로 만듦
 
         // Recursive function to generate all possibilities
         const generatePossibilities = (currentSeq: (string | string[])[], index: number) => {
             if (index === inputSeq.length) {
                 // 무게 합산 및 결과 저장
                 const weight = this.calculateWeight(currentSeq, aminoMap, ncAAMap);
-                possibilities.push({ sequence: currentSeq, weight });
+                possibilities.push({ sequence: currentSeq, weight, adduct: ionType });
                 return;
             }
 
@@ -40,7 +40,7 @@ export class StmHelper {
 
                     // reason 필드에 'truncated' 추가
                     const reason = "Truncated";
-                    possibilities.push({ sequence: truncatedSeq, weight: this.calculateWeight(truncatedSeq, aminoMap, ncAAMap), reason });
+                    possibilities.push({ sequence: truncatedSeq, weight: this.calculateWeight(truncatedSeq, aminoMap, ncAAMap), reason, adduct: ionType });
                 }
             }
         };
@@ -50,9 +50,6 @@ export class StmHelper {
 
         // 포밀레이션 경우의 수 추가
         possibilities = this.addFormylation(possibilities);
-
-        // 모든 Adduct 경우의 수 추가
-        possibilities = this.addAdductPossibilities(possibilities);
 
         // 결과 출력
         console.log("Generated Possibilities with Weights:");
@@ -101,22 +98,5 @@ export class StmHelper {
         // 새로운 가능성을 기존 possibilities에 추가하고 반환
         possibilities.push(...newPossibilities);
         return possibilities;
-    }
-
-    // 모든 Adduct 경우의 수를 추가하는 메서드
-    static addAdductPossibilities(possibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }>) {
-        const ionTypes: IonType[] = ['H', 'Na', 'K', 'NH₄', '-H', '-Na', '-K', '-NH₄'];
-
-        const adductedPossibilities: Array<{ sequence: (string | string[])[], reason?: string, weight?: number, adduct?: IonType }> = [];
-
-        possibilities.forEach(possibility => {
-            ionTypes.forEach(adduct => {
-                const newWeight = (possibility.weight || 0) + getIonWeight(adduct);
-                const newValue = { sequence: possibility.sequence, reason: possibility.reason, weight: newWeight, adduct: adduct };
-                adductedPossibilities.push(newValue);
-            });
-        });
-
-        return adductedPossibilities;
     }
 }

@@ -57,6 +57,7 @@
                 removeZeroValueNcAA(),
                 removeNullCodonTitle(),
                 selectedAminos,
+                ionType,
             );
         } finally {
             loading.set(false);
