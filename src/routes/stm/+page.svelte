@@ -155,24 +155,24 @@
             }
         });
 
-        let allExist = true; // 모든 글자가 존재하는지 여부를 저장
-        let missingKeys = []; // 존재하지 않는 글자를 저장할 배열
+        // let allExist = true; // 모든 글자가 존재하는지 여부를 저장
+        // let missingKeys = []; // 존재하지 않는 글자를 저장할 배열
 
-        // 문자열을 한 글자씩 순회
-        for (let i = 0; i < proteinSeq.length; i++) {
-            let char = proteinSeq[i];
+        // // 문자열을 한 글자씩 순회
+        // for (let i = 0; i < proteinSeq.length; i++) {
+        //     let char = proteinSeq[i];
 
-            // deepCopiedAminos에 해당 글자가 key로 존재하는지 체크
-            if (!(char in deepCopiedAminos)) {
-                allExist = false; // 한 글자라도 존재하지 않으면 false
-                missingKeys.push(char); // 존재하지 않는 글자를 배열에 추가
-            }
-        }
+        //     // deepCopiedAminos에 해당 글자가 key로 존재하는지 체크
+        //     if (!(char in deepCopiedAminos)) {
+        //         allExist = false; // 한 글자라도 존재하지 않으면 false
+        //         missingKeys.push(char); // 존재하지 않는 글자를 배열에 추가
+        //     }
+        // }
 
-        if (allExist === false) {
-            alert('"' + missingKeys + '" cannot be used.');
-            return false;
-        }
+        // if (allExist === false) {
+        //     alert('"' + missingKeys + '" cannot be used.');
+        //     return false;
+        // }
         return true;
     }
 
