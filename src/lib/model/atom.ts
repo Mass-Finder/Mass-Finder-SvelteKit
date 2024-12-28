@@ -87,53 +87,90 @@ export class Molecule {
 
     /// fomular 계산 함수
     getMolecularFormula(): string {
-        const elementCount: { [key: string]: number } = {};
-        const hydrogenCount: { [key: string]: number } = {};
+        const elementCounts = new Map<string, number>();
 
-        /// ## 1. 원소 개수 세기
+        // 먼저 모든 원자를 카운트
         this.atoms.forEach(atom => {
-            // Map에 각 원소가 이미 있으면 value 에 1을 더해주고 없으면 새로 추가 후 value를 1로 셋팅
-            if (elementCount[atom.label]) {
-                elementCount[atom.label]++;
-            } else {
-                elementCount[atom.label] = 1;
+            const symbol = atom.label;
+            elementCounts.set(symbol, (elementCounts.get(symbol) || 0) + 1);
+        });
+
+        // 수소(H) 원자 수 계산 수정
+        let totalH = 0;
+        this.atoms.forEach(atom => {
+            if (atom.label !== 'H') {  // 실제 H 원자는 이미 카운트됨
+                const bonds = this.bonds.filter(bond =>
+                    bond.a1.pid === atom.pid || bond.a2.pid === atom.pid
+                );
+
+                // 원자의 원자가(valence)에서 실제 결합 수를 뺀 값이 암시적 수소의 수
+                const implicitH = this.getImplicitHydrogens(atom, bonds.length);
+                totalH += implicitH;
             }
         });
 
-        // /// ## 2. 수소 원자 개수 계산
-        // this.atoms.forEach(atom => {
-        //     // 각 원소별 최대 결합의 수
-        //     const valence = this.valenceElectrons[atom.label] || 0;
-        //     // 해당 원자에 연결된 진짜 결합의 수
-        //     const bonds = this.bonds.filter(bond => bond.a1.pid === atom.pid || bond.a2.pid === atom.pid);
-        //     // 최대 결합수 - 진짜 겹합수 해서 필요한 수소의 갯수 가져옴
-        //     const hydrogenNeeded = valence - bonds.length;
-        //     if (hydrogenNeeded > 0) {
-        //         hydrogenCount['H'] = (hydrogenCount['H'] || 0) + hydrogenNeeded;
-        //     }
-        // });
-
-        this.atoms.forEach(atom => {
-            const valence = this.valenceElectrons[atom.label] || 0;
-            const bonds = this.bonds.filter(bond => bond.a1.pid === atom.pid || bond.a2.pid === atom.pid);
-            const totalBondOrder = bonds.reduce((sum, bond) => sum + bond.bondOrder, 0);
-            const hydrogenNeeded = valence - totalBondOrder;
-            if (hydrogenNeeded > 0) {
-                hydrogenCount['H'] = (hydrogenCount['H'] || 0) + hydrogenNeeded;
-            }
-        });
-
-        // 위에서 더 필요한 수소가 있다고 판된됐을때 총 수소의 수에 더해줌
-        if (hydrogenCount['H']) {
-            elementCount['H'] = (elementCount['H'] || 0) + hydrogenCount['H'];
+        // 명시적 수소 + 암시적 수소
+        if (totalH > 0) {
+            elementCounts.set('H', (elementCounts.get('H') || 0) + totalH);
         }
 
-        /// ## 3. 화학식 생성
-        // 각 요소를 순회하면서 갯수를 도출하여 join
-        return Object.keys(elementCount).map(element => {
-            const count = elementCount[element];
-            return count > 1 ? `${element}${count}` : element;
-        }).join('');
+        // 분자식 생성 (C, H 순서로, 나머지는 알파벳 순)
+        let formula = '';
+        const cCount = elementCounts.get('C');
+        if (cCount) {
+            formula += 'C' + (cCount > 1 ? cCount : '');
+            elementCounts.delete('C');
+        }
+        const hCount = elementCounts.get('H');
+        if (hCount) {
+            formula += 'H' + (hCount > 1 ? hCount : '');
+            elementCounts.delete('H');
+        }
+
+        // 나머지 원소들 알파벳 순으로
+        Array.from(elementCounts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .forEach(([element, count]) => {
+                formula += element + (count > 1 ? count : '');
+            });
+
+        return formula;
+    }
+
+    // 원자의 암시적 수소 수를 계산하는 헬퍼 메서드
+    private getImplicitHydrogens(atom: Atom, bondCount: number): number {
+        const valenceMap: { [key: string]: number } = {
+            'C': 4,  // 탄소
+            'N': 3,  // 질소
+            'O': 2,  // 산소
+            'S': 2,  // 황
+            'Se': 2, // 셀레늄
+            'P': 3,  // 인
+            'H': 1,  // 수소
+            'F': 1,  // 플루오린
+            'Cl': 1, // 염소
+            'Br': 1, // 브로민
+            'I': 1,  // 아이오딘
+            'B': 3,  // 붕소
+            'Si': 4, // 규소
+            'Ge': 4, // 저마늄
+            'As': 3, // 비소
+            'Te': 2, // 텔루륨
+            'At': 1, // 아스타틴
+            'He': 0, // 헬륨
+            'Ne': 0, // 네온
+            'Ar': 0, // 아르곤
+            'Kr': 0, // 크립톤
+            'Xe': 0, // 제논
+            'Rn': 0, // 라돈
+        };
+
+        const valence = valenceMap[atom.label] || 0;
+        if (valence === 0) return 0;
+
+        // 실제 결합 수를 원자가에서 빼서 암시적 수소 수 계산
+        const implicitH = valence - bondCount;
+        return implicitH > 0 ? implicitH : 0;
     }
 
     /// 분자량 계산 함수
