@@ -2,7 +2,7 @@ import { AminoModel } from '../model/AminoModel';
 
 import type { IonType, FormyType } from '../../type/Types';
 
-import {calculateSimilarity, sortAmino, removeDuplicates } from './mass_util';
+import {calculateSimilarity, sortAmino, removeDuplicates, removeSingleFSequences } from './mass_util';
 import { getIonWeight } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트
@@ -70,6 +70,7 @@ export class MassFinderHelper {
             const addWeight = this.getWaterWeight(i);
             let solutions = this.calcByFType(this.formyType, targetMass + addWeight);
             solutions = removeDuplicates(solutions);
+            solutions = removeSingleFSequences(solutions);
             bestSolutions = bestSolutions.concat(solutions);
         }
 

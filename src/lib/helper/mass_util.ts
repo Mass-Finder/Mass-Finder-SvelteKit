@@ -26,3 +26,11 @@ export function removeDuplicates(inputList: AminoModel[]): AminoModel[] {
     });
     return Object.values(uniqueMap);
 }
+
+// AminoModel 리스트를 입력받고 각 모델에서 seq 값이 f 하나만 존재하는 경우를 제거하는 함수, 이런경우는 없다고 해서 예외처리
+export function removeSingleFSequences(inputList: AminoModel[]): AminoModel[] {
+    return inputList.filter(aminoModel => {
+        const seq = aminoModel.code ?? '';
+        return seq !== 'f';
+    });
+}
