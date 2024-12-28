@@ -38,7 +38,7 @@
       const molecule = Molecule.fromJson(asString);
   
       molecularFormula.set(molecule.getMolecularFormula());
-      monoisotopicWeight.set(molecule.getMonoisotopicMass().toString());
+      monoisotopicWeight.set(molecule.getMonoisotopicMass().toFixed(3).toString()); // 소수점 세자리까지만 반영
     }
   
     function saveData() {
