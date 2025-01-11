@@ -31,6 +31,8 @@
       let comparison = 0;
       if (key === 'mass') {
         comparison = a.weight - b.weight;
+      } else if (key === 'molecularWeight') {
+        comparison = a.molecularWeight - b.molecularWeight;
       }
       return sortOrder[key] ? -comparison : comparison;
     });
