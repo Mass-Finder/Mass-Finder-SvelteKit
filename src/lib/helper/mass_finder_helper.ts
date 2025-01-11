@@ -41,19 +41,12 @@ export class MassFinderHelper {
     static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }): AminoModel[] {
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
-        switch (this.ionType) {
-            case 'unknown':
-                for (const i of ['H', 'Na', 'K'] as IonType[]) {
-                    bestSolutions = bestSolutions.concat(this.calc(targetMass - getIonWeight(i), initAminos, fomyType, i, aminoMap));
-                }
-                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown') }));
-                bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, MassFinderHelper.topSolutionsCount);
-                break;
-            default:
-                bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap);
-                bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown') }));
-        }
-        bestSolutions = bestSolutions.map(e => new AminoModel({ ...e, similarity: calculateSimilarity(targetMass, e.weight ?? 0) }));
+        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap)
+            .map(e => new AminoModel({ 
+                ...e, 
+                weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'),
+                similarity: calculateSimilarity(targetMass, (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'))
+            }));
         return bestSolutions;
     }
 
