@@ -34,7 +34,7 @@ export const shortToLongMapper = {
     R: "Arg"
   };
   
-  // 기초 아미노산 리스트
+  // 기초 아미노산 리스트 Monoisotopic Weight 전용
   export const aminoMap = {
     G: 75.03,
     A: 89.05,
@@ -57,6 +57,30 @@ export const shortToLongMapper = {
     K: 146.11,
     R: 174.11
   };
+
+  // 기초 아미노산 리스트 Molecular Weight 전용
+  export const molecularWeightMap = {
+    G: 75.07,  // Glycine
+    A: 89.09,  // Alanine
+    S: 105.09, // Serine
+    T: 119.12, // Threonine
+    C: 121.16, // Cysteine
+    V: 117.15, // Valine
+    L: 131.17, // Leucine
+    I: 131.17, // Isoleucine
+    M: 149.21, // Methionine
+    P: 115.13, // Proline
+    F: 165.19, // Phenylalanine
+    Y: 181.19, // Tyrosine
+    W: 204.23, // Tryptophan
+    D: 133.10, // Aspartic Acid
+    E: 147.13, // Glutamic Acid
+    N: 132.12, // Asparagine
+    Q: 146.15, // Glutamine
+    H: 155.16, // Histidine
+    K: 146.19, // Lysine
+    R: 174.20  // Arginine
+};
 
 
   const AdductMapper = {

@@ -7,6 +7,7 @@
     let sketcher;
     let molecularFormula = writable('');
     let monoisotopicWeight = writable('');
+    let molecularWeight = writable('');
     let moleculeJson = writable({});
     let savedData = writable([]);
     let chemicalTitle = null;
@@ -39,6 +40,7 @@
   
       molecularFormula.set(molecule.getMolecularFormula());
       monoisotopicWeight.set(molecule.getMonoisotopicMass().toFixed(3).toString()); // 소수점 세자리까지만 반영
+      molecularWeight.set(molecule.getMolecularMass().toFixed(3).toString()); // 소수점 세자리까지만 반영
     }
   
     function saveData() {
@@ -48,7 +50,8 @@
         title: chemicalTitle,
         moleculeJson: $moleculeJson,
         molecularFormula: $molecularFormula,
-        monoisotopicWeight: $monoisotopicWeight
+        monoisotopicWeight: $monoisotopicWeight,
+        molecularWeight: $molecularWeight
       };
       let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
       storedData.push(dataSet);
@@ -131,13 +134,16 @@
         </div>
       </div>
       
-    {#if $molecularFormula || $monoisotopicWeight}
+    {#if $molecularFormula || $monoisotopicWeight || $molecularWeight}
       <div class="results">
         {#if $molecularFormula}
           <p class="alert alert-secondary">Molecular Formula: {$molecularFormula}</p>
         {/if}
         {#if $monoisotopicWeight}
           <p class="alert alert-secondary">Monoisotopic Weight: {$monoisotopicWeight}</p>
+        {/if}
+        {#if $molecularWeight}
+          <p class="alert alert-secondary">Molecular Weight: {$molecularWeight}</p>
         {/if}
       </div>
     {/if}

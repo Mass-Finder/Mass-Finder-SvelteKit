@@ -38,6 +38,7 @@
           <h4 class="card-title text-primary mb-2"><strong>{data.title}</strong></h4>
           <h5 class="card-subtitle mb-2 text-muted">Molecular Formula: {data.molecularFormula}</h5>
           <p class="card-text">Monoisotopic Weight: {data.monoisotopicWeight}</p>
+          <p class="card-text">Molecular Weight: {data.molecularWeight}</p>
         </div>
       </div>
   

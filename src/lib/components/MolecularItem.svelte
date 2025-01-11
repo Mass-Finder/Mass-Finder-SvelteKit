@@ -33,6 +33,7 @@
           <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
           <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
           <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
+          <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
         </div>
       </div>
       <!-- Canvas Section -->

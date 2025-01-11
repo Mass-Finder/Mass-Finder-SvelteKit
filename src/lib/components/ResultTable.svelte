@@ -31,10 +31,6 @@
       let comparison = 0;
       if (key === 'mass') {
         comparison = a.weight - b.weight;
-      } else if (key === 'difference') {
-        const diffA = calculateDifference(detectedMass, a.weight);
-        const diffB = calculateDifference(detectedMass, b.weight);
-        comparison = diffA - diffB;
       }
       return sortOrder[key] ? -comparison : comparison;
     });
@@ -48,15 +44,17 @@
       <tr>
         <th scope="col">No. </th>
         <th scope="col" on:click={() => sortSolutions('mass')} style="cursor: pointer;">Mass {sortOrder.mass ? '▲' : '▼'}</th>
+        <th scope="col" on:click={() => sortSolutions('mass')} style="cursor: pointer;">Mass {sortOrder.mass ? '▲' : '▼'}</th>
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
-        <th scope="col" on:click={() => sortSolutions('difference')} style="cursor: pointer;">Difference {sortOrder.difference ? '▲' : '▼'}</th>
+        <th scope="col">Difference</th>
       </tr>
     </thead>
     <tbody>
       {#each bestSolutions as solution, index}
         <tr>
           <td>{index + 1}</td>
+          <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.weight.toFixed(3)}</td>
           <td>
             {#each replaceWithTitles(solution.code) as part}

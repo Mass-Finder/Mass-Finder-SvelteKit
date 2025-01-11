@@ -41,6 +41,7 @@
     <!-- Molecular Info Section -->
     <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
     <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
+    <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
     <!-- Canvas Section -->
     <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
     <!-- Delete Button -->
