@@ -5,8 +5,12 @@ import type { IonType, FormyType } from '../../type/Types';
 import {calculateSimilarity, sortAmino, removeDuplicates, removeSingleFSequences } from './mass_util';
 import { getIonWeight } from './amino_mapper';
 
-// 사용가능한 아미노산의 리스트
+// 사용가능한 아미노산의 리스트 모노이소토픽 무게
 let dataMap: { [key: string]: number } = {};
+
+// Molecular Weight 전용 Map
+let moleMap: { [key: string]: number } = {};
+
 // 시뮬레이티드 어닐링 반복 횟수
 const saIterations = 100;
 // 초기 온도
@@ -38,10 +42,10 @@ export class MassFinderHelper {
     // [ionType] : 이온이 들어가는지에 대한 값
     // [aminoMap] : 계산에 사용되는 아미노산의 모음
     // 최종적으로 AminoModel의 리스트를 리턴함
-    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }): AminoModel[] {
+    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }): AminoModel[] {
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
-        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap)
+        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap)
             .map(e => new AminoModel({ 
                 ...e, 
                 weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'),
@@ -51,9 +55,10 @@ export class MassFinderHelper {
     }
 
     /// calcByIonType 함수에서 이온값에따라 알아서 구분되어 호출되는 함수
-    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }): AminoModel[] {
+    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }): AminoModel[] {
         this.formyType = fomyType;
         dataMap = { ...aminoMap };
+        moleMap = { ...molecularMap };
         let bestSolutions: AminoModel[] = [];
         const initAminoWeight = this.getInitAminoWeight(initAminos);
         targetMass -= initAminoWeight;
@@ -86,17 +91,29 @@ export class MassFinderHelper {
             switch (fType) {
                 case 'no': // 포밀레이스 없으면 무게 안빼고 계산해도됨
                     const solutionNo = this.simulatedAnnealing(targetMass);
-                    bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: this.getWeightSum(Object.keys(solutionNo)[0]) }));
+                    const seqsN = Object.keys(solutionNo)[0];
+                    const weightN = this.getMonoisotopicWeightSum(seqsN);
+                    const molecularWeightN = this.getMolecularWeightSum(seqsN);
+                    bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
                     const solutionYes = this.simulatedAnnealing(targetMass - fWeight);
-                    bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: this.getWeightSum(`f${Object.keys(solutionYes)[0]}`) }));
+                    const seqsY = `f${Object.keys(solutionYes)[0]}`;
+                    const weightY = this.getMonoisotopicWeightSum(seqsY);
+                    const molecularWeightY = this.getMolecularWeightSum(seqsY);
+                    bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: weightY, molecularWeight: molecularWeightY }));
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
                     const solutionUnknown1 = this.simulatedAnnealing(targetMass);
                     const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight);
-                    bestSolutions.push(new AminoModel({ code: Object.keys(solutionUnknown1)[0], weight: this.getWeightSum(Object.keys(solutionUnknown1)[0]) }));
-                    bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionUnknown2)[0]}`, weight: this.getWeightSum(`f${Object.keys(solutionUnknown2)[0]}`) }));
+                    const seqsU1 = Object.keys(solutionUnknown1)[0];
+                    const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
+                    const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
+                    const weightU2 = this.getMonoisotopicWeightSum(seqsU2);
+                    const molecularWeightU1 = this.getMolecularWeightSum(seqsU1);
+                    const molecularWeightU2 = this.getMolecularWeightSum(seqsU2);
+                    bestSolutions.push(new AminoModel({ code: Object.keys(solutionUnknown1)[0], weight: weightU1, molecularWeight: molecularWeightU1 }));
+                    bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionUnknown2)[0]}`, weight: weightU2, molecularWeight: molecularWeightU2 }));
                     break;
             }
         }
@@ -180,8 +197,19 @@ export class MassFinderHelper {
     }
 
     // 넘어온 code로 무게를 계산하고 포멜레이스 포함이면 그 무게까지 더해줌
-    static getWeightSum(solutionCombine: string): number {
+    static getMonoisotopicWeightSum(solutionCombine: string): number {
         let result = solutionCombine.split('').reduce((sum, e) => sum + (dataMap[e] ?? 0), 0);
+        if (solutionCombine.startsWith('f')) {
+            result -= this.getWaterWeight(solutionCombine.length - 1);
+            result += fWeight;
+        } else {
+            result -= this.getWaterWeight(solutionCombine.length);
+        }
+        return result;
+    }
+
+    static getMolecularWeightSum(solutionCombine: string): number {
+        let result = solutionCombine.split('').reduce((sum, e) => sum + (moleMap[e] ?? 0), 0);
         if (solutionCombine.startsWith('f')) {
             result -= this.getWaterWeight(solutionCombine.length - 1);
             result += fWeight;

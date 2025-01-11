@@ -5,6 +5,7 @@ export class AminoModel {
     totalWeight?: number;
     waterWeight?: number;
     weight?: number;
+    molecularWeight?: number;
     formyType?: FormyType;
     ionType?: IonType;
     essentialSeq?: string;
@@ -15,6 +16,7 @@ export class AminoModel {
         this.totalWeight = data.totalWeight;
         this.waterWeight = data.waterWeight;
         this.weight = data.weight;
+        this.molecularWeight = data.molecularWeight;
         this.formyType = data.formyType;
         this.ionType = data.ionType;
         this.essentialSeq = data.essentialSeq;
@@ -27,6 +29,7 @@ export class AminoModel {
             totalWeight: json['totalWeight'],
             waterWeight: json['waterWeight'],
             weight: json['weight'],
+            molecularWeight: json['molecularWeight'],
             formyType: json['formyType'] as FormyType,
             ionType: json['ionType'] as IonType,
             essentialSeq: json['essentialSeq'],
@@ -40,6 +43,7 @@ export class AminoModel {
             totalWeight: this.totalWeight,
             waterWeight: this.waterWeight,
             weight: this.weight,
+            molecularWeight: this.molecularWeight,
             formyType: this.formyType,
             ionType: this.ionType,
             essentialSeq: this.essentialSeq,

@@ -7,15 +7,14 @@
   import { MassFinderHelper } from '$lib/helper/mass_finder_helper';
   import { getContext } from 'svelte';
   import { writable } from 'svelte/store';
-  import { aminoMap } from '$lib/helper/amino_mapper';
+  import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
 
   // 상태 관리 변수들
   let detectedMass = null;
   let knownSequence = '';
   let formylation = 'yes';
   let adduct = 'H';
-  let selectedAminos = { ...aminoMap };
-  let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
+  let selectedMonoisotopicAminos = { ...aminoMap };
   let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext('loading');
   let bestSolutions = [];
@@ -27,18 +26,37 @@
 
     setTimeout(() => {
       try {
+        // 선택된 NCAA 값들
         let filteredNcAA = Object.fromEntries(
-          Object.entries(ncAA).filter(([key, value]) => value !== 0)
+          Object.entries(fullNcAA).filter(([key, value]) => value !== null)
         );
 
-        const aminoMapMerged = { ...selectedAminos, ...filteredNcAA };
+        let filteredMonoisotopicWeights = Object.fromEntries(
+          Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.monoisotopicWeight)])
+        );
+
+        // monoisotopicMass 를 구하기 위한 전용 Map
+        const monoisotopicMap = { ...selectedMonoisotopicAminos, ...filteredMonoisotopicWeights };
+
+        // selectedMonoisotopicAminos 와 같은 key를 가지고 value만 Molcular 로 가지는 맵
+        let ncAAMolecularWeights = Object.fromEntries(
+          Object.entries(selectedMonoisotopicAminos).map(([key, _]) => [key, molecularWeightMap[key]])
+        );
+
+        let filteredMolecularWeights = Object.fromEntries(
+          Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.molecularWeight)])
+        );
+
+        let molecularMap = { ...ncAAMolecularWeights, ...filteredMolecularWeights };
+
 
         bestSolutions = MassFinderHelper.calcByIonType(
 		      detectedMass,
           knownSequence,
           formylation,
           adduct,
-          aminoMapMerged
+          monoisotopicMap,
+          molecularMap
         );
         console.log('Best solutions:', bestSolutions);
       } finally {
@@ -57,15 +75,10 @@
 
   function handleNcAAChange(e) {
     fullNcAA = e.detail;
-    let _data = Object.entries(e.detail).reduce((acc, [key, value]) => {
-      acc[key] = Number(value?.monoisotopicWeight ?? 0.0);
-      return acc;
-    }, {});
-    ncAA = _data;
   }
 
   function handleAminoMapChange(newAminos) {
-    selectedAminos = Object.fromEntries(
+    selectedMonoisotopicAminos = Object.fromEntries(
       Object.entries(newAminos)
         .filter(([key, value]) => value)
         .map(([key]) => [key, aminoMap[key]])
@@ -88,7 +101,7 @@
 
   function validateknownSequence() {
     let filteredNcAA = Object.fromEntries(
-      Object.entries(ncAA).filter(([key, value]) => value !== 0)
+      Object.entries(fullNcAA).filter(([key, value]) => value !== null)
     );
 
     for (let char of knownSequence) {
