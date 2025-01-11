@@ -61,7 +61,7 @@ export class MassFinderHelper {
         moleMap = { ...molecularMap };
         let bestSolutions: AminoModel[] = [];
         const initAminoWeight = this.getInitAminoWeight(initAminos);
-        targetMass -= initAminoWeight;
+        targetMass -= initAminoWeight.monoisotopicWeight;
 
         const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
         for (let i = minRange; i < maxRange; i++) {
@@ -236,30 +236,37 @@ export class MassFinderHelper {
     }
 
     // 초기 입력된 아미노산의 총 무게에서 물 증발량을 제거한 값
-    static getInitAminoWeight(initAmino: string): number {
+    static getInitAminoWeight(initAmino: string): { monoisotopicWeight: number, molecularWeight: number } {
         // 초기 입력값의 물 증발량, 근데 init 의 물 증발량 구할떄는 길이에 -1 해주면 안됨 나중에 또 -1 해줄거라서
         const initAminoWaterWeight = this.getWaterWeight(initAmino.length + 1);
-        let initAminoWeight = 0;
+        let initAminoMonoisotopicWeight = 0;
+        let initAminoMolecularWeight = 0;
         if (initAmino) {
             for (const i of initAmino.split('')) {
-                initAminoWeight += dataMap[i] ?? 0;
+                initAminoMonoisotopicWeight += dataMap[i] ?? 0;
+                initAminoMolecularWeight += moleMap[i] ?? 0;
             }
         }
-        return initAminoWeight - initAminoWaterWeight;
+        return {
+            monoisotopicWeight: initAminoMonoisotopicWeight - initAminoWaterWeight,
+            molecularWeight: initAminoMolecularWeight - initAminoWaterWeight
+        };
     }
 
     /// 기존 베스트 솔루션 에서 init 값을 앞에 붙여주는 로직
-    static setInitAminoToResult(bestSolutions: AminoModel[], initAmino: string, initAminoWeight: number): AminoModel[] {
+    static setInitAminoToResult(bestSolutions: AminoModel[], initAmino: string, initAminoWeight: { monoisotopicWeight: number, molecularWeight: number }): AminoModel[] {
         if (!initAmino) return bestSolutions;
         return bestSolutions.map(item => {
+            const weight = (item.weight ?? 0) + initAminoWeight.monoisotopicWeight;
+            const molecularWeight = (item.molecularWeight ?? 0) + initAminoWeight.molecularWeight;
             if (!item.code) {
-                return new AminoModel({ ...item, code: initAmino, weight: (item.weight ?? 0) + initAminoWeight });
+                return new AminoModel({ ...item, code: initAmino, weight: weight, molecularWeight: molecularWeight });
             } else {
                 const firstString = item.code[0];
                 if (firstString === 'f') {
-                    return new AminoModel({ ...item, code: `f${initAmino}${item.code.slice(1)}`, weight: (item.weight ?? 0) + initAminoWeight });
+                    return new AminoModel({ ...item, code: `f${initAmino}${item.code.slice(1)}`, weight: weight, molecularWeight: molecularWeight });
                 } else {
-                    return new AminoModel({ ...item, code: `${initAmino}${item.code}`, weight: (item.weight ?? 0) + initAminoWeight });
+                    return new AminoModel({ ...item, code: `${initAmino}${item.code}`, weight: weight, molecularWeight: molecularWeight });
                 }
             }
         });
