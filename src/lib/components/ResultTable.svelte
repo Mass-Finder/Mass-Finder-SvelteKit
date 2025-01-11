@@ -43,8 +43,8 @@
     <thead class="table-light">
       <tr>
         <th scope="col">No. </th>
-        <th scope="col" on:click={() => sortSolutions('molecularWeight')} style="cursor: pointer;">Molecular Weight {sortOrder.molecularWeight ? '▲' : '▼'}</th>
         <th scope="col" on:click={() => sortSolutions('mass')} style="cursor: pointer;">Monoisotopic Weight {sortOrder.mass ? '▲' : '▼'}</th>
+        <th scope="col" on:click={() => sortSolutions('molecularWeight')} style="cursor: pointer;">Molecular Weight {sortOrder.molecularWeight ? '▲' : '▼'}</th>
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
         <th scope="col">Difference</th>
@@ -54,8 +54,8 @@
       {#each bestSolutions as solution, index}
         <tr>
           <td>{index + 1}</td>
-          <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>{solution.weight.toFixed(3)}</td>
+          <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
             {#each replaceWithTitles(solution.code) as part}
               <span style="color: {part.isReplaced ? 'red' : 'inherit'}">{part.char}</span>

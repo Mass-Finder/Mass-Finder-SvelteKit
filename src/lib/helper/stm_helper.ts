@@ -2,6 +2,7 @@ import { codonTableRtoS } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import { getIonWeight } from './amino_mapper';
 import type { IonType } from '../../type/Types';
+import { molecularWeightMap } from './amino_mapper';
 
 export class StmHelper {
     static calc(
@@ -15,6 +16,7 @@ export class StmHelper {
             sequence: (string | string[])[], 
             reason?: string, 
             weight?: number, 
+            molecularWeight?: number,
             adduct?: IonType 
         }> = [];
 
@@ -37,7 +39,8 @@ export class StmHelper {
             // 시퀀스 생성이 완료된 경우
             if (currentIndex >= inputSeq.length) {
                 if (currentSeq.length > 0) {
-                    const weight = calculateWeight(currentSeq, aminoMap, ncAAMap);
+                    const weight = calculateMonoisotopicWeight(currentSeq, aminoMap, ncAAMap);
+                    const molecularWeight = calculateMolecularWeight(currentSeq, aminoMap, ncAAMap);
                     let finalReasons = [...reasons];
                     if (!hasModification) {
                         finalReasons = ['Theoretical Value'];
@@ -46,6 +49,7 @@ export class StmHelper {
                         sequence: currentSeq,
                         reason: finalReasons.join(", "),
                         weight,
+                        molecularWeight,
                         adduct: ionType
                     });
                 }
@@ -129,7 +133,7 @@ export class StmHelper {
 }
 
 // 무게 계산 헬퍼 함수
-function calculateWeight(
+function calculateMonoisotopicWeight(
     sequence: (string | string[])[],
     aminoMap: { [key: string]: number },
     ncAAMap: { [key: string]: any }
@@ -150,6 +154,29 @@ function calculateWeight(
     });
     return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
 }
+
+function calculateMolecularWeight(
+    sequence: (string | string[])[],
+    aminoMap: { [key: string]: number },
+    ncAAMap: { [key: string]: any }
+): number {
+    let totalWeight = 0;
+    sequence.forEach(item => {
+        const amino = item[0];
+        if (amino in aminoMap) {
+            totalWeight += molecularWeightMap[amino];
+        } else {
+            for (const [key, ncaa] of Object.entries(ncAAMap)) {
+                if (ncaa.title === amino) {
+                    totalWeight += parseFloat(ncaa.molecularWeight);
+                    break;
+                }
+            }
+        }
+    });
+    return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
+}
+
 
 // 중복 제거 함수
 function removeDuplicates(possibilities: Array<{ 

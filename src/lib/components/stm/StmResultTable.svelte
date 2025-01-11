@@ -11,7 +11,8 @@
     <thead class="table-light">
       <tr>
         <th scope="col">No.</th>
-        <th scope="col">Mass</th>
+        <th scope="col">Monoisotopic Weight</th>
+        <th scope="col">Molecular Weight</th>
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
         <th scope="col">Note</th>
@@ -22,6 +23,7 @@
         <tr>
           <td>{index + 1}</td>
           <td>{solution.weight.toFixed(3)}</td>
+          <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>{solution.sequence.join('')}</td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
           <td>{solution.reason || 'Theoretical value'}</td>

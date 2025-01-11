@@ -9,7 +9,7 @@
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
     import { getContext } from "svelte";
     import AdductSelector from "$lib/components/AdductSelector.svelte";
-    let selectedAminos = { ...aminoMap };
+    let selectedMonoisotopicAminos = { ...aminoMap };
 
     let proteinSeq = "";
     let possibilities = [];
@@ -32,7 +32,7 @@
     const loading = getContext("loading");
 
     function handleAminoMapChange(newAminos) {
-        selectedAminos = Object.fromEntries(
+        selectedMonoisotopicAminos = Object.fromEntries(
             Object.entries(newAminos)
                 .filter(([key, value]) => value)
                 .map(([key]) => [key, aminoMap[key]]),
@@ -56,7 +56,7 @@
                 proteinSeq,
                 removeZeroValueNcAA(),
                 removeNullCodonTitle(),
-                selectedAminos,
+                selectedMonoisotopicAminos,
                 ionType,
             );
         } finally {
@@ -138,14 +138,14 @@
         return true;
     }
 
-    /// selectedAminos 값과 ncaa 를 합쳐서 proteinSeq 의 모든 글자가 사용 아미노산에 등록이 된건지 체크
+    /// selectedMonoisotopicAminos 값과 ncaa 를 합쳐서 proteinSeq 의 모든 글자가 사용 아미노산에 등록이 된건지 체크
     function checkSeqValidate() {
         // codonTitle의 현재 상태를 가져오기 위해 get 함수 사용
         let current = get(codonTitle);
 
         // ncAA에서 value가 0이 아닌 key를 모음
         let nonZeroKeys = Object.keys(ncAA).filter((key) => ncAA[key] !== 0);
-        let deepCopiedAminos = structuredClone(selectedAminos);
+        let deepCopiedAminos = structuredClone(selectedMonoisotopicAminos);
         nonZeroKeys.forEach((key) => {
             if (key in current) {
                 let value = current[key];
