@@ -4,7 +4,7 @@
   export let possibilities = [];
   let selectedNoteFilter = 'All Notes';
 
-  const noteOptions = ['All Notes', 'Theoretical Value', 'Truncated', 'Substituted', 'Skipped'];
+  const noteOptions = ['All Notes', 'Only natural AA', 'Truncated', 'Substituted', 'Skipped'];
 
   $: filteredPossibilities = filterPossibilities(selectedNoteFilter, possibilities);
 
@@ -45,7 +45,7 @@
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>{solution.sequence.join('')}</td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
-          <td>{solution.reason || 'Theoretical Value'}</td>
+          <td>{solution.reason || 'Only natural AA'}</td>
         </tr>
       {/each}
     </tbody>

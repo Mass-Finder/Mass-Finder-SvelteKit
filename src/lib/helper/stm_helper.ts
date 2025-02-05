@@ -43,7 +43,7 @@ export class StmHelper {
                     const molecularWeight = calculateMolecularWeight(currentSeq, aminoMap, ncAAMap);
                     let finalReasons = [...reasons];
                     if (!hasModification) {
-                        finalReasons = ['Theoretical Value'];
+                        finalReasons = ['Only natural AA'];
                     }
                     possibilities.push({
                         sequence: currentSeq,
