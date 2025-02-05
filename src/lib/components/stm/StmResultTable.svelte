@@ -4,7 +4,7 @@
   export let possibilities = [];
   let selectedNoteFilter = 'All Notes';
 
-  const noteOptions = ['All Notes', 'Only natural AA', 'Truncated', 'Substituted', 'Skipped'];
+  const noteOptions = ['All Notes', 'Only natural AA', 'Truncated', 'ncAA incorporated', 'Skipped'];
 
   $: filteredPossibilities = filterPossibilities(selectedNoteFilter, possibilities);
 

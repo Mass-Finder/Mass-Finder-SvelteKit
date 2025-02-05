@@ -76,7 +76,7 @@ export class StmHelper {
                     generateSequences(
                         currentIndex + 1,
                         [...currentSeq, [ncaa.title]],
-                        [...reasons, "Substituted"],
+                        [...reasons, "ncAA incorporated"],
                         true
                     );
 
