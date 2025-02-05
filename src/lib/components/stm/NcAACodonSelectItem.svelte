@@ -1,11 +1,14 @@
 <script>
     import { onMount } from 'svelte';
+    import CodonSelectDialog from './CodonSelectDialog.svelte';
   
     export let data;
     export let key;
     export let onCancelSelectData;
     export let onChangeTitle;
     export let customCodonTitle;
+
+    let showCodonDialog = false;
 
     onMount(() => {
       let canvasId = `canvas-ncaa-codon-${data.title}`;
@@ -26,56 +29,69 @@
       }, 100);
     });
 
-
-    // 입력값 대문자로
-    function handleInputToUpper(event) {
-      const input = event.target;
-      customCodonTitle = input.value.toUpperCase();
+    function handleCodonSelect(event) {
+      customCodonTitle = event.detail.codon;
       onChangeTitle(customCodonTitle, key);
+      showCodonDialog = false;
     }
+</script>
 
-  </script>
- <div class="card-body text-center">
-    <!-- Title Section -->
+<div class="card-body text-center">
     <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
-    <!-- Molecular Info Section -->
     <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
     <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
     <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
-    <!-- Canvas Section -->
     <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
-    <!-- Delete Button -->
     <button class="btn btn-danger btn-sm w-100 mt-3" on:click={() => onCancelSelectData(key)}>Cancel</button>
     <div class="row align-items-center mt-3">
-      <label for="customCodon" class="form-label fw-bold col-md-4 mt-2">Codon:</label>
-      <div class="col-md-8">
-        <input
-          type="text"
-          id="customCodon"
-          bind:value={customCodonTitle}
-          class="form-control"
-          placeholder="Custom Codon"
-          on:input={handleInputToUpper}
-        />
-      </div>
+        <label for="customCodon" class="form-label fw-bold col-md-4 mt-2">Codon:</label>
+        <div class="col-md-8">
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="customCodon"
+                    bind:value={customCodonTitle}
+                    class="form-control"
+                    placeholder="ex) UAG"
+                    readonly
+                />
+                <button 
+                    class="btn btn-outline-secondary" 
+                    type="button"
+                    on:click={() => showCodonDialog = true}
+                >
+                    Select
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <style>
+</div>
+
+<CodonSelectDialog
+    bind:showDialog={showCodonDialog}
+    on:select={handleCodonSelect}
+/>
+
+<style>
     canvas {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
   
     .card-title {
-      font-size: 1.1rem;
+        font-size: 1.1rem;
     }
   
     .card-body {
-      padding: 10px;
+        padding: 10px;
     }
   
     button {
-      font-size: 0.875rem;
+        font-size: 0.875rem;
     }
-  </style>
+
+    input[readonly] {
+        background-color: #fff;
+        cursor: default;
+    }
+</style>
   
