@@ -4,34 +4,42 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import { writable } from 'svelte/store';
 	import { setContext } from 'svelte';
+	import { page } from '$app/stores';
   
 	// Create loading store and set context
 	export const loading = writable(false);
 	setContext('loading', loading);
-  </script>
+
+	// 현재 경로가 루트 경로인지 확인
+	$: isRootPath = $page.url.pathname === '/';
+</script>
   
-  <svelte:head>
+<svelte:head>
 	<title>Mass Finder</title>
 	<meta
 	  name="description"
 	  content=""
 	/>
-  </svelte:head>
+</svelte:head>
   
-  <!-- Show loading spinner based on store value -->
-  {#if $loading}
+<!-- Show loading spinner based on store value -->
+{#if $loading}
 	<div class="loading-overlay">
 	  <div class="loading-spinner" />
 	</div>
-  {/if}
+{/if}
   
-  <Navbar />
-  <div class="content-container">
-    <slot />
-  </div>
-  <Footer />
+{#if !isRootPath}
+	<Navbar />
+{/if}
+<div class="content-container">
+	<slot />
+</div>
+{#if !isRootPath}
+	<Footer />
+{/if}
   
-  <style>
+<style>
 	.loading-overlay {
 	  position: fixed;
 	  top: 0;
@@ -67,5 +75,5 @@
 	  padding: 0 5rem; /* 화면 좌우 여백 */
 	  width: 100%;
 	}
-  </style>
+</style>
   
