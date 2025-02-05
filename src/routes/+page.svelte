@@ -120,7 +120,7 @@
 
 <div class="container mt-5">
   <div class="text-center mb-4">
-    <h1>Mass Finder</h1>
+    <h1>Mass to Sequence</h1>
   </div>
 
   <div class="mb-3">
