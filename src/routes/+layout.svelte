@@ -14,7 +14,7 @@
 	<title>Mass Finder</title>
 	<meta
 	  name="description"
-	  content="E-commerce solution built with SvelteKit, a headless CMS integration, uses Stripe for payments, providing better performance and faster development time"
+	  content=""
 	/>
   </svelte:head>
   
