@@ -1,5 +1,5 @@
 <script>
-  import { adductPrintName } from '$lib/helper/amino_mapper';
+  import { adductPrintName, aminoMap } from '$lib/helper/amino_mapper';
 
   export let possibilities = [];
   
@@ -160,7 +160,15 @@
           <td>{index + 1}</td>
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.molecularWeight.toFixed(3)}</td>
-          <td>{solution.sequence.join('')}</td>
+          <td>
+            {#each solution.sequence as letter}
+              {#if aminoMap[letter] !== undefined}
+                {letter}
+              {:else}
+                <span style="color: red;">{letter}</span>
+              {/if}
+            {/each}
+          </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
           <td>{formatReasons(solution.reason)}</td>
         </tr>
