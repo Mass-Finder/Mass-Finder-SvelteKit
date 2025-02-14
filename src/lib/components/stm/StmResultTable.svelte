@@ -66,6 +66,24 @@
     // 선택된 컬럼의 정렬 상태 순환
     sortState[column] = (sortState[column] + 1) % 3;
   }
+  
+  // reason 값이 string에서 string의 리스트로 변경될 예정이므로,
+  // 중복된 항목은 제거하고 각 항목의 중복개수를 (xN) 형식으로 표기한 후,
+  // 콤마(,) 로 구분하여 하나의 문자열로 만들어 반환하는 함수
+  function formatReasons(reason) {
+    if (!reason || (Array.isArray(reason) && reason.length === 0)) {
+      return 'Only natural AA';
+    }
+    const reasons = Array.isArray(reason) ? reason : [reason];
+    const counts = {};
+    reasons.forEach(r => {
+      counts[r] = (counts[r] || 0) + 1;
+    });
+    const formatted = Object.entries(counts).map(([r, count]) => {
+      return count > 1 ? `${r} (x${count})` : r;
+    });
+    return formatted.join(', ');
+  }
 </script>
 
 <!-- Bootstrap Table -->
@@ -144,7 +162,7 @@
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>{solution.sequence.join('')}</td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
-          <td>{solution.reason || 'Only natural AA'}</td>
+          <td>{formatReasons(solution.reason)}</td>
         </tr>
       {/each}
     </tbody>

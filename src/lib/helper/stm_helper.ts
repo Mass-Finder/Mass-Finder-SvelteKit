@@ -14,7 +14,7 @@ export class StmHelper {
     ) {
         let possibilities: Array<{ 
             sequence: (string | string[])[], 
-            reason?: string, 
+            reason?: string[],
             weight?: number, 
             molecularWeight?: number,
             adduct?: IonType 
@@ -47,7 +47,7 @@ export class StmHelper {
                     }
                     possibilities.push({
                         sequence: currentSeq,
-                        reason: finalReasons.join(", "),
+                        reason: finalReasons,
                         weight,
                         molecularWeight,
                         adduct: ionType
@@ -181,18 +181,18 @@ function calculateMolecularWeight(
 // 중복 제거 함수
 function removeDuplicates(possibilities: Array<{ 
     sequence: (string | string[])[], 
-    reason?: string, 
+    reason?: string[],
     weight?: number, 
     adduct?: IonType 
 }>): Array<{ 
     sequence: (string | string[])[], 
-    reason?: string, 
+    reason?: string[],
     weight?: number, 
     adduct?: IonType 
 }> {
     const seen = new Set<string>();
     return possibilities.filter(item => {
-        const key = JSON.stringify(item.sequence) + item.reason;
+        const key = JSON.stringify(item.sequence) + JSON.stringify(item.reason);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
