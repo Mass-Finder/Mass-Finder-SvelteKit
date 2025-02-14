@@ -11,23 +11,51 @@
     'Skipped': false
   };
 
+  // 정렬 상태 관리
+  let sortState = {
+    monoisotopicWeight: 0, // 0: 초기상태, 1: 오름차순, 2: 내림차순
+    molecularWeight: 0
+  };
+
   const noteOptions = Object.keys(selectedFilters);
 
-  // 필터링 로직 수정
-  $: filteredPossibilities = possibilities.filter(solution => {
-    // 선택된 필터가 없으면 모든 결과 표시
-    const activeFilters = Object.entries(selectedFilters).filter(([_, isSelected]) => isSelected);
-    if (activeFilters.length === 0) return true;
-
-    // solution.reason이 없고 필터에 'Only natural AA'가 선택된 경우
-    if (!solution.reason && selectedFilters['Only natural AA']) return true;
-
-    // solution.reason이 있는 경우, 선택된 필터 중 하나라도 포함되어 있으면 표시
-    return solution.reason && activeFilters.some(([filter]) => solution.reason.includes(filter));
-  });
+  // 필터링 및 정렬 로직
+  $: filteredPossibilities = possibilities
+    .filter(solution => {
+      const activeFilters = Object.entries(selectedFilters).filter(([_, isSelected]) => isSelected);
+      if (activeFilters.length === 0) return true;
+      if (!solution.reason && selectedFilters['Only natural AA']) return true;
+      return solution.reason && activeFilters.some(([filter]) => solution.reason.includes(filter));
+    })
+    .sort((a, b) => {
+      // Monoisotopic Weight 정렬
+      if (sortState.monoisotopicWeight === 1) {
+        return a.weight - b.weight;
+      } else if (sortState.monoisotopicWeight === 2) {
+        return b.weight - a.weight;
+      }
+      
+      // Molecular Weight 정렬
+      if (sortState.molecularWeight === 1) {
+        return a.molecularWeight - b.molecularWeight;
+      } else if (sortState.molecularWeight === 2) {
+        return b.molecularWeight - a.molecularWeight;
+      }
+      
+      return 0;
+    });
 
   function handleFilterChange(filter) {
     selectedFilters[filter] = !selectedFilters[filter];
+  }
+
+  function handleSort(column) {
+    // 다른 컬럼의 정렬 상태 초기화
+    if (column !== 'monoisotopicWeight') sortState.monoisotopicWeight = 0;
+    if (column !== 'molecularWeight') sortState.molecularWeight = 0;
+    
+    // 선택된 컬럼의 정렬 상태 순환 (초기 -> 오름차순 -> 내림차순)
+    sortState[column] = (sortState[column] + 1) % 3;
   }
 </script>
 
@@ -53,8 +81,34 @@
     <thead class="table-light">
       <tr>
         <th scope="col">No.</th>
-        <th scope="col">Monoisotopic Weight</th>
-        <th scope="col">Molecular Weight</th>
+        <th 
+          scope="col" 
+          class="sortable-header"
+          on:click={() => handleSort('monoisotopicWeight')}
+        >
+          Monoisotopic Weight
+          {#if sortState.monoisotopicWeight === 1}
+            <span class="sort-icon">↑</span>
+          {:else if sortState.monoisotopicWeight === 2}
+            <span class="sort-icon">↓</span>
+          {:else}
+            <span class="sort-icon">↕</span>
+          {/if}
+        </th>
+        <th 
+          scope="col"
+          class="sortable-header"
+          on:click={() => handleSort('molecularWeight')}
+        >
+          Molecular Weight
+          {#if sortState.molecularWeight === 1}
+            <span class="sort-icon">↑</span>
+          {:else if sortState.molecularWeight === 2}
+            <span class="sort-icon">↓</span>
+          {:else}
+            <span class="sort-icon">↕</span>
+          {/if}
+        </th>
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
         <th scope="col">Note</th>
@@ -109,5 +163,26 @@
     width: 1rem;
     height: 1rem;
     cursor: pointer;
+  }
+
+  .sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 1.5rem;
+  }
+
+  .sortable-header:hover {
+    background-color: #e9ecef;
+  }
+
+  .sort-icon {
+    position: absolute;
+    right: 0.5rem;
+    color: #666;
+  }
+
+  th {
+    white-space: nowrap;
   }
 </style>
