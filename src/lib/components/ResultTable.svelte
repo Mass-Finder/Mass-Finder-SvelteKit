@@ -5,12 +5,6 @@
   export let detectedMass;
   export let fullNcAA;
 
-  let sortOrder = {
-    no: false,
-    mass: false,
-    difference: false,
-  };
-
   function calculateDifference(target, value) {
     return Math.abs(target - value);
   }
@@ -24,19 +18,6 @@
       }
     });
   }
-
-  function sortSolutions(key) {
-    sortOrder[key] = !sortOrder[key];
-    bestSolutions = [...bestSolutions].sort((a, b) => {
-      let comparison = 0;
-      if (key === 'mass') {
-        comparison = a.weight - b.weight;
-      } else if (key === 'molecularWeight') {
-        comparison = a.molecularWeight - b.molecularWeight;
-      }
-      return sortOrder[key] ? -comparison : comparison;
-    });
-  }
 </script>
 
 <!-- Bootstrap Table -->
@@ -45,8 +26,8 @@
     <thead class="table-light">
       <tr>
         <th scope="col">No. </th>
-        <th scope="col" on:click={() => sortSolutions('mass')} style="cursor: pointer;">Monoisotopic Weight {sortOrder.mass ? '▲' : '▼'}</th>
-        <th scope="col" on:click={() => sortSolutions('molecularWeight')} style="cursor: pointer;">Molecular Weight {sortOrder.molecularWeight ? '▲' : '▼'}</th>
+        <th scope="col">Monoisotopic Weight</th>
+        <th scope="col">Molecular Weight</th>
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
         <th scope="col">Difference</th>
