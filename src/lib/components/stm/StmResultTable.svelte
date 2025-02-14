@@ -13,8 +13,9 @@
 
   // 정렬 상태 관리
   let sortState = {
-    monoisotopicWeight: 0, // 0: 초기상태, 1: 오름차순, 2: 내림차순
-    molecularWeight: 0
+    monoisotopicWeight: 0,
+    molecularWeight: 0,
+    sequence: 0  // 0: 초기상태, 1: 오름차순, 2: 내림차순
   };
 
   const noteOptions = Object.keys(selectedFilters);
@@ -41,6 +42,13 @@
       } else if (sortState.molecularWeight === 2) {
         return b.molecularWeight - a.molecularWeight;
       }
+
+      // Sequence Length 정렬
+      if (sortState.sequence === 1) {
+        return a.sequence.length - b.sequence.length;
+      } else if (sortState.sequence === 2) {
+        return b.sequence.length - a.sequence.length;
+      }
       
       return 0;
     });
@@ -51,10 +59,11 @@
 
   function handleSort(column) {
     // 다른 컬럼의 정렬 상태 초기화
-    if (column !== 'monoisotopicWeight') sortState.monoisotopicWeight = 0;
-    if (column !== 'molecularWeight') sortState.molecularWeight = 0;
+    Object.keys(sortState).forEach(key => {
+      if (key !== column) sortState[key] = 0;
+    });
     
-    // 선택된 컬럼의 정렬 상태 순환 (초기 -> 오름차순 -> 내림차순)
+    // 선택된 컬럼의 정렬 상태 순환
     sortState[column] = (sortState[column] + 1) % 3;
   }
 </script>
@@ -109,7 +118,20 @@
             <span class="sort-icon">↕</span>
           {/if}
         </th>
-        <th scope="col">Sequence</th>
+        <th 
+          scope="col"
+          class="sortable-header"
+          on:click={() => handleSort('sequence')}
+        >
+          Sequence
+          {#if sortState.sequence === 1}
+            <span class="sort-icon">↑</span>
+          {:else if sortState.sequence === 2}
+            <span class="sort-icon">↓</span>
+          {:else}
+            <span class="sort-icon">↕</span>
+          {/if}
+        </th>
         <th scope="col">Adduct</th>
         <th scope="col">Note</th>
       </tr>
