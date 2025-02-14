@@ -45,6 +45,8 @@ export class StmHelper {
                     if (!hasModification) {
                         finalReasons = ['Only natural AA'];
                     }
+                    // 시퀀스 3개 이하는 제외
+                    if(currentSeq.length <= 3) return;
                     possibilities.push({
                         sequence: currentSeq,
                         reason: finalReasons,
