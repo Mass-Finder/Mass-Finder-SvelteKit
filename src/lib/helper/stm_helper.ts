@@ -87,6 +87,8 @@ export class StmHelper {
         const possibilities: Possibility[] = [];
         for (const seqArr of basePossibilities) {
             const letters = seqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
+            // 시퀀스 길이가 3 이하인 경우 Possibility 목록에 추가하지 않음
+            if (letters.length <= 3) continue;
             const sequenceString = useFormylation ? "f" + letters : letters;
 
             let weight = 0;
