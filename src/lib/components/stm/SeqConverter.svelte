@@ -9,7 +9,8 @@
 
   let selectedType = "RNA"; // 초기값 RNA
   let inputValue = ""; // 입력받을 값
-  export let proteinSeq;
+  export let proteinSeq = ""; // string 값으로 변경
+  let proteinSeqList = []; // 리스트로 관리하기 위한 새로운 변수
 
   let showSaveDialog = false;
   let showLoadDialog = false;
@@ -28,9 +29,10 @@
 
   // 입력 값이 바뀔 때마다 호출되는 함수
   function updateSequences() {
-    // 인풋값이 없으면 proteinSeq를 빈 리스트로 처리
+    // 인풋값이 없으면 proteinSeqList를 빈 리스트로 처리
     if (!inputValue) {
-      proteinSeq = [];
+      proteinSeqList = [];
+      proteinSeq = "";
       return;
     }
     // 입력값을 대문자로 변환
@@ -38,10 +40,12 @@
 
     if (selectedType === "RNA") {
       inputValue = replaceTwithU(inputValue);
-      proteinSeq = translateRNAtoProtein(inputValue);
+      proteinSeqList = translateRNAtoProtein(inputValue);
     } else {
-      proteinSeq = translateInputToProtein(inputValue);
+      proteinSeqList = translateInputToProtein(inputValue);
     }
+    // proteinSeqList가 업데이트될 때마다 proteinSeq string도 업데이트
+    proteinSeq = proteinSeqList.join('');
   }
 
   // 입력값을 대문자로 변환
@@ -164,7 +168,7 @@
         <!-- 단일 텍스트 노드처럼 연속된 문자를 출력.
              숫자는 ::before pseudo-element를 통해 표시되어, 복사/드래그 시 포함되지 않습니다. -->
         <p class="card-text">
-          {#each proteinSeq as letter, index}
+          {#each proteinSeqList as letter, index}
             <span class="letter" data-index={index % 3 === 0 ? index + 1 : undefined}>{letter}</span>
           {/each}
         </p>
