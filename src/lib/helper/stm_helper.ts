@@ -109,25 +109,24 @@ export class StmHelper {
             weight -= MassFinderHelper.getWaterWeight(count);
             molWeight -= MassFinderHelper.getWaterWeight(count);
 
-            // 사유(reason) 수집
-            const reasonsSet = new Set<string>();
+            // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
+            const reasons: string[] = [];
             for (const item of seqArr) {
                 if (!item.natural) {
                     if (item.candidate && !item.truncated && !item.skipped) {
-                        reasonsSet.add("ncAA incorporated");
+                        reasons.push("ncAA incorporated");
                     }
                     if (item.truncated) {
-                        reasonsSet.add("Truncated");
+                        reasons.push("Truncated");
                     }
                     if (item.skipped) {
-                        reasonsSet.add("Skipped");
+                        reasons.push("Skipped");
                     }
                 }
             }
-            if (reasonsSet.size === 0) {
-                reasonsSet.add("Only natural AA");
+            if (reasons.length === 0) {
+                reasons.push("Only natural AA");
             }
-            const reasons = Array.from(reasonsSet);
 
             possibilities.push({
                 sequence: seqArr,
@@ -155,8 +154,22 @@ export class StmHelper {
             }
 
             for (const pairing of allDisulfidePossibilities) {
-                const newPoss = { ...poss, disulfide: pairing, reasons: [...poss.reasons] };
-                if (pairing.length > 0) newPoss.reasons.push("Disulfide");
+                // 새로운 possibility를 생성하여 disulfide 적용에 따른 질량 변경 및 reason 추가
+                // disulfide가 적용되면 "Only natural AA" 이유는 제거됨
+                const newPoss: Possibility = {
+                    ...poss,
+                    disulfide: pairing,
+                    reasons: poss.reasons.filter(reason => reason !== "Only natural AA"),
+                    weight: poss.weight,
+                    molecularWeight: poss.molecularWeight
+                };
+
+                // 한쌍의 disulfide마다 질량에서 4씩 감소하고, reason에 "Disulfide"를 반복적으로 추가
+                for (let i = 0; i < pairing.length; i++) {
+                    newPoss.weight -= 4;
+                    newPoss.molecularWeight -= 4;
+                    newPoss.reasons.push("Disulfide");
+                }
 
                 // 시퀀스 전체에 다이서파이드 적용된 인덱스를 순서대로 정렬
                 const flattenedPairing: number[] = pairing.reduce((acc: number[], curr: [number, number]) => {
@@ -199,6 +212,7 @@ function getAllValidDisulfideCombinations(indices: number[]): Array<Array<[numbe
     generatePairs(indices, []);
     return results;
 }
+
 //
 // **타입 정의**
 //
@@ -219,4 +233,3 @@ interface PossibilityLetter {
     truncated?: boolean;
     skipped?: boolean;
 }
-
