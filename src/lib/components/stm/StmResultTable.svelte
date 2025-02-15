@@ -165,9 +165,7 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
-            {#each solution.sequence as letter, letterIndex}
-              <span class:text-danger={!letter.natural}>{letter.letter}{#if isDisulfideIndex(solution, letterIndex)}<sup class="disulfide-marker">d</sup>{/if}</span>
-            {/each}
+            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{item.letter.letter}{#if isDisulfideIndex(solution,item.origIndex)}<span class="disulfide-marker">d</span>{/if}</span>{/each}
           </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
           <td>{formatReasons(solution.reasons)}</td>
@@ -235,12 +233,32 @@
   }
 
   .disulfide-marker {
+    position: absolute;
+    bottom: -2px;
+    left: 7px;
     font-size: 0.7em;
-    color: #666;
-    margin-left: -3px;
+    color: #00008B;
   }
 
   .text-danger {
     color: red;
+  }
+  
+  .letter {
+    position: relative;
+    display: inline;
+    margin-right: 0.2em;
+  }
+
+  .letter::before {
+    content: attr(data-index);
+    position: absolute;
+    top: -1em;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5em;
+    color: gray;
+    user-select: none;
+    pointer-events: none;
   }
 </style>
