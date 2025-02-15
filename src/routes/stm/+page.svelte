@@ -58,6 +58,7 @@
                 removeNullCodonTitle(),
                 selectedMonoisotopicAminos,
                 ionType,
+                false,
             );
         } finally {
             loading.set(false);

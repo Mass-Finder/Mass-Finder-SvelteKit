@@ -1,8 +1,6 @@
-import { codonTableRtoS } from './amino_mapper';
+import { codonTableRtoS, molecularWeightMap } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
-import { getIonWeight } from './amino_mapper';
 import type { IonType } from '../../type/Types';
-import { molecularWeightMap } from './amino_mapper';
 
 export class StmHelper {
     static calc(
@@ -11,192 +9,214 @@ export class StmHelper {
         codonTitle: { [key: string]: string },
         aminoMap: { [key: string]: number },
         ionType: IonType,
-    ) {
-        let possibilities: Array<{ 
-            sequence: (string | string[])[], 
-            reason?: string[],
-            weight?: number, 
-            molecularWeight?: number,
-            adduct?: IonType 
-        }> = [];
+        useFormylation: boolean
+    ): Possibility[] {
+        const memo = new Map<string, PossibilityLetter[][]>();
 
-        // RNA 코돈을 아미노산으로 변환하는 맵 생성
-        const rnaToAminoMap = new Map<string, string>();
-        for (const [key, rna] of Object.entries(codonTitle)) {
-            const amino = codonTableRtoS[rna];
-            if (amino) {
-                rnaToAminoMap.set(key, amino);
+        function generatePossibilities(index: number): PossibilityLetter[][] {
+            if (index >= inputSeq.length) return [[]];
+
+            const key = `${index}`;
+            if (memo.has(key)) return memo.get(key)!;
+
+            const results: PossibilityLetter[][] = [];
+            const currentAmino = inputSeq[index];
+            const possibilitiesForCurrent: PossibilityLetter[] = [];
+
+            // (1) 자연 아미노산이 존재하는 경우
+            if (aminoMap[currentAmino] !== undefined) {
+                possibilitiesForCurrent.push({ letter: currentAmino, natural: true });
+            }
+
+            // (2) ncAA 대체 가능성 확인
+            let candidateFound = false;
+            for (const [key, candidate] of Object.entries(ncAAMap)) {
+                const rna = codonTitle[key];
+                if (rna && codonTableRtoS[rna] === currentAmino) {
+                    candidateFound = true;
+
+                    // (A) ncAA로 대체 (full incorporation)
+                    possibilitiesForCurrent.push({
+                        letter: candidate.title,
+                        natural: false,
+                        candidate: candidate
+                    });
+
+                    // (B) truncated 현상
+                    possibilitiesForCurrent.push({
+                        letter: "",
+                        natural: false,
+                        candidate: candidate,
+                        truncated: true
+                    });
+
+                    // (C) skipping 현상
+                    possibilitiesForCurrent.push({
+                        letter: "",
+                        natural: false,
+                        skipped: true
+                    });
+                }
+            }
+
+            // (3) 자연 아미노산도 없고 ncAA도 대체 불가능한 경우 skipping
+            if (!candidateFound && aminoMap[currentAmino] === undefined) {
+                possibilitiesForCurrent.push({
+                    letter: "",
+                    natural: false,
+                    skipped: true
+                });
+            }
+
+            const nextPossibilities = generatePossibilities(index + 1);
+            for (const option of possibilitiesForCurrent) {
+                for (const next of nextPossibilities) {
+                    results.push([option, ...next]);
+                }
+            }
+
+            memo.set(key, results);
+            return results;
+        }
+
+        let basePossibilities = generatePossibilities(0);
+
+        // **Skipping 및 Truncated가 적용된 결과 필터링**
+        basePossibilities = basePossibilities.filter(seq => seq.filter(x => x.letter !== "").length > 0);
+
+        const possibilities: Possibility[] = [];
+        for (const seqArr of basePossibilities) {
+            const letters = seqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
+            const sequenceString = useFormylation ? "f" + letters : letters;
+
+            let weight = 0;
+            let molWeight = 0;
+            let count = 0;
+
+            for (const item of seqArr) {
+                if (item.letter === "") continue;
+                count++;
+                if (item.natural) {
+                    weight += aminoMap[item.letter];
+                    molWeight += molecularWeightMap[item.letter];
+                } else if (item.candidate) {
+                    weight += parseFloat(item.candidate.monoisotopicWeight);
+                    molWeight += parseFloat(item.candidate.molecularWeight);
+                }
+            }
+            
+            // 물 손실량 적용
+            weight -= MassFinderHelper.getWaterWeight(count);
+            molWeight -= MassFinderHelper.getWaterWeight(count);
+
+            // 사유(reason) 수집
+            const reasonsSet = new Set<string>();
+            for (const item of seqArr) {
+                if (!item.natural) {
+                    if (item.candidate && !item.truncated && !item.skipped) {
+                        reasonsSet.add("ncAA incorporated");
+                    }
+                    if (item.truncated) {
+                        reasonsSet.add("Truncated");
+                    }
+                    if (item.skipped) {
+                        reasonsSet.add("Skipped");
+                    }
+                }
+            }
+            if (reasonsSet.size === 0) {
+                reasonsSet.add("Only natural AA");
+            }
+            const reasons = Array.from(reasonsSet);
+
+            possibilities.push({
+                sequence: seqArr,
+                sequenceString: sequenceString,
+                reasons: reasons,
+                weight: weight,
+                molecularWeight: molWeight,
+                adduct: ionType
+            });
+        }
+
+        // **Disulfide 처리 (S가 2개 이상일 경우)**
+        const finalPossibilities: Possibility[] = [];
+        const uniqueSequences = new Set<string>();
+
+        for (const poss of possibilities) {
+            const sIndices: number[] = [];
+            poss.sequence.forEach((item, idx) => {
+                if (item.letter === "S") sIndices.push(idx);
+            });
+
+            let allDisulfidePossibilities: Array<Array<[number, number]>> = [[]];
+            if (sIndices.length >= 2) {
+                allDisulfidePossibilities = getAllValidDisulfideCombinations(sIndices);
+            }
+
+            for (const pairing of allDisulfidePossibilities) {
+                const newPoss = { ...poss, disulfide: pairing, reasons: [...poss.reasons] };
+                if (pairing.length > 0) newPoss.reasons.push("Disulfide");
+
+                // 시퀀스 전체에 다이서파이드 적용된 인덱스를 순서대로 정렬
+                const flattenedPairing: number[] = pairing.reduce((acc: number[], curr: [number, number]) => {
+                    return acc.concat(curr);
+                }, []);
+                flattenedPairing.sort((a, b) => a - b);
+
+                // 중복 방지를 위해 Disulfide 개수와 시퀀스 문자열을 기준으로 유니크한 값만 저장
+                const uniqueKey = `${newPoss.sequenceString}-D${flattenedPairing.join(",")}`;
+                if (!uniqueSequences.has(uniqueKey)) {
+                    uniqueSequences.add(uniqueKey);
+                    finalPossibilities.push(newPoss);
+                }
             }
         }
 
-        // 재귀적으로 모든 가능한 시퀀스를 생성
-        const generateSequences = (
-            currentIndex: number,
-            currentSeq: (string | string[])[],
-            reasons: string[],
-            hasModification: boolean
-        ) => {
-            // 시퀀스 생성이 완료된 경우
-            if (currentIndex >= inputSeq.length) {
-                if (currentSeq.length > 0) {
-                    const weight = calculateMonoisotopicWeight(currentSeq, aminoMap, ncAAMap);
-                    const molecularWeight = calculateMolecularWeight(currentSeq, aminoMap, ncAAMap);
-                    let finalReasons = [...reasons];
-                    if (!hasModification) {
-                        finalReasons = ['Only natural AA'];
-                    }
-                    // 시퀀스 3개 이하는 제외
-                    if(currentSeq.length <= 3) return;
-                    possibilities.push({
-                        sequence: currentSeq,
-                        reason: finalReasons,
-                        weight,
-                        molecularWeight,
-                        adduct: ionType
-                    });
-                }
-                return;
-            }
-
-            const currentAmino = inputSeq[currentIndex];
-            
-            // Case 1: 일반 아미노산 사용
-            if (currentAmino in aminoMap) {
-                generateSequences(
-                    currentIndex + 1,
-                    [...currentSeq, [currentAmino]],
-                    reasons,
-                    hasModification
-                );
-            }
-
-            // Case 2: ncAA로 대체
-            for (const [ncaaKey, ncaa] of Object.entries(ncAAMap)) {
-                const rna = codonTitle[ncaaKey];
-                if (rna && codonTableRtoS[rna] === currentAmino) {
-                    // 대체
-                    generateSequences(
-                        currentIndex + 1,
-                        [...currentSeq, [ncaa.title]],
-                        [...reasons, "ncAA incorporated"],
-                        true
-                    );
-
-                    // Truncated case
-                    if (currentIndex > 0) {
-                        // 앞부분만 사용
-                        generateSequences(
-                            inputSeq.length, // 나머지 시퀀스 스킵
-                            currentSeq,
-                            [...reasons, "Truncated"],
-                            true
-                        );
-                    }
-                    if (currentIndex < inputSeq.length - 1) {
-                        // 뒷부분으로 진행
-                        generateSequences(
-                            currentIndex + 1,
-                            currentSeq,
-                            [...reasons, "Truncated"],
-                            true
-                        );
-                    }
-
-                    // Skipping case
-                    generateSequences(
-                        currentIndex + 1,
-                        currentSeq,
-                        [...reasons, "Skipped"],
-                        true
-                    );
-                }
-            }
-
-            // Case 3: Skipping (아미노산을 사용할 수 없는 경우)
-            if (!(currentAmino in aminoMap) && 
-                !Array.from(rnaToAminoMap.values()).includes(currentAmino)) {
-                generateSequences(
-                    currentIndex + 1,
-                    currentSeq,
-                    [...reasons, "Skipped"],
-                    true
-                );
-            }
-        };
-
-        // 시퀀스 생성 시작
-        generateSequences(0, [], [], false);
-
-        // 중복 제거 및 정렬
-        possibilities = removeDuplicates(possibilities);
-
-        return possibilities;
+        return finalPossibilities;
     }
 }
 
-// 무게 계산 헬퍼 함수
-function calculateMonoisotopicWeight(
-    sequence: (string | string[])[],
-    aminoMap: { [key: string]: number },
-    ncAAMap: { [key: string]: any }
-): number {
-    let totalWeight = 0;
-    sequence.forEach(item => {
-        const amino = item[0];
-        if (amino in aminoMap) {
-            totalWeight += aminoMap[amino];
-        } else {
-            for (const [key, ncaa] of Object.entries(ncAAMap)) {
-                if (ncaa.title === amino) {
-                    totalWeight += parseFloat(ncaa.monoisotopicWeight);
-                    break;
-                }
+//
+// **Disulfide 페어링 조합 생성**
+//
+function getAllValidDisulfideCombinations(indices: number[]): Array<Array<[number, number]>> {
+    const results: Array<Array<[number, number]>> = [[]];
+
+    function generatePairs(remaining: number[], currentPairs: Array<[number, number]>) {
+        if (currentPairs.length > 0) {
+            results.push([...currentPairs]);
+        }
+
+        for (let i = 0; i < remaining.length; i++) {
+            for (let j = i + 1; j < remaining.length; j++) {
+                const newPair: [number, number] = [remaining[i], remaining[j]];
+                generatePairs(remaining.filter((_, idx) => idx !== i && idx !== j), [...currentPairs, newPair]);
             }
         }
-    });
-    return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
+    }
+
+    generatePairs(indices, []);
+    return results;
+}
+//
+// **타입 정의**
+//
+interface Possibility {
+    sequence: PossibilityLetter[];
+    sequenceString: string;
+    reasons: string[];
+    weight: number;
+    molecularWeight: number;
+    adduct: IonType;
+    disulfide?: Array<[number, number]>;
 }
 
-function calculateMolecularWeight(
-    sequence: (string | string[])[],
-    aminoMap: { [key: string]: number },
-    ncAAMap: { [key: string]: any }
-): number {
-    let totalWeight = 0;
-    sequence.forEach(item => {
-        const amino = item[0];
-        if (amino in aminoMap) {
-            totalWeight += molecularWeightMap[amino];
-        } else {
-            for (const [key, ncaa] of Object.entries(ncAAMap)) {
-                if (ncaa.title === amino) {
-                    totalWeight += parseFloat(ncaa.molecularWeight);
-                    break;
-                }
-            }
-        }
-    });
-    return totalWeight - MassFinderHelper.getWaterWeight(sequence.length);
+interface PossibilityLetter {
+    letter: string;
+    natural: boolean;
+    candidate?: any;
+    truncated?: boolean;
+    skipped?: boolean;
 }
 
-
-// 중복 제거 함수
-function removeDuplicates(possibilities: Array<{ 
-    sequence: (string | string[])[], 
-    reason?: string[],
-    weight?: number, 
-    adduct?: IonType 
-}>): Array<{ 
-    sequence: (string | string[])[], 
-    reason?: string[],
-    weight?: number, 
-    adduct?: IonType 
-}> {
-    const seen = new Set<string>();
-    return possibilities.filter(item => {
-        const key = JSON.stringify(item.sequence) + JSON.stringify(item.reason);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-}

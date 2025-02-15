@@ -8,7 +8,8 @@
     'Only natural AA': false,
     'Truncated': false,
     'ncAA incorporated': false,
-    'Skipped': false
+    'Skipped': false,
+    'Disulfide': false
   };
 
   // 정렬 상태 관리
@@ -25,8 +26,8 @@
     .filter(solution => {
       const activeFilters = Object.entries(selectedFilters).filter(([_, isSelected]) => isSelected);
       if (activeFilters.length === 0) return true;
-      if (!solution.reason && selectedFilters['Only natural AA']) return true;
-      return solution.reason && activeFilters.some(([filter]) => solution.reason.includes(filter));
+      if (!solution.reasons || solution.reasons.length === 0) return selectedFilters['Only natural AA'];
+      return activeFilters.some(([filter]) => solution.reasons.includes(filter));
     })
     .sort((a, b) => {
       // Monoisotopic Weight 정렬
@@ -67,14 +68,10 @@
     sortState[column] = (sortState[column] + 1) % 3;
   }
   
-  // reason 값이 string에서 string의 리스트로 변경될 예정이므로,
-  // 중복된 항목은 제거하고 각 항목의 중복개수를 (xN) 형식으로 표기한 후,
-  // 콤마(,) 로 구분하여 하나의 문자열로 만들어 반환하는 함수
-  function formatReasons(reason) {
-    if (!reason || (Array.isArray(reason) && reason.length === 0)) {
+  function formatReasons(reasons) {
+    if (!reasons || reasons.length === 0) {
       return 'Only natural AA';
     }
-    const reasons = Array.isArray(reason) ? reason : [reason];
     const counts = {};
     reasons.forEach(r => {
       counts[r] = (counts[r] || 0) + 1;
@@ -83,6 +80,11 @@
       return count > 1 ? `${r} (x${count})` : r;
     });
     return formatted.join(', ');
+  }
+
+  function isDisulfideIndex(solution, index) {
+    if (!solution.disulfide) return false;
+    return solution.disulfide.some(pair => pair[0] === index || pair[1] === index);
   }
 </script>
 
@@ -161,16 +163,17 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
-            {#each solution.sequence as letter}
-              {#if aminoMap[letter] !== undefined}
-                {letter}
-              {:else}
-                <span style="color: red;">{letter}</span>
-              {/if}
+            {#each solution.sequence as letter, letterIndex}
+              <span class:text-danger={!letter.natural}>
+                {letter.letter}
+                {#if isDisulfideIndex(solution, letterIndex)}
+                  <sup class="disulfide-marker">d</sup>
+                {/if}
+              </span>
             {/each}
           </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
-          <td>{formatReasons(solution.reason)}</td>
+          <td>{formatReasons(solution.reasons)}</td>
         </tr>
       {/each}
     </tbody>
@@ -232,5 +235,15 @@
 
   th {
     white-space: nowrap;
+  }
+
+  .disulfide-marker {
+    font-size: 0.7em;
+    color: #666;
+    margin-left: -5px;
+  }
+
+  .text-danger {
+    color: red;
   }
 </style>
