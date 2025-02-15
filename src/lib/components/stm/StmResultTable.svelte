@@ -45,10 +45,12 @@
       }
 
       // Sequence Length 정렬
+      const aFilteredLength = a.sequence.filter(item => item.letter !== "").length;
+      const bFilteredLength = b.sequence.filter(item => item.letter !== "").length;
       if (sortState.sequence === 1) {
-        return a.sequence.length - b.sequence.length;
+        return aFilteredLength - bFilteredLength;
       } else if (sortState.sequence === 2) {
-        return b.sequence.length - a.sequence.length;
+        return bFilteredLength - aFilteredLength;
       }
       
       return 0;
