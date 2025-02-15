@@ -64,7 +64,7 @@
       if (key !== column) sortState[key] = 0;
     });
     
-    // 선택된 컬럼의 정렬 상태 순환
+    // 선택된 컬럼의 정렬 상태 순환 (0 -> 1 -> 2 -> 0)
     sortState[column] = (sortState[column] + 1) % 3;
   }
   
