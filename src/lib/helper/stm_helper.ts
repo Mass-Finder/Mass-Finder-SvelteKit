@@ -94,33 +94,34 @@ export class StmHelper {
             // 시퀀스 길이가 3 이하인 경우 Possibility 목록에 추가하지 않음
             if (originalLetters.length <= 3) continue;
             
-            // useFormylation이 true인 경우, seqArr 앞에 'f'를 추가함
-            const updatedSeqArr = useFormylation ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
-            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
-
-            let weight = 0;
-            let molWeight = 0;
-            let count = 0;
-
-            updatedSeqArr.forEach((item, index) => {
+            // 기존 아미노산 시퀀스들만으로 분자량과 물 손실량 계산
+            let baseWeight = 0;
+            let baseMolWeight = 0;
+            let baseCount = 0;
+            seqArr.forEach(item => {
                 if (item.letter === "") return;
-                count++;
-                if (item.letter === "f") {
-                    // "f" 아미노산은 fWeight를 사용
-                    weight += fWeight;
-                    molWeight += fWeight;
-                } else if (item.natural) {
-                    weight += aminoMap[item.letter];
-                    molWeight += molecularWeightMap[item.letter];
+                baseCount++;
+                if (item.natural) {
+                    baseWeight += aminoMap[item.letter];
+                    baseMolWeight += molecularWeightMap[item.letter];
                 } else if (item.candidate) {
-                    weight += parseFloat(item.candidate.monoisotopicWeight);
-                    molWeight += parseFloat(item.candidate.molecularWeight);
+                    baseWeight += parseFloat(item.candidate.monoisotopicWeight);
+                    baseMolWeight += parseFloat(item.candidate.molecularWeight);
                 }
             });
+            // 물 손실량은 기존 아미노산에 대해서만 적용
+            baseWeight -= MassFinderHelper.getWaterWeight(baseCount);
+            baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
             
-            // 물 손실량 적용
-            weight -= MassFinderHelper.getWaterWeight(count);
-            molWeight -= MassFinderHelper.getWaterWeight(count);
+            // useFormylation이 true인 경우, 'f'를 시퀀스 앞에 추가하고, f의 분자량은 별도로 더함
+            const updatedSeqArr = useFormylation ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
+            let finalWeight = baseWeight;
+            let finalMolWeight = baseMolWeight;
+            if (useFormylation) {
+                finalWeight += fWeight;
+                finalMolWeight += fWeight;
+            }
+            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
@@ -146,8 +147,8 @@ export class StmHelper {
                 sequence: updatedSeqArr,
                 sequenceString: sequenceString,
                 reasons: reasons,
-                weight: weight,
-                molecularWeight: molWeight,
+                weight: finalWeight,
+                molecularWeight: finalMolWeight,
                 adduct: ionType
             });
         }

@@ -59,23 +59,23 @@
     function onClickBody(index) {
       let _data = $savedData[index];
 
-      if(_checkAlreadyExistValue(_data)){
-        alert('This value has already been added.');
-        return;
-      }
+      // if(_checkAlreadyExistValue(_data)){
+      //   alert('This value has already been added.');
+      //   return;
+      // }
 
       selectData(_data);
       confirmSelection();
     }
 
-    // 전달받은 값이 이미 selectedData에 존재하는지 체크
-    function _checkAlreadyExistValue(data) {
-      // 현재 `selectedData`의 모든 `value`를 가져옴
-      let selectedDataValues = Object.values(get(selectedData));
+    // // 전달받은 값이 이미 selectedData에 존재하는지 체크
+    // function _checkAlreadyExistValue(data) {
+    //   // 현재 `selectedData`의 모든 `value`를 가져옴
+    //   let selectedDataValues = Object.values(get(selectedData));
       
-      // `targetValue`가 `selectedDataValues` 중 하나와 일치하는지 체크
-      return selectedDataValues.includes(data);
-    }
+    //   // `targetValue`가 `selectedDataValues` 중 하나와 일치하는지 체크
+    //   return selectedDataValues.includes(data);
+    // }
 
     function onCancelSelectData(targetKey) {
       selectedData.update(currentData => {
