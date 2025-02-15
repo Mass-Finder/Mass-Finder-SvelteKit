@@ -9,6 +9,7 @@
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
     import { getContext } from "svelte";
     import AdductSelector from "$lib/components/AdductSelector.svelte";
+    import FormylationSelector from "$lib/components/FormylationSelector.svelte";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
     let proteinSeq = "";
@@ -18,6 +19,7 @@
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
 
     let ionType = 'H';
+    let formylation = false; // 기본값 no
 
     /// 선택된 ncaa를 어떤 코돈과 매핑할지 적어주는 부분
     let codonTitle = writable({
@@ -58,7 +60,7 @@
                 removeNullCodonTitle(),
                 selectedMonoisotopicAminos,
                 ionType,
-                false,
+                formylation,
             );
         } finally {
             loading.set(false);
@@ -226,10 +228,13 @@
         <SeqConverter bind:proteinSeq></SeqConverter>
     </div>
 
-    <div class="mb-3 d-flex justify-content-start">
+    <div class="mb-3 d-flex justify-content-start align-items-center">
         <AdductSelector
             on:changeAdduct={handleAdductChange}
         />
+        <div class="ms-3">
+            <FormylationSelector showUnknown={false} fomyType="no" on:change={(e) => formylation = (e.detail === 'yes')} />
+        </div>
     </div>
 
     <div class="mb-3">

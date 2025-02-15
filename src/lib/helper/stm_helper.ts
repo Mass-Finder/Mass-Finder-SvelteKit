@@ -2,6 +2,9 @@ import { codonTableRtoS, molecularWeightMap } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType } from '../../type/Types';
 
+// 포밀레이스의 분자량
+const fWeight = 27.99;
+
 export class StmHelper {
     static calc(
         inputSeq: string,
@@ -86,26 +89,34 @@ export class StmHelper {
 
         const possibilities: Possibility[] = [];
         for (const seqArr of basePossibilities) {
-            const letters = seqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
+            // 원래 시퀀스의 실제 아미노산 문자들로 구성된 문자열
+            const originalLetters = seqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
             // 시퀀스 길이가 3 이하인 경우 Possibility 목록에 추가하지 않음
-            if (letters.length <= 3) continue;
-            const sequenceString = useFormylation ? "f" + letters : letters;
+            if (originalLetters.length <= 3) continue;
+            
+            // useFormylation이 true인 경우, seqArr 앞에 'f'를 추가함
+            const updatedSeqArr = useFormylation ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
+            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
 
             let weight = 0;
             let molWeight = 0;
             let count = 0;
 
-            for (const item of seqArr) {
-                if (item.letter === "") continue;
+            updatedSeqArr.forEach((item, index) => {
+                if (item.letter === "") return;
                 count++;
-                if (item.natural) {
+                if (item.letter === "f") {
+                    // "f" 아미노산은 fWeight를 사용
+                    weight += fWeight;
+                    molWeight += fWeight;
+                } else if (item.natural) {
                     weight += aminoMap[item.letter];
                     molWeight += molecularWeightMap[item.letter];
                 } else if (item.candidate) {
                     weight += parseFloat(item.candidate.monoisotopicWeight);
                     molWeight += parseFloat(item.candidate.molecularWeight);
                 }
-            }
+            });
             
             // 물 손실량 적용
             weight -= MassFinderHelper.getWaterWeight(count);
@@ -113,7 +124,8 @@ export class StmHelper {
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
-            for (const item of seqArr) {
+            updatedSeqArr.forEach((item, index) => {
+                if (useFormylation && index === 0) return;
                 if (!item.natural) {
                     if (item.candidate && !item.truncated && !item.skipped) {
                         reasons.push("ncAA incorporated");
@@ -125,13 +137,13 @@ export class StmHelper {
                         reasons.push("Skipped");
                     }
                 }
-            }
+            });
             if (reasons.length === 0) {
                 reasons.push("Only natural AA");
             }
 
             possibilities.push({
-                sequence: seqArr,
+                sequence: updatedSeqArr,
                 sequenceString: sequenceString,
                 reasons: reasons,
                 weight: weight,
@@ -140,14 +152,14 @@ export class StmHelper {
             });
         }
 
-        // **Disulfide 처리 (S가 2개 이상일 경우)**
+        // **Disulfide 처리 (C가 2개 이상일 경우)**
         const finalPossibilities: Possibility[] = [];
         const uniqueSequences = new Set<string>();
 
         for (const poss of possibilities) {
             const sIndices: number[] = [];
             poss.sequence.forEach((item, idx) => {
-                if (item.letter === "S") sIndices.push(idx);
+                if (item.letter === "C") sIndices.push(idx);
             });
 
             let allDisulfidePossibilities: Array<Array<[number, number]>> = [[]];
@@ -166,10 +178,10 @@ export class StmHelper {
                     molecularWeight: poss.molecularWeight
                 };
 
-                // 한쌍의 disulfide마다 질량에서 4씩 감소하고, reason에 "Disulfide"를 반복적으로 추가
+                // 한 쌍의 disulfide마다 질량에서 -2.02씩 감소하고, reason에 "Disulfide"를 반복적으로 추가
                 for (let i = 0; i < pairing.length; i++) {
-                    newPoss.weight -= 4;
-                    newPoss.molecularWeight -= 4;
+                    newPoss.weight -= 2.02;
+                    newPoss.molecularWeight -= 2.02;
                     newPoss.reasons.push("Disulfide");
                 }
 
