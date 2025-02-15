@@ -166,12 +166,7 @@
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
             {#each solution.sequence as letter, letterIndex}
-              <span class:text-danger={!letter.natural}>
-                {letter.letter}
-                {#if isDisulfideIndex(solution, letterIndex)}
-                  <sup class="disulfide-marker">d</sup>
-                {/if}
-              </span>
+              <span class:text-danger={!letter.natural}>{letter.letter}{#if isDisulfideIndex(solution, letterIndex)}<sup class="disulfide-marker">d</sup>{/if}</span>
             {/each}
           </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
@@ -242,7 +237,7 @@
   .disulfide-marker {
     font-size: 0.7em;
     color: #666;
-    margin-left: -5px;
+    margin-left: -3px;
   }
 
   .text-danger {
