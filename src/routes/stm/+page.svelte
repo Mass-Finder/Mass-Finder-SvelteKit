@@ -222,7 +222,6 @@
     </div>
 
     <div class="mb-3">
-        <label for="detected-mass" class="form-label fw-bold">Sequnece</label>
         <SeqConverter bind:proteinSeq></SeqConverter>
     </div>
 

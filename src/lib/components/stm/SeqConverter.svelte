@@ -14,25 +14,26 @@
   let showSaveDialog = false;
   let showLoadDialog = false;
 
+  // RNA 시퀀스를 변환할 때, 변환 결과를 문자 리스트로 반환합니다.
   function translateRNAtoProtein(rna) {
-    return rna
-      .match(/.{1,3}/g)
-      .map((codon) => codonTableRtoS[codon] || "?")
-      .join("");
+    const codons = rna.match(/.{1,3}/g) || [];
+    return codons.map((codon) => codonTableRtoS[codon] || "?");
   }
 
+  // Protein 입력값을 개별 문자 리스트로 변환합니다.
   function translateInputToProtein(protein) {
-    return protein
-      .match(/.{1,1}/g)
-      .map((codon) => (shortToLongMapper[codon] ? codon : "?"))
-      .join("");
+    const chars = protein.match(/.{1}/g) || [];
+    return chars.map((char) => (shortToLongMapper[char] ? char : "?"));
   }
 
   // 입력 값이 바뀔 때마다 호출되는 함수
   function updateSequences() {
-    // 인풋값이 빈값이면 그냥 공백처리
-    if (!inputValue) return (proteinSeq = "");
-    // 일단 대문자 만들어놓고 시작
+    // 인풋값이 없으면 proteinSeq를 빈 리스트로 처리
+    if (!inputValue) {
+      proteinSeq = [];
+      return;
+    }
+    // 입력값을 대문자로 변환
     handleInputToUpper();
 
     if (selectedType === "RNA") {
@@ -43,11 +44,12 @@
     }
   }
 
-  // 입력값 대문자로
+  // 입력값을 대문자로 변환
   function handleInputToUpper() {
     inputValue = inputValue.toUpperCase();
   }
 
+  // DNA의 T를 RNA의 U로 변환
   function replaceTwithU(sequence) {
     return sequence.replace(/T/g, "U");
   }
@@ -90,8 +92,7 @@
 
   <!-- 입력받는 input 필드 -->
   <div class="col-md-8">
-    <label for="sequence-input" class="form-label fw-bold">Input Sequence</label
-    >
+    <label for="sequence-input" class="form-label fw-bold">Input Sequence</label>
     <input
       id="sequence-input"
       type="text"
@@ -160,7 +161,13 @@
     <div class="card">
       <div class="card-body">
         <h5 class="card-title text-primary">Protein Sequence</h5>
-        <p class="card-text">{proteinSeq}</p>
+        <!-- 단일 텍스트 노드처럼 연속된 문자를 출력.
+             숫자는 ::before pseudo-element를 통해 표시되어, 복사/드래그 시 포함되지 않습니다. -->
+        <p class="card-text">
+          {#each proteinSeq as letter, index}
+            <span class="letter" data-index={index % 3 === 0 ? index + 1 : undefined}>{letter}</span>
+          {/each}
+        </p>
       </div>
     </div>
   </div>
@@ -174,5 +181,24 @@
   .card-text {
     font-family: monospace;
     word-wrap: break-word;
+  }
+
+  /* 각 글자를 감싸는 span은 인라인으로 처리하여 텍스트 연속성을 유지 */
+  .letter {
+    position: relative;
+    display: inline;
+  }
+
+  /* data-index가 있을 경우에만 ::before로 번호를 표시 */
+  .letter::before {
+    content: attr(data-index);
+    position: absolute;
+    top: -1em;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5em;
+    color: gray;
+    user-select: none;
+    pointer-events: none;
   }
 </style>
