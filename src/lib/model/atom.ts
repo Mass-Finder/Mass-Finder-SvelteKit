@@ -98,36 +98,37 @@ export class Molecule {
         };
     }
 
-    /// fomular 계산 함수
     getMolecularFormula(): string {
         const elementCounts = new Map<string, number>();
-
-        // 먼저 모든 원자를 카운트
+    
+        // 모든 원자를 먼저 카운트
         this.atoms.forEach(atom => {
             const symbol = atom.label;
             elementCounts.set(symbol, (elementCounts.get(symbol) || 0) + 1);
         });
-
-        // 수소(H) 원자 수 계산 수정
+    
+        // 암시적 수소(H) 원자 수 계산 수정
         let totalH = 0;
         this.atoms.forEach(atom => {
-            if (atom.label !== 'H') {  // 실제 H 원자는 이미 카운트됨
+            if (atom.label !== 'H') {  // 명시적 H는 이미 카운트됨
+                // 해당 원자와 연결된 모든 결합을 찾고, bondOrder의 합을 구함
                 const bonds = this.bonds.filter(bond =>
                     bond.a1.pid === atom.pid || bond.a2.pid === atom.pid
                 );
-
-                // 원자의 원자가(valence)에서 실제 결합 수를 뺀 값이 암시적 수소의 수
-                const implicitH = this.getImplicitHydrogens(atom, bonds.length);
+                const bondOrderSum = bonds.reduce((sum, bond) => sum + bond.bondOrder, 0);
+    
+                // 원자가(valence)에서 실제 결합 수(여기서는 bondOrder의 합)를 뺀 값이 암시적 수소 수
+                const implicitH = this.getImplicitHydrogens(atom, bondOrderSum);
                 totalH += implicitH;
             }
         });
-
+    
         // 명시적 수소 + 암시적 수소
         if (totalH > 0) {
             elementCounts.set('H', (elementCounts.get('H') || 0) + totalH);
         }
-
-        // 분자식 생성 (C, H 순서로, 나머지는 알파벳 순)
+    
+        // 분자식 생성: C, H 순서로 출력하고, 나머지는 알파벳 순으로
         let formula = '';
         const cCount = elementCounts.get('C');
         if (cCount) {
@@ -139,14 +140,12 @@ export class Molecule {
             formula += 'H' + (hCount > 1 ? hCount : '');
             elementCounts.delete('H');
         }
-
-        // 나머지 원소들 알파벳 순으로
         Array.from(elementCounts.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
             .forEach(([element, count]) => {
                 formula += element + (count > 1 ? count : '');
             });
-
+    
         return formula;
     }
 
