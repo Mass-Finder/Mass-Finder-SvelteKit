@@ -36,50 +36,50 @@ export const shortToLongMapper = {
   
   // 기초 아미노산 리스트 Monoisotopic Weight 전용
   export const aminoMap = {
-    G: 75.03,
-    A: 89.05,
-    S: 105.04,
-    T: 119.06,
-    C: 121.02,
-    V: 117.08,
-    L: 131.09,
-    I: 131.09,
-    M: 149.05,
-    P: 115.06,
-    F: 165.08,
-    Y: 181.07,
-    W: 204.09,
-    D: 133.04,
-    E: 147.05,
-    N: 132.05,
-    Q: 146.07,
-    H: 155.07,
-    K: 146.11,
-    R: 174.11
+    G: 75.03203,
+    A: 89.04768,
+    S: 105.04259,
+    T: 119.05824,
+    C: 121.01975,
+    V: 117.07898,
+    L: 131.09463,
+    I: 131.09463,
+    M: 149.05105,
+    P: 115.06333,
+    F: 165.07898,
+    Y: 181.07389,
+    W: 204.08988,
+    D: 133.03751,
+    E: 147.05316,
+    N: 132.05349,
+    Q: 146.06914,
+    H: 155.06948,
+    K: 146.10553,
+    R: 174.11168
   };
 
   // 기초 아미노산 리스트 Molecular Weight 전용
   export const molecularWeightMap = {
-    G: 75.07,  // Glycine
-    A: 89.09,  // Alanine
-    S: 105.09, // Serine
-    T: 119.12, // Threonine
-    C: 121.16, // Cysteine
-    V: 117.15, // Valine
-    L: 131.17, // Leucine
-    I: 131.17, // Isoleucine
-    M: 149.21, // Methionine
-    P: 115.13, // Proline
-    F: 165.19, // Phenylalanine
-    Y: 181.19, // Tyrosine
-    W: 204.23, // Tryptophan
-    D: 133.10, // Aspartic Acid
-    E: 147.13, // Glutamic Acid
-    N: 132.12, // Asparagine
-    Q: 146.15, // Glutamine
-    H: 155.16, // Histidine
-    K: 146.19, // Lysine
-    R: 174.20  // Arginine
+    G: 75.06700,  // Glycine
+    A: 89.09400,  // Alanine
+    S: 105.09300, // Serine
+    T: 119.12000, // Threonine
+    C: 121.15400, // Cysteine
+    V: 117.14800, // Valine
+    L: 131.17500, // Leucine
+    I: 131.17500, // Isoleucine
+    M: 149.20800, // Methionine
+    P: 115.13200, // Proline
+    F: 165.19200, // Phenylalanine
+    Y: 181.19100, // Tyrosine
+    W: 204.22900, // Tryptophan
+    D: 133.10300, // Aspartic Acid
+    E: 147.13000, // Glutamic Acid
+    N: 132.11900, // Asparagine
+    Q: 146.1600, // Glutamine
+    H: 155.15700, // Histidine
+    K: 146.19000, // Lysine
+    R: 174.20400  // Arginine
 };
 
 

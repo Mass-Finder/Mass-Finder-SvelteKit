@@ -221,7 +221,7 @@ export class MassFinderHelper {
 
     static getWaterWeight(aminoLength: number): number {
         if (aminoLength === 0) return 0;
-        return 18.01 * (aminoLength - 1);
+        return 18.01056 * (aminoLength - 1);
     }
 
     // 물 증발량 계산을위해 가능한 아미노산의 갯수 범위를 산정힘
