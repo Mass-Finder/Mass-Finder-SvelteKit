@@ -30,6 +30,9 @@
 
   // 입력 값이 바뀔 때마다 호출되는 함수
   function updateSequences() {
+    // 입력값의 공백과 줄바꿈 제거
+    inputValue = inputValue.replace(/[\s\n]/g, '');
+
     // 인풋값이 없으면 proteinSeqList를 빈 리스트로 처리
     if (!inputValue) {
       proteinSeqList = [];
@@ -39,7 +42,7 @@
     }
     // 입력값을 대문자로 변환
     handleInputToUpper();
-
+    
     if (selectedType === "RNA") {
       inputValue = replaceTwithU(inputValue);
       // RNA 시퀀스를 3개씩 나누어 리스트로 저장
