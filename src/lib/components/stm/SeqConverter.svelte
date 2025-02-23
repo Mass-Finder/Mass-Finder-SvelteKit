@@ -105,14 +105,19 @@
   <!-- 입력받는 input 필드 -->
   <div class="col-md-8">
     <label for="sequence-input" class="form-label fw-bold">Input Sequence</label>
-    <input
-      id="sequence-input"
-      type="text"
+    <textarea
+      id="sequence-input" 
       class="form-control"
       bind:value={inputValue}
       on:input={updateSequences}
       placeholder="Enter {selectedType}"
-    />
+      rows="1"
+      style="min-height: 38px; overflow-y: hidden;"
+      on:input={(e) => {
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 'px';
+      }}
+    ></textarea>
   </div>
 
   <!-- 저장과 불러오기 버튼 -->
