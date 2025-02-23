@@ -4,8 +4,7 @@
   import AminoMapSelector from '$lib/components/AminoMapSelector.svelte';
   import NcAASelector from '$lib/components/NcAASelector.svelte';
   import ResultTable from '$lib/components/ResultTable.svelte';
-  import { MassFinderHelper } from '$lib/helper/mass_finder_helper';
-  import { getContext } from 'svelte';
+  import { getContext, onDestroy } from 'svelte';
   import { writable } from 'svelte/store';
   import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
 
@@ -18,51 +17,83 @@
   let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext('loading');
   let bestSolutions = [];
+  let worker;
+
+  onDestroy(() => {
+    if (worker) {
+      worker.terminate();
+    }
+  });
 
   // Calculate 버튼 클릭 시 호출되는 메서드
   async function handleCalculate() {
     loading.set(true);
     if (!validate()) return loading.set(false);
 
-    setTimeout(() => {
-      try {
-        // 선택된 NCAA 값들
-        let filteredNcAA = Object.fromEntries(
-          Object.entries(fullNcAA).filter(([key, value]) => value !== null)
+    try {
+      // 선택된 NCAA 값들
+      let filteredNcAA = Object.fromEntries(
+        Object.entries(fullNcAA).filter(([key, value]) => value !== null)
+      );
+
+      let filteredMonoisotopicWeights = Object.fromEntries(
+        Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.monoisotopicWeight)])
+      );
+
+      // monoisotopicMass 를 구하기 위한 전용 Map
+      const monoisotopicMap = { ...selectedMonoisotopicAminos, ...filteredMonoisotopicWeights };
+
+      // selectedMonoisotopicAminos 와 같은 key를 가지고 value만 Molcular 로 가지는 맵
+      let ncAAMolecularWeights = Object.fromEntries(
+        Object.entries(selectedMonoisotopicAminos).map(([key, _]) => [key, molecularWeightMap[key]])
+      );
+
+      let filteredMolecularWeights = Object.fromEntries(
+        Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.molecularWeight)])
+      );
+
+      let molecularMap = { ...ncAAMolecularWeights, ...filteredMolecularWeights };
+
+      // Worker 생성 및 메시지 처리
+      if (!worker) {
+        worker = new Worker(
+          new URL('$lib/workers/mass_finder.worker.ts', import.meta.url),
+          { type: 'module' }
         );
-
-        let filteredMonoisotopicWeights = Object.fromEntries(
-          Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.monoisotopicWeight)])
-        );
-
-        // monoisotopicMass 를 구하기 위한 전용 Map
-        const monoisotopicMap = { ...selectedMonoisotopicAminos, ...filteredMonoisotopicWeights };
-
-        // selectedMonoisotopicAminos 와 같은 key를 가지고 value만 Molcular 로 가지는 맵
-        let ncAAMolecularWeights = Object.fromEntries(
-          Object.entries(selectedMonoisotopicAminos).map(([key, _]) => [key, molecularWeightMap[key]])
-        );
-
-        let filteredMolecularWeights = Object.fromEntries(
-          Object.entries(filteredNcAA).map(([key, value]) => [key, Number(value?.molecularWeight)])
-        );
-
-        let molecularMap = { ...ncAAMolecularWeights, ...filteredMolecularWeights };
-
-
-        bestSolutions = MassFinderHelper.calcByIonType(
-		      detectedMass,
-          knownSequence,
-          formylation,
-          adduct,
-          monoisotopicMap,
-          molecularMap
-        );
-        console.log('Best solutions:', bestSolutions);
-      } finally {
-        loading.set(false);
       }
-    }, 100);
+
+      worker.onmessage = (e) => {
+        if (e.data.type === 'success') {
+          bestSolutions = e.data.solutions;
+          console.log('Best solutions:', bestSolutions);
+        } else if (e.data.type === 'error') {
+          console.error('Worker error:', e.data.error);
+          alert('An error occurred while calculating');
+        }
+        loading.set(false);
+      };
+
+      worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        alert('An error occurred while calculating');
+        loading.set(false);
+      };
+
+      // Worker에 데이터 전송
+      worker.postMessage({
+        detectedMass,
+        knownSequence,
+        formylation,
+        adduct,
+        monoisotopicMap,
+        molecularMap
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while calculating');
+      loading.set(false);
+    }
   }
 
   function handleFormylationChange(newFormylation) {
