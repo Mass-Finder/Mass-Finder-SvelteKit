@@ -79,7 +79,8 @@
       counts[r] = (counts[r] || 0) + 1;
     });
     const formatted = Object.entries(counts).map(([r, count]) => {
-      return count > 1 ? `${r} (x${count})` : r;
+      // Truncated는 중복이어도 하나만 표시
+      return r === 'Truncated' ? r : (count > 1 ? `${r} (x${count})` : r);
     });
     return formatted.join(', ');
   }
