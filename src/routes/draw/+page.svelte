@@ -83,11 +83,11 @@
             alert('Spaces cannot be entered.');
             return false;
         }
-        var onlyEnglish = /^[A-Za-z]+$/.test(chemicalTitle);
-        if(!onlyEnglish) {
-            alert('Please enter only English alphabets.');
-            return false;
-        }
+        // var onlyEnglish = /^[A-Za-z]+$/.test(chemicalTitle);
+        // if(!onlyEnglish) {
+        //     alert('Please enter only English alphabets.');
+        //     return false;
+        // }
         if(checkTitleDuplicated()) {
             alert('The name already exists.');
             return false;
