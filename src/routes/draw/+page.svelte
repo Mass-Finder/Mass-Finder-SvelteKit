@@ -69,7 +69,8 @@
       let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
       storedData.splice(index, 1);
       localStorage.setItem('moleculeData', JSON.stringify(storedData));
-      loadSavedData();
+      // 완전히 새로운 배열을 생성하여 savedData store 업데이트
+      savedData.set([...storedData]);
     }
 
     /// 입력된 타이틀이 저장 가능한지 체크
@@ -151,7 +152,7 @@
     <h2 class="text-start my-4">Saved Molecule Data</h2>
     {#if $savedData.length > 0}
       <ul class="list-group">
-        {#each $savedData as data, index}
+        {#each $savedData as data, index (data.title)}
           <li class="list-group-item d-flex justify-content-between align-items-center">
             <MolecularItem {data} {index} {deleteData} />
           </li>
