@@ -7,11 +7,10 @@
   import SaveDialog from './SeqSaveDialog.svelte';
   import LoadDialog from './SeqLoadDialog.svelte';
 
-  let selectedType = "RNA"; // 초기값 RNA
-  let inputValue = ""; // 입력받을 값
-  export let proteinSeq = ""; // string 값으로 변경
-  let proteinSeqList = []; // 리스트로 관리하기 위한 새로운 변수
-  let inputValueList = []; // RNA 시퀀스를 3개씩 나눈 리스트
+  let inputValue = ""; // 입력받을 값 (RNA만)
+  export let rnaSeq = ""; // RNA 시퀀스를 직접 export
+  let rnaSeqList = []; // RNA 시퀀스를 3개씩 나눈 리스트
+  let proteinSeqList = []; // 변환된 단백질 시퀀스 리스트
 
   let showSaveDialog = false;
   let showLoadDialog = false;
@@ -22,38 +21,31 @@
     return codons.map((codon) => codonTableRtoS[codon] || "?");
   }
 
-  // Protein 입력값을 개별 문자 리스트로 변환합니다.
-  function translateInputToProtein(protein) {
-    const chars = protein.match(/.{1}/g) || [];
-    return chars.map((char) => (shortToLongMapper[char] ? char : "?"));
-  }
-
   // 입력 값이 바뀔 때마다 호출되는 함수
   function updateSequences() {
     // 입력값의 공백과 줄바꿈 제거
     inputValue = inputValue.replace(/[\s\n]/g, '');
 
-    // 인풋값이 없으면 proteinSeqList를 빈 리스트로 처리
+    // 인풋값이 없으면 모든 리스트를 빈 리스트로 처리
     if (!inputValue) {
       proteinSeqList = [];
-      inputValueList = [];
-      proteinSeq = "";
+      rnaSeqList = [];
+      rnaSeq = "";
       return;
     }
+    
     // 입력값을 대문자로 변환
     handleInputToUpper();
     
-    if (selectedType === "RNA") {
-      inputValue = replaceTwithU(inputValue);
-      // RNA 시퀀스를 3개씩 나누어 리스트로 저장
-      inputValueList = inputValue.match(/.{1,3}/g) || [];
-      proteinSeqList = translateRNAtoProtein(inputValue);
-    } else {
-      inputValueList = [];
-      proteinSeqList = translateInputToProtein(inputValue);
-    }
-    // proteinSeqList가 업데이트될 때마다 proteinSeq string도 업데이트
-    proteinSeq = proteinSeqList.join('');
+    // DNA의 T를 RNA의 U로 변환
+    inputValue = replaceTwithU(inputValue);
+    
+    // RNA 시퀀스를 3개씩 나누어 리스트로 저장
+    rnaSeqList = inputValue.match(/.{1,3}/g) || [];
+    proteinSeqList = translateRNAtoProtein(inputValue);
+    
+    // rnaSeq를 업데이트
+    rnaSeq = inputValue;
   }
 
   // 입력값을 대문자로 변환
@@ -87,30 +79,17 @@
   }
 </script>
 
-<!-- RNA/DNA/Protein 선택 섹션 -->
+<!-- RNA 입력 섹션 -->
 <div class="row mb-3">
-  <div class="col-md-2">
-    <label for="sequence-type" class="form-label fw-bold">Select Type</label>
-    <select
-      id="sequence-type"
-      class="form-select"
-      bind:value={selectedType}
-      on:change={updateSequences}
-    >
-      <option value="RNA">RNA</option>
-      <option value="Protein">Protein</option>
-    </select>
-  </div>
-
   <!-- 입력받는 input 필드 -->
-  <div class="col-md-8">
-    <label for="sequence-input" class="form-label fw-bold">Input Sequence</label>
+  <div class="col-md-10">
+    <label for="sequence-input" class="form-label fw-bold">Input RNA Sequence</label>
     <textarea
       id="sequence-input" 
       class="form-control"
       bind:value={inputValue}
       on:input={updateSequences}
-      placeholder="Enter {selectedType}"
+      placeholder="Enter RNA sequence (e.g., AUGCCCGGG...)"
       rows="1"
       style="min-height: 38px; overflow-y: hidden;"
       on:input={(e) => {
@@ -173,14 +152,14 @@
 />
 
 <!-- RNA 시퀀스 출력 섹션 -->
-{#if selectedType === "RNA"}
+{#if inputValue}
   <div class="row mt-4">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
           <h5 class="card-title text-primary">RNA Sequence</h5>
           <p class="card-text">
-            {#each inputValueList as codon, index}
+            {#each rnaSeqList as codon, index}
               <span class="letter" data-index={index + 1}>{codon}</span>
             {/each}
           </p>

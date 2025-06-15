@@ -6,7 +6,7 @@
     export let key;
     export let onCancelSelectData;
     export let onChangeTitle;
-    export let customCodonTitle;
+    export let customCodonTitles;
 
     let showCodonDialog = false;
 
@@ -30,9 +30,17 @@
     });
 
     function handleCodonSelect(event) {
-      customCodonTitle = event.detail.codon;
-      onChangeTitle(customCodonTitle, key);
+      const selectedCodon = event.detail.codon;
+      if (!customCodonTitles.includes(selectedCodon)) {
+        customCodonTitles = [...customCodonTitles, selectedCodon];
+        onChangeTitle(customCodonTitles, key);
+      }
       showCodonDialog = false;
+    }
+
+    function removeCodon(codonToRemove) {
+      customCodonTitles = customCodonTitles.filter(codon => codon !== codonToRemove);
+      onChangeTitle(customCodonTitles, key);
     }
 </script>
 
@@ -43,27 +51,33 @@
     <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
     <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
     <button class="btn btn-danger btn-sm w-100 mt-3" on:click={() => onCancelSelectData(key)}>Cancel</button>
-    <div class="row align-items-center mt-3">
-        <label for="customCodon" class="form-label fw-bold col-md-4 mt-2">Codon:</label>
-        <div class="col-md-8">
-            <div class="input-group">
-                <input
-                    type="text"
-                    id="customCodon"
-                    bind:value={customCodonTitle}
-                    class="form-control"
-                    placeholder="ex) UAG"
-                    readonly
-                />
-                <button 
-                    class="btn btn-outline-secondary" 
-                    type="button"
-                    on:click={() => showCodonDialog = true}
-                >
-                    Select
-                </button>
-            </div>
+    
+    <div class="mt-3">
+        <label class="form-label fw-bold">Codons:</label>
+        
+        <!-- 선택된 코돈들 표시 -->
+        <div class="selected-codons mb-2">
+          {#each customCodonTitles as codon}
+            <span class="badge bg-primary me-1 mb-1">
+              {codon}
+              <button 
+                type="button" 
+                class="btn-close btn-close-white ms-1" 
+                aria-label="Remove {codon}"
+                on:click={() => removeCodon(codon)}
+              ></button>
+            </span>
+          {/each}
         </div>
+        
+        <!-- 코돈 추가 버튼 -->
+        <button 
+          class="btn btn-outline-primary btn-sm w-100" 
+          type="button"
+          on:click={() => showCodonDialog = true}
+        >
+          Add Codon
+        </button>
     </div>
 </div>
 
@@ -89,9 +103,25 @@
         font-size: 0.875rem;
     }
 
-    input[readonly] {
-        background-color: #fff;
-        cursor: default;
+    .selected-codons {
+        min-height: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.8em;
+    }
+
+    .btn-close {
+        font-size: 0.6em;
+        padding: 0;
+        margin: 0;
+        width: 12px;
+        height: 12px;
     }
 </style>
   

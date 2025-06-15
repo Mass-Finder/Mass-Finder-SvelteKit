@@ -10,8 +10,8 @@
 
     const dispatch = createEventDispatcher();
   
-    export let codonTitle;
-    export let onChangeCodonTitle;
+    export let codonTitles;
+    export let onChangeCodonTitles;
     /// 로컬 스토리지에 저장된 분자들
     let savedData = writable([]);
 
@@ -85,17 +85,17 @@
       return currentData;
       });
       
-      codonTitle.update(currentData => {
+      codonTitles.update(currentData => {
       if (currentData.hasOwnProperty(targetKey)) {
-        currentData[targetKey] = null;
+        currentData[targetKey] = [];
       }
       return currentData;
       });
       confirmSelection();
     }
   
-    function onChangeTitle(upperValue, key){
-      onChangeCodonTitle(upperValue, key);
+    function onChangeTitles(codonArray, key){
+      onChangeCodonTitles(codonArray, key);
     }
 
     // Get keys of selectedData
@@ -110,7 +110,13 @@
           <div class="card h-100">
             <div class="card-body d-flex align-items-center justify-content-center">
               {#if $selectedData[key]}
-                <NcAACodonSelectItem data={$selectedData[key]} {key} {onCancelSelectData} customCodonTitle={codonTitle[key]} {onChangeTitle}/>
+                <NcAACodonSelectItem 
+                  data={$selectedData[key]} 
+                  {key} 
+                  {onCancelSelectData} 
+                  customCodonTitles={$codonTitles[key] || []} 
+                  onChangeTitle={onChangeTitles}
+                />
               {:else}
                 <button 
                   id="select-btn-{key}" 

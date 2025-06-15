@@ -1,4 +1,4 @@
-import { codonTableRtoS, molecularWeightMap } from './amino_mapper';
+import { codonTableRtoS, molecularWeightMap, getIonWeight } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType } from '../../type/Types';
 
@@ -7,35 +7,50 @@ const fWeight = 27.99;
 
 export class StmHelper {
     static calc(
-        inputSeq: string,
+        rnaSeq: string,
         ncAAMap: { [key: string]: any },
-        codonTitle: { [key: string]: string },
+        codonTitles: { [key: string]: string[] },
         aminoMap: { [key: string]: number },
-        ionType: IonType,
+        ionTypes: IonType[],
         useFormylation: boolean
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
 
+        // RNA 시퀀스를 3개씩 나누어 코돈 배열로 변환
+        const codons = rnaSeq.match(/.{1,3}/g) || [];
+
+        // Stop 코돈을 찾아서 그 이전까지만 처리
+        let effectiveCodons = [];
+        for (let i = 0; i < codons.length; i++) {
+            const codon = codons[i];
+            const naturalAmino = codonTableRtoS[codon];
+            if (naturalAmino === '[Stop]') {
+                break; // Stop 코돈을 만나면 여기서 중단
+            }
+            effectiveCodons.push(codon);
+        }
+
         function generatePossibilities(index: number): PossibilityLetter[][] {
-            if (index >= inputSeq.length) return [[]];
+            if (index >= effectiveCodons.length) return [[]];
 
             const key = `${index}`;
             if (memo.has(key)) return memo.get(key)!;
 
             const results: PossibilityLetter[][] = [];
-            const currentAmino = inputSeq[index];
+            const currentCodon = effectiveCodons[index];
             const possibilitiesForCurrent: PossibilityLetter[] = [];
 
-            // (1) 자연 아미노산이 존재하는 경우
-            if (aminoMap[currentAmino] !== undefined) {
-                possibilitiesForCurrent.push({ letter: currentAmino, natural: true });
+            // (1) 자연 아미노산으로 변환 가능한 경우
+            const naturalAmino = codonTableRtoS[currentCodon];
+            if (naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined) {
+                possibilitiesForCurrent.push({ letter: naturalAmino, natural: true });
             }
 
             // (2) ncAA 대체 가능성 확인
             let candidateFound = false;
             for (const [key, candidate] of Object.entries(ncAAMap)) {
-                const rna = codonTitle[key];
-                if (rna && codonTableRtoS[rna] === currentAmino) {
+                const assignedCodons = codonTitles[key] || [];
+                if (assignedCodons.includes(currentCodon)) {
                     candidateFound = true;
 
                     // (A) ncAA로 대체 (full incorporation)
@@ -62,8 +77,13 @@ export class StmHelper {
                 }
             }
 
-            // (3) 자연 아미노산도 없고 ncAA도 대체 불가능한 경우 skipping
-            if (!candidateFound && aminoMap[currentAmino] === undefined) {
+            // (3) skipping 조건들
+            // - 자연 아미노산이 없는 경우
+            // - 자연 아미노산이 Stop 코돈인 경우  
+            // - 자연 아미노산이 있지만 aminoMap에서 제외된 경우
+            // - ncAA 대체도 불가능한 경우
+            const naturalAminoAvailable = naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined;
+            if (!candidateFound && !naturalAminoAvailable) {
                 possibilitiesForCurrent.push({
                     letter: "",
                     natural: false,
@@ -143,14 +163,18 @@ export class StmHelper {
                 reasons.push("Only natural AA");
             }
 
-            possibilities.push({
-                sequence: updatedSeqArr,
-                sequenceString: sequenceString,
-                reasons: reasons,
-                weight: finalWeight,
-                molecularWeight: finalMolWeight,
-                adduct: ionType
-            });
+            // 각 ionType에 대해 별도의 possibility 생성
+            for (const ionType of ionTypes) {
+                const adductWeight = ionType === 'none' ? 0 : getIonWeight(ionType);
+                possibilities.push({
+                    sequence: updatedSeqArr,
+                    sequenceString: sequenceString,
+                    reasons: reasons,
+                    weight: finalWeight + adductWeight,
+                    molecularWeight: finalMolWeight + adductWeight,
+                    adduct: ionType
+                });
+            }
         }
 
         // **Disulfide 처리 (C가 2개 이상일 경우)**
@@ -192,8 +216,8 @@ export class StmHelper {
                 }, []);
                 flattenedPairing.sort((a, b) => a - b);
 
-                // 중복 방지를 위해 Disulfide 개수와 시퀀스 문자열을 기준으로 유니크한 값만 저장
-                const uniqueKey = `${newPoss.sequenceString}-D${flattenedPairing.join(",")}`;
+                // 중복 방지를 위해 Disulfide 개수와 시퀀스 문자열, adduct를 기준으로 유니크한 값만 저장
+                const uniqueKey = `${newPoss.sequenceString}-D${flattenedPairing.join(",")}-${newPoss.adduct}`;
                 if (!uniqueSequences.has(uniqueKey)) {
                     uniqueSequences.add(uniqueKey);
                     finalPossibilities.push(newPoss);

@@ -92,6 +92,7 @@ export const shortToLongMapper = {
     "-Na" : "[M-2H+Na]⁺",
     "-K" : "[M-2H+K]⁺",
     "-NH₄" : "[M-2H+NH₄]⁺",
+    "none" : "[M]",
 }
 
 
@@ -198,6 +199,7 @@ export const codonTableRtoS = {
         case '-Na': return -22.9892;
         case '-K': return -38.9632;
         case '-NH₄': return -18.03382;
+        case 'none': return 0;
         case 'unknown': return 0;
         default: return 0;
     }

@@ -8,27 +8,27 @@
     import { StmHelper } from "$lib/helper/stm_helper";
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
     import { getContext } from "svelte";
-    import AdductSelector from "$lib/components/AdductSelector.svelte";
+    import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
     import FormylationSelector from "$lib/components/FormylationSelector.svelte";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
-    let proteinSeq = "";
+    let rnaSeq = ""; // RNA 시퀀스로 변경
     let possibilities = [];
 
     // 선택된 ncaa
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
 
-    let ionType = 'H';
+    let ionTypes = ['H']; // 배열로 변경
     let formylation = false; // 기본값 no
 
-    /// 선택된 ncaa를 어떤 코돈과 매핑할지 적어주는 부분
-    let codonTitle = writable({
-        B: null,
-        J: null,
-        O: null,
-        U: null,
-        X: null,
-        Z: null,
+    /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
+    let codonTitles = writable({
+        B: [],
+        J: [],
+        O: [],
+        U: [],
+        X: [],
+        Z: [],
     });
 
     const loading = getContext("loading");
@@ -45,8 +45,8 @@
         ncAA = e.detail;
     }
 
-    function onChangeCodonTitle(upperValue, key) {
-        $codonTitle[key] = upperValue;
+    function onChangeCodonTitles(codonArray, key) {
+        $codonTitles[key] = codonArray;
     }
 
     function _onTapCalcButton() {
@@ -55,11 +55,11 @@
         if (!_validateCheck()) return loading.set(false);
         try {
             possibilities = StmHelper.calc(
-                proteinSeq,
+                rnaSeq,
                 removeZeroValueNcAA(),
-                removeNullCodonTitle(),
+                removeEmptyCodonTitles(),
                 selectedMonoisotopicAminos,
-                ionType,
+                ionTypes,
                 formylation,
             );
         } finally {
@@ -69,51 +69,59 @@
 
     function _validateCheck() {
         // 입력값 없는 경우
-        if (!proteinSeq) {
-            alert("Please enter RNA or DNA or Protein.");
+        if (!rnaSeq) {
+            alert("Please enter RNA sequence.");
             return false;
         }
         // 잘못된 입력값 있는경우
-        if (proteinSeq.includes("?")) {
+        if (rnaSeq.includes("?")) {
             alert("Please enter the correct sequence.");
             return false;
         }
+        // RNA 시퀀스 길이가 3의 배수가 아닌 경우
+        if (rnaSeq.length % 3 !== 0) {
+            alert("RNA sequence length must be a multiple of 3.");
+            return false;
+        }
         // ncaa가 선택이 되었으나 codon 값이 입력되지 않은 경우
-        if (!checkCustomCodonTitle1()) {
+        if (!checkCustomCodonTitles1()) {
             alert(
                 "Codon name was not entered in the selected Used Non-Canonical Monomers value.",
             );
             return false;
         }
         // ncaa 의 codon 으로 입력된 값이 codonTableRtoS 에 매핑되지 않을때
-        if (!checkCustomCodonTitle2()) {
+        if (!checkCustomCodonTitles2()) {
             return false;
         }
-
-        if (!checkSeqValidate()) {
-            return false;
-        }
+        // adduct가 선택되지 않은 경우는 이제 허용 (none 값으로 처리)
+        // if (ionTypes.length === 0) {
+        //     alert("Please select at least one adduct type.");
+        //     return false;
+        // }
 
         return true;
     }
 
-    // ncaa가 선택이 된것중에 title이 모두 잘 들어가 있는지 체크
-    function checkCustomCodonTitle1() {
+    // ncaa가 선택이 된것중에 codon들이 모두 잘 들어가 있는지 체크
+    function checkCustomCodonTitles1() {
         // ncAA에서 value가 0이 아닌 key를 모음
         let nonZeroKeys = Object.keys(ncAA).filter((key) => ncAA[key] !== 0);
 
-        // codonTitle 값을 직접 구독해서 값 확인
-        let currentCodonTitle = $codonTitle;
+        // codonTitles 값을 직접 구독해서 값 확인
+        let currentCodonTitles = $codonTitles;
 
-        nonZeroKeys.forEach((key) => {
-            if (currentCodonTitle[key] === null) return false;
-        });
+        for (const key of nonZeroKeys) {
+            if (!currentCodonTitles[key] || currentCodonTitles[key].length === 0) {
+                return false;
+            }
+        }
         return true;
     }
 
-    function checkCustomCodonTitle2() {
-        // codonTitle의 현재 상태를 가져오기 위해 get 함수 사용
-        let current = get(codonTitle);
+    function checkCustomCodonTitles2() {
+        // codonTitles의 현재 상태를 가져오기 위해 get 함수 사용
+        let current = get(codonTitles);
 
         // ncAA에서 value가 0이 아닌 key를 모음
         let nonZeroKeys = Object.keys(ncAA).filter((key) => ncAA[key] !== 0);
@@ -122,16 +130,17 @@
         let isFirst = true;
 
         nonZeroKeys.forEach((key) => {
-            if (key in current) {
-                let value = current[key];
-                if (!(value in codonTableRtoS)) {
-                    // 첫 번째 줄에는 줄바꿈을 넣지 않음
-                    if (!isFirst) {
-                        msg = msg + "\n"; // 두 번째 이후로는 줄바꿈 추가
+            if (key in current && current[key]) {
+                current[key].forEach(codon => {
+                    if (!(codon in codonTableRtoS)) {
+                        // 첫 번째 줄에는 줄바꿈을 넣지 않음
+                        if (!isFirst) {
+                            msg = msg + "\n"; // 두 번째 이후로는 줄바꿈 추가
+                        }
+                        msg = msg + `Codon ${codon} is not mapped in RNA`;
+                        isFirst = false; // 첫 번째 이후로는 줄바꿈 허용
                     }
-                    msg = msg + `Codon ${value} is not mapped in RNA`;
-                    isFirst = false; // 첫 번째 이후로는 줄바꿈 허용
-                }
+                });
             }
         });
         if (msg) {
@@ -141,55 +150,17 @@
         return true;
     }
 
-    /// selectedMonoisotopicAminos 값과 ncaa 를 합쳐서 proteinSeq 의 모든 글자가 사용 아미노산에 등록이 된건지 체크
-    function checkSeqValidate() {
-        // codonTitle의 현재 상태를 가져오기 위해 get 함수 사용
-        let current = get(codonTitle);
+    // codonTitles 에서 빈 배열 제거
+    function removeEmptyCodonTitles() {
+        // 현재 codonTitles 값을 가져오기
+        let current = get(codonTitles);
 
-        // ncAA에서 value가 0이 아닌 key를 모음
-        let nonZeroKeys = Object.keys(ncAA).filter((key) => ncAA[key] !== 0);
-        let deepCopiedAminos = structuredClone(selectedMonoisotopicAminos);
-        nonZeroKeys.forEach((key) => {
-            if (key in current) {
-                let value = current[key];
-                let seqValue = codonTableRtoS[value];
-                // key 리스트에만 넣기 위해  value는 아무거나 넣음
-                deepCopiedAminos[seqValue] = 1.0;
-            }
-        });
-
-        // let allExist = true; // 모든 글자가 존재하는지 여부를 저장
-        // let missingKeys = []; // 존재하지 않는 글자를 저장할 배열
-
-        // // 문자열을 한 글자씩 순회
-        // for (let i = 0; i < proteinSeq.length; i++) {
-        //     let char = proteinSeq[i];
-
-        //     // deepCopiedAminos에 해당 글자가 key로 존재하는지 체크
-        //     if (!(char in deepCopiedAminos)) {
-        //         allExist = false; // 한 글자라도 존재하지 않으면 false
-        //         missingKeys.push(char); // 존재하지 않는 글자를 배열에 추가
-        //     }
-        // }
-
-        // if (allExist === false) {
-        //     alert('"' + missingKeys + '" cannot be used.');
-        //     return false;
-        // }
-        return true;
-    }
-
-    // codonTitle 에서 null 제거
-    function removeNullCodonTitle() {
-        // 현재 codonTitle 값을 가져오기
-        let current = get(codonTitle);
-
-        // null이 아닌 값만 새로운 객체에 저장
-        let filteredCodonTitle = Object.fromEntries(
-            Object.entries(current).filter(([key, value]) => value !== null),
+        // 빈 배열이 아닌 값만 새로운 객체에 저장
+        let filteredCodonTitles = Object.fromEntries(
+            Object.entries(current).filter(([key, value]) => value && value.length > 0),
         );
 
-        return filteredCodonTitle;
+        return filteredCodonTitles;
     }
 
     // ncAA 에서 value 가 0 인거 제거
@@ -201,21 +172,32 @@
         return filtedData;
     }
 
-
-    // RNA 와 DNA 에서는 [stop] seq 가 존재할수있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
+    // RNA에서 Stop 코돈(UAG, UAA, UGA)이 존재할 수 있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
     function getSequenceBeforeStop() {
-        // 첫 번째 "[stop]"의 인덱스 찾기
-        const stopIndex = proteinSeq.indexOf("[Stop]");
-
-        // "[stop]"이 없는 경우 전체 문자열 반환
+        // Stop 코돈들
+        const stopCodons = ['UAG', 'UAA', 'UGA'];
+        
+        // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
+        const codons = rnaSeq.match(/.{1,3}/g) || [];
+        
+        // 첫 번째 Stop 코돈의 인덱스 찾기
+        let stopIndex = -1;
+        for (let i = 0; i < codons.length; i++) {
+            if (stopCodons.includes(codons[i])) {
+                stopIndex = i;
+                break;
+            }
+        }
+        
+        // Stop 코돈이 없는 경우 전체 시퀀스 유지
         if (stopIndex === -1) return;
-
-        // "[stop]" 이전 부분만 반환
-        proteinSeq = proteinSeq.substring(0, stopIndex);
+        
+        // Stop 코돈 이전까지의 코돈들만 다시 합쳐서 RNA 시퀀스 생성
+        rnaSeq = codons.slice(0, stopIndex).join('');
     }
 
     function handleAdductChange(e) {
-        ionType = e.detail;
+        ionTypes = e.detail;
     }
 </script>
 
@@ -225,11 +207,11 @@
     </div>
 
     <div class="mb-3">
-        <SeqConverter bind:proteinSeq></SeqConverter>
+        <SeqConverter bind:rnaSeq></SeqConverter>
     </div>
 
     <div class="mb-3 d-flex justify-content-start align-items-center">
-        <AdductSelector
+        <StmAdductSelector
             on:changeAdduct={handleAdductChange}
         />
         <div class="ms-3">
@@ -246,8 +228,8 @@
     <div class="mb-3">
         <NcAACodonSelector
             on:changeNcAA={handleNcAAChange}
-            bind:codonTitle
-            {onChangeCodonTitle}
+            bind:codonTitles
+            {onChangeCodonTitles}
         />
     </div>
 
@@ -259,7 +241,7 @@
         Predict Mass!
     </button>
 
-    {#if proteinSeq !== null && possibilities.length > 0}
+    {#if rnaSeq !== null && possibilities.length > 0}
         <StmResultTable {possibilities} />
     {/if}
 </div>
