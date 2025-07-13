@@ -30,7 +30,7 @@ const fWeight = 27.99;
  */
 export class MassFinderHelper {
     // 몇개의 결과를 도출할건지에 대한 값
-    static topSolutionsCount: number = 20;
+    static topSolutionsCount: number = 100;
 
     static formyType: FormyType = 'unknown';
     static ionType: IonType = 'unknown';

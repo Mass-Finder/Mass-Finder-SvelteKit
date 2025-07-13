@@ -8,6 +8,7 @@
   import { getContext, onDestroy } from 'svelte';
   import { writable } from 'svelte/store';
   import { aminoMap, molecularWeightMap, codonTableRtoS } from '$lib/helper/amino_mapper';
+  import { MassFinderHelper } from '$lib/helper/mass_finder_helper';
 
   // 상태 관리 변수들
   let detectedMass = null;
@@ -19,6 +20,8 @@
   let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext('loading');
   let bestSolutions = [];
+  let allSolutions = []; // 전체 결과를 저장할 배열
+  let maxResultCount = 20; // 표시할 최대 결과 개수
   let worker;
 
   onDestroy(() => {
@@ -31,6 +34,9 @@
   async function handleCalculate() {
     loading.set(true);
     if (!validate()) return loading.set(false);
+
+    // 최대 100개의 결과를 가져오도록 설정
+    MassFinderHelper.topSolutionsCount = 100;
 
     try {
       // 선택된 NCAA 값들
@@ -66,8 +72,10 @@
 
       worker.onmessage = (e) => {
         if (e.data.type === 'success') {
-          bestSolutions = e.data.solutions;
-          console.log('Best solutions:', bestSolutions);
+          allSolutions = e.data.solutions;
+          bestSolutions = allSolutions.slice(0, maxResultCount);
+          console.log('All solutions count:', allSolutions.length);
+          console.log('Displayed solutions:', bestSolutions.length);
         } else if (e.data.type === 'error') {
           console.error('Worker error:', e.data.error);
           alert('An error occurred while calculating');
@@ -223,6 +231,11 @@
 
   $: proteinMass = calculateProteinMass(proteinSequence);
   $: massWarning = proteinSequence && detectedMass && Math.abs(proteinMass - detectedMass) > (detectedMass * 0.5);
+  
+  // maxResultCount가 변경될 때마다 결과를 다시 필터링
+  $: if (allSolutions.length > 0) {
+    bestSolutions = allSolutions.slice(0, maxResultCount);
+  }
 </script>
 
 <div class="container mt-5">
@@ -289,13 +302,11 @@
       <select 
         id="solution-count" 
         class="form-select mb-3" 
-        on:change={(e) => {
-          MassFinderHelper.topSolutionsCount = parseInt(e.target.value);
-        }}
+        bind:value={maxResultCount}
       >
-        <option value="20">20</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
+        <option value={20}>20</option>
+        <option value={50}>50</option>
+        <option value={100}>100</option>
       </select>
     </div>
   </div>
