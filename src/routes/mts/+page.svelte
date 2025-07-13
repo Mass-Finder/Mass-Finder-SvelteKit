@@ -4,13 +4,15 @@
   import AminoMapSelector from '$lib/components/AminoMapSelector.svelte';
   import NcAASelector from '$lib/components/NcAASelector.svelte';
   import ResultTable from '$lib/components/ResultTable.svelte';
+  import InitialRnaInput from '$lib/components/InitialRnaInput.svelte';
   import { getContext, onDestroy } from 'svelte';
   import { writable } from 'svelte/store';
-  import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
+  import { aminoMap, molecularWeightMap, codonTableRtoS } from '$lib/helper/amino_mapper';
 
   // 상태 관리 변수들
   let detectedMass = null;
   let knownSequence = '';
+  let proteinSequence = '';
   let formylation = 'yes';
   let adduct = 'H';
   let selectedMonoisotopicAminos = { ...aminoMap };
@@ -83,6 +85,7 @@
       worker.postMessage({
         detectedMass,
         knownSequence,
+        proteinSequence,
         formylation,
         adduct,
         monoisotopicMap,
@@ -127,6 +130,11 @@
       return false;
     }
 
+    if (!validateProteinSequence()) {
+      alert('Please enter the correct Protein Sequence');
+      return false;
+    }
+
     return true;
   }
 
@@ -147,6 +155,74 @@
     const input = event.target;
     knownSequence = input.value.toUpperCase();
   }
+
+
+
+  function convertRnaToAminoAcids(rnaSequence) {
+    if (!rnaSequence) return '';
+    
+    // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
+    const codons = rnaSequence.match(/.{1,3}/g) || [];
+    let aminoSequence = '';
+    
+    for (const codon of codons) {
+      if (codon.length === 3) {
+        const amino = codonTableRtoS[codon];
+        if (amino && amino !== '[Stop]') {
+          aminoSequence += amino;
+        } else if (amino === '[Stop]') {
+          break; // Stop 코돈을 만나면 중단
+        }
+      }
+    }
+    
+    return aminoSequence;
+  }
+
+  function validateProteinSequence() {
+    // 빈 문자열인 경우 유효함 (선택사항)
+    if (proteinSequence === '') return true;
+    
+    // RNA 시퀀스 검증: A, U, G, C만 허용
+    const validRnaBases = ['A', 'U', 'G', 'C'];
+    for (let char of proteinSequence) {
+      if (!validRnaBases.includes(char)) {
+        return false;
+      }
+    }
+    
+    // 3의 배수 길이 검증 (코돈 단위)
+    if (proteinSequence.length % 3 !== 0) {
+      alert('RNA sequence length must be a multiple of 3 (codon units)');
+      return false;
+    }
+    
+    return true;
+  }
+
+  function calculateProteinMass(rnaSequence) {
+    if (!rnaSequence) return 0;
+    
+    // RNA 시퀀스를 아미노산으로 변환
+    const aminoSequence = convertRnaToAminoAcids(rnaSequence);
+    if (!aminoSequence) return 0;
+    
+    let filteredNcAA = Object.fromEntries(
+      Object.entries(fullNcAA).filter(([key, value]) => value !== null)
+    );
+
+    return aminoSequence.split('').reduce((sum, char) => {
+      if (selectedMonoisotopicAminos[char]) {
+        return sum + selectedMonoisotopicAminos[char];
+      } else if (filteredNcAA[char]) {
+        return sum + parseFloat(filteredNcAA[char].monoisotopicWeight);
+      }
+      return sum;
+    }, 0);
+  }
+
+  $: proteinMass = calculateProteinMass(proteinSequence);
+  $: massWarning = proteinSequence && detectedMass && Math.abs(proteinMass - detectedMass) > (detectedMass * 0.5);
 </script>
 
 <div class="container mt-5">
@@ -176,6 +252,11 @@
       on:input={handleknownSequenceInput}
     />
   </div>
+
+  <InitialRnaInput 
+    bind:value={proteinSequence} 
+    on:input={(e) => proteinSequence = e.detail.value}
+  />
 
   <div class="mb-3 row">
 	<div class="col-md-6">

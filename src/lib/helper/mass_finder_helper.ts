@@ -3,7 +3,7 @@ import { AminoModel } from '../model/AminoModel';
 import type { IonType, FormyType } from '../../type/Types';
 
 import {calculateSimilarity, sortAmino, removeDuplicates, removeSingleFSequences } from './mass_util';
-import { getIonWeight } from './amino_mapper';
+import { getIonWeight, codonTableRtoS } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트 모노이소토픽 무게
 let dataMap: { [key: string]: number } = {};
@@ -41,11 +41,12 @@ export class MassFinderHelper {
     // [fomyType] : 포밀레이스가 들어가는지에 대한 값, 포밀레이스는 항상 결과물의 제일 앞에 붙음
     // [ionType] : 이온이 들어가는지에 대한 값
     // [aminoMap] : 계산에 사용되는 아미노산의 모음
+    // [proteinSequence] : 초기 솔루션으로 사용할 단백질/RNA 시퀀스 (선택사항)
     // 최종적으로 AminoModel의 리스트를 리턴함
-    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }): AminoModel[] {
+    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string): AminoModel[] {
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
-        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap)
+        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence)
             .map(e => new AminoModel({ 
                 ...e, 
                 weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'),
@@ -55,7 +56,7 @@ export class MassFinderHelper {
     }
 
     /// calcByIonType 함수에서 이온값에따라 알아서 구분되어 호출되는 함수
-    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }): AminoModel[] {
+    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string): AminoModel[] {
         this.formyType = fomyType;
         dataMap = { ...aminoMap };
         moleMap = { ...molecularMap };
@@ -66,7 +67,7 @@ export class MassFinderHelper {
         const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
         for (let i = minRange; i < maxRange; i++) {
             const addWeight = this.getWaterWeight(i);
-            let solutions = this.calcByFType(this.formyType, targetMass + addWeight);
+            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, proteinSequence);
             solutions = removeDuplicates(solutions);
             solutions = removeSingleFSequences(solutions);
             bestSolutions = bestSolutions.concat(solutions);
@@ -85,27 +86,27 @@ export class MassFinderHelper {
 
     // calc 함수에서 호출되는 함수
     // FormyType 값에 따라 솔루션을 각각 구해와서 전달하는 역할을 한다.
-    static calcByFType(fType: FormyType, targetMass: number): AminoModel[] {
+    static calcByFType(fType: FormyType, targetMass: number, proteinSequence?: string): AminoModel[] {
         const bestSolutions: AminoModel[] = [];
         for (let i = 0; i < saIterations; i++) {
             switch (fType) {
                 case 'no': // 포밀레이스 없으면 무게 안빼고 계산해도됨
-                    const solutionNo = this.simulatedAnnealing(targetMass);
+                    const solutionNo = this.simulatedAnnealing(targetMass, proteinSequence);
                     const seqsN = Object.keys(solutionNo)[0];
                     const weightN = this.getMonoisotopicWeightSum(seqsN);
                     const molecularWeightN = this.getMolecularWeightSum(seqsN);
                     bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
-                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight);
+                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, proteinSequence);
                     const seqsY = `f${Object.keys(solutionYes)[0]}`;
                     const weightY = this.getMonoisotopicWeightSum(seqsY);
                     const molecularWeightY = this.getMolecularWeightSum(seqsY);
                     bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: weightY, molecularWeight: molecularWeightY }));
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
-                    const solutionUnknown1 = this.simulatedAnnealing(targetMass);
-                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight);
+                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, proteinSequence);
+                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, proteinSequence);
                     const seqsU1 = Object.keys(solutionUnknown1)[0];
                     const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
                     const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
@@ -121,10 +122,10 @@ export class MassFinderHelper {
     }
 
     /// 핵심로직으로 랜덤한 값과 그 랜던값에서 조금 바꾼 다른 값을 계속 비교해 나가면서 최적의 해를 찾음
-    static simulatedAnnealing(targetMass: number): { [key: string]: number } {
+    static simulatedAnnealing(targetMass: number, proteinSequence?: string): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
-        let currentSolution = this.randomSolution(targetMass);
+        let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, targetMass) : this.randomSolution(targetMass);
         let currentEnergy = this.evaluate(currentSolution, targetMass);
         // 1차 비교군을 베스트로지정해놓음
         let bestSolution = [...currentSolution];
@@ -166,6 +167,59 @@ export class MassFinderHelper {
             solution.push(aminoAcid);
             mass += aminoAcidMass;
         }
+        return solution;
+    }
+
+    // RNA 시퀀스를 아미노산으로 변환하는 함수
+    static convertRnaToAminoAcids(rnaSequence: string): string {
+        if (!rnaSequence) return '';
+        
+        // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
+        const codons = rnaSequence.match(/.{1,3}/g) || [];
+        let aminoSequence = '';
+        
+        for (const codon of codons) {
+            if (codon.length === 3) {
+                const amino = codonTableRtoS[codon];
+                if (amino && amino !== '[Stop]') {
+                    aminoSequence += amino;
+                } else if (amino === '[Stop]') {
+                    break; // Stop 코돈을 만나면 중단
+                }
+            }
+        }
+        
+        return aminoSequence;
+    }
+
+    // 단백질/RNA 시퀀스를 기반으로 초기 솔루션을 생성하는 함수
+    static proteinBasedSolution(inputSequence: string, targetMass: number): string[] {
+        // RNA 시퀀스인지 확인 (A, U, G, C로만 구성되고 3의 배수 길이)
+        const isRnaSequence = /^[AUGC]+$/.test(inputSequence) && inputSequence.length % 3 === 0;
+        
+        // RNA 시퀀스면 아미노산으로 변환
+        const aminoSequence = isRnaSequence ? this.convertRnaToAminoAcids(inputSequence) : inputSequence;
+        
+        const solution: string[] = aminoSequence.split('');
+        let currentMass = solution.reduce((sum, amino) => sum + (dataMap[amino] || 0), 0);
+        
+        // 목표 질량보다 작으면 아미노산 추가
+        while (currentMass < targetMass) {
+            const aminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+            const aminoAcidMass = dataMap[aminoAcid];
+            if (currentMass + aminoAcidMass > targetMass) break;
+            solution.push(aminoAcid);
+            currentMass += aminoAcidMass;
+        }
+        
+        // 목표 질량보다 크면 아미노산 제거 (단, 원본 시퀀스는 최대한 보존)
+        while (currentMass > targetMass && solution.length > aminoSequence.length) {
+            const removedAmino = solution.pop();
+            if (removedAmino) {
+                currentMass -= dataMap[removedAmino] || 0;
+            }
+        }
+        
         return solution;
     }
 

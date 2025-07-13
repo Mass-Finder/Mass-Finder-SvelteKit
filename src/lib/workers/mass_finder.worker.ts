@@ -4,6 +4,7 @@ self.onmessage = (e) => {
   const { 
     detectedMass, 
     knownSequence, 
+    proteinSequence,
     formylation, 
     adduct, 
     monoisotopicMap, 
@@ -17,7 +18,8 @@ self.onmessage = (e) => {
       formylation,
       adduct,
       monoisotopicMap,
-      molecularMap
+      molecularMap,
+      proteinSequence
     );
     
     self.postMessage({ type: 'success', solutions });
