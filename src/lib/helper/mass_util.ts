@@ -9,103 +9,32 @@ export function calculateSimilarity(a: number, b: number): number {
     return similarity < 0 ? 0 : similarity;
 }
 
-/// 시퀀스 유사도 계산 함수
-export function calculateSequenceSimilarity(sequence1: string, sequence2: string): number {
-    if (!sequence1 || !sequence2) return 0;
+/// 시퀀스 유사도 계산 함수 (단순한 포함도 기반)
+export function calculateSequenceSimilarity(resultSequence: string, referenceSequence: string): number {
+    if (!resultSequence || !referenceSequence) return 0;
     
-    // 아미노산 조성 비교 (각 아미노산의 빈도)
-    const composition1 = getAminoAcidComposition(sequence1);
-    const composition2 = getAminoAcidComposition(sequence2);
+    // 포밀화 제거
+    const cleanResult = resultSequence.replace(/^f/, '');
+    const cleanReference = referenceSequence.replace(/^f/, '');
     
-    // 조성 유사도 계산 (0-100%)
-    const compositionSimilarity = calculateCompositionSimilarity(composition1, composition2);
+    if (!cleanResult || !cleanReference) return 0;
     
-    // 공통 부분 서열 유사도 계산 (0-100%)
-    const subsequenceSimilarity = calculateSubsequenceSimilarity(sequence1, sequence2);
+    // 참조 시퀀스의 각 아미노산이 결과 시퀀스에 포함되어 있는지 확인
+    let matchedCount = 0;
     
-    // 길이 유사도 계산 (0-100%)
-    const lengthSimilarity = calculateLengthSimilarity(sequence1.length, sequence2.length);
-    
-    // 가중 평균으로 전체 유사도 계산
-    // 조성 40%, 부분서열 40%, 길이 20%
-    const overallSimilarity = (
-        compositionSimilarity * 0.4 +
-        subsequenceSimilarity * 0.4 +
-        lengthSimilarity * 0.2
-    );
-    
-    return Math.max(0, Math.min(100, overallSimilarity));
-}
-
-// 아미노산 조성 분석
-function getAminoAcidComposition(sequence: string): { [key: string]: number } {
-    const composition: { [key: string]: number } = {};
-    const cleanSeq = sequence.replace(/^f/, ''); // 포밀화 제거
-    
-    for (const amino of cleanSeq) {
-        composition[amino] = (composition[amino] || 0) + 1;
-    }
-    
-    return composition;
-}
-
-// 조성 유사도 계산
-function calculateCompositionSimilarity(comp1: { [key: string]: number }, comp2: { [key: string]: number }): number {
-    const allAminos = new Set([...Object.keys(comp1), ...Object.keys(comp2)]);
-    let totalDistance = 0;
-    let maxPossibleDistance = 0;
-    
-    for (const amino of allAminos) {
-        const count1 = comp1[amino] || 0;
-        const count2 = comp2[amino] || 0;
-        totalDistance += Math.abs(count1 - count2);
-        maxPossibleDistance += Math.max(count1, count2);
-    }
-    
-    if (maxPossibleDistance === 0) return 100;
-    return (1 - totalDistance / maxPossibleDistance) * 100;
-}
-
-// 부분 서열 유사도 계산 (LCS 기반)
-function calculateSubsequenceSimilarity(seq1: string, seq2: string): number {
-    const cleanSeq1 = seq1.replace(/^f/, '');
-    const cleanSeq2 = seq2.replace(/^f/, '');
-    
-    if (cleanSeq1.length === 0 || cleanSeq2.length === 0) return 0;
-    
-    const lcsLength = longestCommonSubsequence(cleanSeq1, cleanSeq2);
-    const maxLength = Math.max(cleanSeq1.length, cleanSeq2.length);
-    
-    return (lcsLength / maxLength) * 100;
-}
-
-// 최장 공통 부분 서열 길이 계산
-function longestCommonSubsequence(str1: string, str2: string): number {
-    const m = str1.length;
-    const n = str2.length;
-    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
-    
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (str1[i - 1] === str2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-            }
+    for (const amino of cleanReference) {
+        if (cleanResult.includes(amino)) {
+            matchedCount++;
         }
     }
     
-    return dp[m][n];
+    // 참조 시퀀스 기준으로 퍼센트 계산
+    const similarity = (matchedCount / cleanReference.length) * 100;
+    
+    return Math.round(similarity * 10) / 10; // 소수점 1자리로 반올림
 }
 
-// 길이 유사도 계산
-function calculateLengthSimilarity(length1: number, length2: number): number {
-    if (length1 === 0 && length2 === 0) return 100;
-    if (length1 === 0 || length2 === 0) return 0;
-    
-    const ratio = Math.min(length1, length2) / Math.max(length1, length2);
-    return ratio * 100;
-}
+
 
 // 기준 크기로 정렬 (시퀀스 유사도 고려)
 export function sortAmino(list: AminoModel[], compareValue: number, referenceSequence?: string): AminoModel[] {
@@ -139,12 +68,36 @@ export function sortAmino(list: AminoModel[], compareValue: number, referenceSeq
     });
 }
 
-// 리스트 중복제거
+// 리스트 중복제거 (강화된 버전)
 export function removeDuplicates(inputList: AminoModel[]): AminoModel[] {
     const uniqueMap: { [key: string]: AminoModel } = {};
+    
     inputList.forEach(aminoModel => {
-        uniqueMap[aminoModel.code ?? ''] = aminoModel;
+        const key = aminoModel.code ?? '';
+        
+        if (!uniqueMap[key]) {
+            // 새로운 시퀀스인 경우 추가
+            uniqueMap[key] = aminoModel;
+        } else {
+            // 동일한 시퀀스가 이미 존재하는 경우
+            const existing = uniqueMap[key];
+            const current = aminoModel;
+            
+            // 더 나은 조건의 것을 선택 (분자량 정확도 우선, 그 다음 시퀀스 유사도)
+            const existingSimilarity = existing.similarity ?? 0;
+            const currentSimilarity = current.similarity ?? 0;
+            
+            const existingSeqSimilarity = existing.sequenceSimilarity ?? 0;
+            const currentSeqSimilarity = current.sequenceSimilarity ?? 0;
+            
+            // 분자량 유사도가 더 높거나, 같다면 시퀀스 유사도가 더 높은 것을 선택
+            if (currentSimilarity > existingSimilarity || 
+                (currentSimilarity === existingSimilarity && currentSeqSimilarity > existingSeqSimilarity)) {
+                uniqueMap[key] = current;
+            }
+        }
     });
+    
     return Object.values(uniqueMap);
 }
 
@@ -154,4 +107,116 @@ export function removeSingleFSequences(inputList: AminoModel[]): AminoModel[] {
         const seq = aminoModel.code ?? '';
         return seq !== 'f';
     });
+}
+
+// Known Sequence와 RNA 변환 시퀀스 간의 중복 처리 함수
+export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedSequence: string): {
+    finalKnownSequence: string,
+    remainingRnaSequence: string,
+    overlapInfo: {
+        hasOverlap: boolean,
+        overlapLength: number,
+        overlapPosition: number
+    }
+} {
+    if (!knownSequence || !rnaConvertedSequence) {
+        return {
+            finalKnownSequence: knownSequence,
+            remainingRnaSequence: rnaConvertedSequence,
+            overlapInfo: {
+                hasOverlap: false,
+                overlapLength: 0,
+                overlapPosition: -1
+            }
+        };
+    }
+
+    // Known Sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
+    const overlapPosition = rnaConvertedSequence.indexOf(knownSequence);
+    
+    if (overlapPosition !== -1) {
+        // 중복이 있는 경우: Known Sequence를 제거하고 나머지 RNA 시퀀스 반환
+        const beforeKnown = rnaConvertedSequence.substring(0, overlapPosition);
+        const afterKnown = rnaConvertedSequence.substring(overlapPosition + knownSequence.length);
+        const remainingRnaSequence = beforeKnown + afterKnown;
+        
+        return {
+            finalKnownSequence: knownSequence,
+            remainingRnaSequence: remainingRnaSequence,
+            overlapInfo: {
+                hasOverlap: true,
+                overlapLength: knownSequence.length,
+                overlapPosition: overlapPosition
+            }
+        };
+    }
+
+    // RNA 변환 시퀀스가 Known Sequence에 포함되어 있는지 확인
+    const rnaInKnownPosition = knownSequence.indexOf(rnaConvertedSequence);
+    
+    if (rnaInKnownPosition !== -1) {
+        // RNA 시퀀스가 Known Sequence에 포함된 경우: Known Sequence만 사용
+        return {
+            finalKnownSequence: knownSequence,
+            remainingRnaSequence: '',
+            overlapInfo: {
+                hasOverlap: true,
+                overlapLength: rnaConvertedSequence.length,
+                overlapPosition: rnaInKnownPosition
+            }
+        };
+    }
+
+    // 부분 중복 확인 (Known Sequence의 끝과 RNA 시퀀스의 시작이 겹치는 경우)
+    for (let i = 1; i <= Math.min(knownSequence.length, rnaConvertedSequence.length); i++) {
+        const knownSuffix = knownSequence.substring(knownSequence.length - i);
+        const rnaPrefix = rnaConvertedSequence.substring(0, i);
+        
+        if (knownSuffix === rnaPrefix) {
+            // 부분 중복 발견: 중복 부분 제거
+            const remainingRnaSequence = rnaConvertedSequence.substring(i);
+            
+            return {
+                finalKnownSequence: knownSequence,
+                remainingRnaSequence: remainingRnaSequence,
+                overlapInfo: {
+                    hasOverlap: true,
+                    overlapLength: i,
+                    overlapPosition: knownSequence.length - i
+                }
+            };
+        }
+    }
+
+    // RNA 시퀀스의 끝과 Known Sequence의 시작이 겹치는 경우
+    for (let i = 1; i <= Math.min(knownSequence.length, rnaConvertedSequence.length); i++) {
+        const rnaSuffix = rnaConvertedSequence.substring(rnaConvertedSequence.length - i);
+        const knownPrefix = knownSequence.substring(0, i);
+        
+        if (rnaSuffix === knownPrefix) {
+            // 부분 중복 발견: 중복 부분 제거
+            const remainingRnaSequence = rnaConvertedSequence.substring(0, rnaConvertedSequence.length - i);
+            
+            return {
+                finalKnownSequence: knownSequence,
+                remainingRnaSequence: remainingRnaSequence,
+                overlapInfo: {
+                    hasOverlap: true,
+                    overlapLength: i,
+                    overlapPosition: 0
+                }
+            };
+        }
+    }
+
+    // 중복이 없는 경우: 둘 다 그대로 사용
+    return {
+        finalKnownSequence: knownSequence,
+        remainingRnaSequence: rnaConvertedSequence,
+        overlapInfo: {
+            hasOverlap: false,
+            overlapLength: 0,
+            overlapPosition: -1
+        }
+    };
 }

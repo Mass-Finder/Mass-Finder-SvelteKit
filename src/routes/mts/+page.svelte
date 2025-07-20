@@ -233,6 +233,54 @@
   $: massWarning = proteinSequence && detectedMass && Math.abs(proteinMass - detectedMass) > (detectedMass * 0.5);
   $: convertedAminoSequence = proteinSequence ? convertRnaToAminoAcids(proteinSequence) : '';
   $: hasReferenceSequence = proteinSequence && proteinSequence.trim() !== '';
+  $: overlapInfo = checkSequenceOverlap(knownSequence, convertedAminoSequence);
+  
+  function checkSequenceOverlap(known, converted) {
+    if (!known || !converted) {
+      return { hasOverlap: false, message: '' };
+    }
+    
+    // Known Sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
+    if (converted.indexOf(known) !== -1) {
+      return {
+        hasOverlap: true,
+        message: `Known Sequence "${known}" is already included in the RNA sequence. Duplicate portion will be automatically removed.`
+      };
+    }
+    
+    // RNA 변환 시퀀스가 Known Sequence에 포함되어 있는지 확인
+    if (known.indexOf(converted) !== -1) {
+      return {
+        hasOverlap: true,
+        message: `RNA sequence is already included in Known Sequence "${known}". Only Known Sequence will be used.`
+      };
+    }
+    
+    // 부분 중복 확인
+    for (let i = 1; i <= Math.min(known.length, converted.length); i++) {
+      const knownSuffix = known.substring(known.length - i);
+      const convertedPrefix = converted.substring(0, i);
+      
+      if (knownSuffix === convertedPrefix) {
+        return {
+          hasOverlap: true,
+          message: `Partial overlap detected: "${knownSuffix}" appears at the end of Known Sequence and start of RNA sequence. Duplicate will be automatically removed.`
+        };
+      }
+      
+      const convertedSuffix = converted.substring(converted.length - i);
+      const knownPrefix = known.substring(0, i);
+      
+      if (convertedSuffix === knownPrefix) {
+        return {
+          hasOverlap: true,
+          message: `Partial overlap detected: "${convertedSuffix}" appears at the end of RNA sequence and start of Known Sequence. Duplicate will be automatically removed.`
+        };
+      }
+    }
+    
+    return { hasOverlap: false, message: '' };
+  }
   
   // maxResultCount가 변경될 때마다 결과를 다시 필터링
   $: if (allSolutions.length > 0) {
@@ -291,6 +339,22 @@
   <div class="mb-3">
     <NcAASelector on:changeNcAA={handleNcAAChange} />
   </div>
+
+  <!-- 시퀀스 중복 경고 -->
+  {#if overlapInfo.hasOverlap}
+    <div class="alert alert-warning mb-3">
+      <div class="d-flex align-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-triangle me-2" viewBox="0 0 16 16">
+          <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-2.008 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"/>
+          <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z"/>
+        </svg>
+        <strong>Sequence Overlap Detected</strong>
+      </div>
+      <small class="text-muted mt-1 d-block">
+        {overlapInfo.message}
+      </small>
+    </div>
+  {/if}
 
   <!-- 참조 시퀀스 정보 표시 -->
   {#if hasReferenceSequence}
