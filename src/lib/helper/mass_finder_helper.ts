@@ -2,7 +2,7 @@ import { AminoModel } from '../model/AminoModel';
 
 import type { IonType, FormyType } from '../../type/Types';
 
-import {calculateSimilarity, sortAmino, removeDuplicates, removeSingleFSequences } from './mass_util';
+import {calculateSimilarity, calculateSequenceSimilarity, sortAmino, removeDuplicates, removeSingleFSequences } from './mass_util';
 import { getIonWeight, codonTableRtoS } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트 모노이소토픽 무게
@@ -10,6 +10,9 @@ let dataMap: { [key: string]: number } = {};
 
 // Molecular Weight 전용 Map
 let moleMap: { [key: string]: number } = {};
+
+// 참조 시퀀스 (시퀀스 유사도 계산용)
+let referenceSequence: string = '';
 
 // 시뮬레이티드 어닐링 반복 횟수
 const saIterations = 100;
@@ -60,6 +63,15 @@ export class MassFinderHelper {
         this.formyType = fomyType;
         dataMap = { ...aminoMap };
         moleMap = { ...molecularMap };
+        
+        // 참조 시퀀스 설정 (RNA 시퀀스인 경우 아미노산으로 변환)
+        if (proteinSequence) {
+            const isRnaSequence = /^[AUGC]+$/.test(proteinSequence) && proteinSequence.length % 3 === 0;
+            referenceSequence = isRnaSequence ? this.convertRnaToAminoAcids(proteinSequence) : proteinSequence;
+        } else {
+            referenceSequence = '';
+        }
+        
         let bestSolutions: AminoModel[] = [];
         const initAminoWeight = this.getInitAminoWeight(initAminos);
         targetMass -= initAminoWeight.monoisotopicWeight;
@@ -73,9 +85,10 @@ export class MassFinderHelper {
             bestSolutions = bestSolutions.concat(solutions);
         }
 
-        bestSolutions = sortAmino(bestSolutions, targetMass).slice(0, MassFinderHelper.topSolutionsCount);
+        bestSolutions = sortAmino(bestSolutions, targetMass, referenceSequence).slice(0, MassFinderHelper.topSolutionsCount);
         bestSolutions = this.setInitAminoToResult(bestSolutions, initAminos, initAminoWeight);
         bestSolutions = this.setMetaData(bestSolutions, this.formyType, ionType, initAminos);
+        bestSolutions = this.setSequenceSimilarity(bestSolutions);
 
         bestSolutions.forEach(solution => {
             console.log(`combins : ${solution.code}, result : ${solution.weight}`);
@@ -223,25 +236,72 @@ export class MassFinderHelper {
         return solution;
     }
 
-    // 기존 선택된 조합에서 아미노산을 새걸로 갈아치워서 새로운 조합 생성
+    // 기존 선택된 조합에서 아미노산을 새걸로 갈아치워서 새로운 조합 생성 (참조 시퀀스 고려)
     static neighborSolution(currentSolution: string[], targetMass: number): string[] {
         const newSolution = [...currentSolution];
         if (newSolution.length > 0) {
             const index = Math.floor(Math.random() * newSolution.length);
-            const newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+            let newAminoAcid: string;
+            
+            // 참조 시퀀스가 있는 경우 참조 시퀀스의 아미노산을 우선적으로 선택
+            if (referenceSequence) {
+                // 70% 확률로 참조 시퀀스에서 아미노산 선택, 30% 확률로 랜덤 선택
+                if (Math.random() < 0.7 && referenceSequence.length > 0) {
+                    // 참조 시퀀스에서 무작위로 아미노산 선택
+                    const refIndex = Math.floor(Math.random() * referenceSequence.length);
+                    const candidateAmino = referenceSequence[refIndex];
+                    
+                    // 선택된 아미노산이 사용 가능한 아미노산 목록에 있는지 확인
+                    if (dataMap[candidateAmino]) {
+                        newAminoAcid = candidateAmino;
+                    } else {
+                        // 사용 불가능하면 랜덤 선택
+                        newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+                    }
+                } else {
+                    // 랜덤 선택
+                    newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+                }
+            } else {
+                // 참조 시퀀스가 없는 경우 기존 방식대로 랜덤 선택
+                newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+            }
+            
             newSolution[index] = newAminoAcid;
 
-            while (this.evaluate(newSolution, targetMass) > targetMass) {
+            // 질량이 목표값을 초과하는 경우 아미노산 제거
+            const currentMass = newSolution.reduce((sum, amino) => sum + (dataMap[amino] ?? 0), 0);
+            while (currentMass > targetMass && newSolution.length > 0) {
                 newSolution.splice(Math.floor(Math.random() * newSolution.length), 1);
+                const updatedMass = newSolution.reduce((sum, amino) => sum + (dataMap[amino] ?? 0), 0);
+                if (updatedMass <= targetMass) break;
             }
         }
         return newSolution;
     }
 
-    // 도출된 솔루션의 전체 질량과 목표값의 차이 도출
+    // 도출된 솔루션의 전체 질량과 목표값의 차이 도출 (시퀀스 유사도 고려)
     static evaluate(solution: string[], targetMass: number): number {
         const mass = solution.reduce((sum, gene) => sum + (dataMap[gene] ?? 0), 0);
-        return Math.abs(targetMass - mass);
+        const massDifference = Math.abs(targetMass - mass);
+        
+        // 참조 시퀀스가 있는 경우 시퀀스 유사도도 고려
+        if (referenceSequence) {
+            const currentSequence = solution.join('');
+            const sequenceSimilarity = calculateSequenceSimilarity(currentSequence, referenceSequence);
+            
+            // 시퀀스 유사도를 역수로 변환 (높을수록 좋음 -> 낮을수록 좋음)
+            const sequenceDifference = (100 - sequenceSimilarity) / 100;
+            
+            // 분자량 차이를 정규화 (큰 값을 방지하기 위해)
+            const normalizedMassDiff = massDifference / targetMass;
+            
+            // 복합 평가 점수 계산 (분자량 80%, 시퀀스 유사도 20%)
+            return normalizedMassDiff * 0.8 + sequenceDifference * 0.2;
+        }
+        
+        // 참조 시퀀스가 없는 경우 기존 방식대로 분자량 차이만 고려
+        return massDifference;
     }
 
     // newEnergy < currentEnergy 이면 합격
@@ -329,5 +389,21 @@ export class MassFinderHelper {
     /// FormyType, IonType, essential seq 붙여주는 부분
     static setMetaData(bestSolutions: AminoModel[], formyType: FormyType, ionType: IonType, essentialSeq: string): AminoModel[] {
         return bestSolutions.map(e => new AminoModel({ ...e, formyType, ionType, essentialSeq }));
+    }
+
+    /// 참조 시퀀스가 있는 경우 시퀀스 유사도 계산하여 추가
+    static setSequenceSimilarity(bestSolutions: AminoModel[]): AminoModel[] {
+        if (!referenceSequence) {
+            // 참조 시퀀스가 없는 경우 그대로 반환
+            return bestSolutions;
+        }
+
+        return bestSolutions.map(solution => {
+            const sequenceSimilarity = calculateSequenceSimilarity(solution.code ?? '', referenceSequence);
+            return new AminoModel({ 
+                ...solution, 
+                sequenceSimilarity: Math.round(sequenceSimilarity * 100) / 100 // 소수점 2자리로 반올림
+            });
+        });
     }
 }

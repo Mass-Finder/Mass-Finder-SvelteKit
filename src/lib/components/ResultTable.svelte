@@ -4,6 +4,7 @@
   export let bestSolutions = [];
   export let detectedMass;
   export let fullNcAA;
+  export let hasReferenceSequence = false;
 
   function calculateDifference(target, value) {
     return Math.abs(target - value);
@@ -31,6 +32,9 @@
         <th scope="col">Sequence</th>
         <th scope="col">Adduct</th>
         <th scope="col">Difference</th>
+        {#if hasReferenceSequence}
+          <th scope="col">Seq. Similarity (%)</th>
+        {/if}
       </tr>
     </thead>
     <tbody>
@@ -46,6 +50,17 @@
           </td>
           <td>{adductPrintName(solution.ionType)}</td>
           <td>{calculateDifference(detectedMass, solution.weight).toFixed(3)}</td>
+          {#if hasReferenceSequence}
+            <td>
+              {#if solution.sequenceSimilarity !== undefined}
+                <span class="badge" style="background-color: {solution.sequenceSimilarity > 70 ? '#28a745' : solution.sequenceSimilarity > 40 ? '#ffc107' : '#dc3545'}; color: white;">
+                  {solution.sequenceSimilarity.toFixed(1)}%
+                </span>
+              {:else}
+                <span class="text-muted">-</span>
+              {/if}
+            </td>
+          {/if}
         </tr>
       {/each}
     </tbody>

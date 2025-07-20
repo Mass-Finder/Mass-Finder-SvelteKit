@@ -10,6 +10,7 @@ export class AminoModel {
     ionType?: IonType;
     essentialSeq?: string;
     similarity?: number;
+    sequenceSimilarity?: number;
 
     constructor(data: Partial<AminoModel> = {}) {
         this.code = data.code;
@@ -21,6 +22,7 @@ export class AminoModel {
         this.ionType = data.ionType;
         this.essentialSeq = data.essentialSeq;
         this.similarity = data.similarity;
+        this.sequenceSimilarity = data.sequenceSimilarity;
     }
 
     static fromJson(json: { [key: string]: any }): AminoModel {
@@ -33,7 +35,8 @@ export class AminoModel {
             formyType: json['formyType'] as FormyType,
             ionType: json['ionType'] as IonType,
             essentialSeq: json['essentialSeq'],
-            similarity: json['similarity']
+            similarity: json['similarity'],
+            sequenceSimilarity: json['sequenceSimilarity']
         });
     }
 
@@ -47,7 +50,8 @@ export class AminoModel {
             formyType: this.formyType,
             ionType: this.ionType,
             essentialSeq: this.essentialSeq,
-            similarity: this.similarity
+            similarity: this.similarity,
+            sequenceSimilarity: this.sequenceSimilarity
         };
     }
 }

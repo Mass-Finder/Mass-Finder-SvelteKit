@@ -231,6 +231,8 @@
 
   $: proteinMass = calculateProteinMass(proteinSequence);
   $: massWarning = proteinSequence && detectedMass && Math.abs(proteinMass - detectedMass) > (detectedMass * 0.5);
+  $: convertedAminoSequence = proteinSequence ? convertRnaToAminoAcids(proteinSequence) : '';
+  $: hasReferenceSequence = proteinSequence && proteinSequence.trim() !== '';
   
   // maxResultCount가 변경될 때마다 결과를 다시 필터링
   $: if (allSolutions.length > 0) {
@@ -290,9 +292,27 @@
     <NcAASelector on:changeNcAA={handleNcAAChange} />
   </div>
 
+  <!-- 참조 시퀀스 정보 표시 -->
+  {#if hasReferenceSequence}
+    <div class="alert alert-info mb-3">
+      <div class="d-flex align-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle me-2" viewBox="0 0 16 16">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+        </svg>
+        <strong>Reference Sequence Active</strong>
+      </div>
+      <small class="text-muted mt-1 d-block">
+        The algorithm will prioritize finding sequences similar to: <span class="fw-bold">{convertedAminoSequence}</span>
+        <br>
+        Results will be optimized for both mass accuracy and sequence similarity.
+      </small>
+    </div>
+  {/if}
+
   <!-- 계산 버튼 -->
   <button type="button" class="btn btn-primary w-100" on:click={handleCalculate}>
-    Calculate!
+    Calculate{hasReferenceSequence ? ' with Reference Sequence' : ''}!
   </button>
   
   <!-- 최대 결과 개수 선택 -->
@@ -312,6 +332,6 @@
   </div>
 
   {#if detectedMass !== null && bestSolutions.length > 0}
-    <ResultTable {bestSolutions} {detectedMass} {fullNcAA}/>
+    <ResultTable {bestSolutions} {detectedMass} {fullNcAA} {hasReferenceSequence}/>
   {/if}
 </div>
