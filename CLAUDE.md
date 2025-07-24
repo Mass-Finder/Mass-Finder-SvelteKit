@@ -1,88 +1,119 @@
-# CLAUDE.md - Mass Finder Project Context
+# CLAUDE.md
 
-## 프로젝트 개요
-Mass Finder는 생화학 연구자를 위한 분자량 분석 웹 애플리케이션입니다. 분자량과 아미노산 시퀀스 간의 상호 변환을 제공하는 전문 도구로, 시뮬레이티드 어닐링 알고리즘과 웹 워커를 활용한 고성능 계산을 지원합니다.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 핵심 기능
-- **MTS (Mass to Sequence)**: 감지된 분자량으로부터 가능한 아미노산 시퀀스 예측
-- **STM (Sequence to Mass)**: RNA 시퀀스를 아미노산 시퀀스로 변환하고 분자량 계산
-- **Chemical Drawing**: ChemDoodle를 이용한 화학 구조 그리기 및 분자량 계산
-- **Manual**: 사용법 안내 페이지
+## Project Overview
 
-## 기술 스택
-- **Frontend**: SvelteKit + TypeScript + Bootstrap 5
-- **Chemistry**: ChemDoodle Web Components
-- **Algorithm**: 시뮬레이티드 어닐링, 웹 워커 비동기 처리
-- **Build**: Vite, 정적 사이트 생성
+Mass Finder is a specialized biochemical analysis web application for molecular weight and amino acid sequence interconversion. It serves biochemical researchers with high-performance calculations using simulated annealing algorithms and web workers.
 
-## 프로젝트 구조
-```
-src/
-├── lib/
-│   ├── components/     # UI 컴포넌트 (Selector, Table 등)
-│   ├── helper/         # 비즈니스 로직 (MassFinderHelper, StmHelper)
-│   ├── model/          # 데이터 모델 (AminoModel, Atom)
-│   ├── stores/         # 상태 관리
-│   └── workers/        # 웹 워커 (mass_finder.worker.ts)
-├── routes/             # 페이지 라우팅
-├── type/               # TypeScript 타입 정의
-└── app.html           # 메인 HTML 템플릿
-```
+## Core Features & Routes
 
-## 현재 상태 (약 80% 완성)
-### ✅ 완전 구현된 기능
-- MTS/STM 계산 엔진
-- ChemDoodle 화학 구조 그리기
-- 웹 워커 비동기 처리
-- 기본 UI 컴포넌트들
+- **MTS (Mass to Sequence)** (`/mts`): Predicts amino acid sequences from detected molecular masses using simulated annealing
+- **STM (Sequence to Mass)** (`/stm`): Converts RNA sequences to amino acid sequences with mass calculations
+- **Chemical Drawing** (`/draw`): ChemDoodle-based chemical structure drawing and mass calculation
+- **Manual** (`/manual`): Usage guide documentation
 
-### ⚠️ 개선 필요 영역
-- Manual 페이지 콘텐츠 부족
-- 테스트 코드 0% 커버리지
-- 성능 최적화 필요
-- 모바일 UI/UX 개선
+## Development Commands
 
-## 최근 주요 업데이트 (feat/input_origin 브랜치)
-- RNA 시퀀스 기반 초기값 설정 기능 구현
-- MTS 페이지 UI 개선 및 검증 로직 강화
-- 시뮬레이티드 어닐링 알고리즘 고도화
-
-## 개발 명령어
 ```bash
-npm run dev        # 개발 서버 실행
-npm run build      # 프로덕션 빌드
-npm run preview    # 빌드 미리보기
+npm run dev        # Development server (runs on port 8080)
+npm run build      # Production build for static deployment
+npm run preview    # Preview production build
 ```
 
-## 알려진 이슈
-- 시뮬레이티드 어닐링의 확률적 특성으로 인한 결과 변동
-- 매우 큰 분자량에 대한 계산 시간 증가
-- 모바일 환경에서의 입력 불편함
+## Technology Stack & Architecture
 
-## 즉시 실행 가능한 개선사항
-1. Manual 페이지 사용법 가이드 작성
-2. 입력 검증 및 오류 메시지 개선
-3. 계산 결과 내보내기 기능 (CSV/JSON)
-4. 성능 최적화 및 테스트 코드 추가
+- **Frontend**: SvelteKit with TypeScript, Bootstrap 5, Vite build system
+- **Chemistry**: ChemDoodle Web Components for molecular visualization
+- **Algorithms**: Simulated annealing optimization, recursive sequence generation with memoization
+- **Performance**: Web Workers for non-blocking calculations
+- **Deployment**: Static site generation with SPA fallback
 
-## 중요 파일 및 함수
-- `src/lib/helper/mass_finder_helper.ts`: MTS 계산 로직
-- `src/lib/helper/stm_helper.ts`: STM 변환 로직
-- `src/lib/workers/mass_finder.worker.ts`: 웹 워커 계산
-- `src/routes/mts/+page.svelte`: MTS 페이지 컴포넌트
-- `src/routes/stm/+page.svelte`: STM 페이지 컴포넌트
+## Key Architecture Components
 
-## 사용자 대상
-- 생화학 연구자
-- 분자생물학 연구자
-- 화학 분석 전문가
-- 학술 연구 목적의 사용자
+### Core Business Logic (`src/lib/helper/`)
 
-## 성공 지표
-- 정확한 분자량 계산 결과
-- 빠른 계산 처리 속도
-- 사용자 친화적인 인터페이스
-- 다양한 화학적 변형 지원
+**mass_finder_helper.ts** - MTS calculation engine:
+- Simulated annealing algorithm (temp: 10,000, cooling: 0.99, 100 iterations)
+- Fitness function: 80% mass accuracy + 20% sequence similarity
+- Multiple solution strategies: random, protein-based, neighbor generation
+- Ion type adjustments and overlap processing
 
----
-*이 문서는 Claude Code가 프로젝트를 이해하고 효과적으로 작업할 수 있도록 돕는 컨텍스트 정보입니다.*
+**stm_helper.ts** - STM conversion engine:
+- Recursive sequence generation with memoization
+- Biological phenomena modeling: ncAA incorporation, truncation, codon skipping
+- Disulfide bond formation (C-C pairing with -2.02 mass reduction)
+- Comprehensive codon table mapping (64 codons)
+
+**amino_mapper.ts** - Biochemical data repository:
+- Monoisotopic weights for 20 standard amino acids
+- 9 ion adduct types with mass calculations
+- RNA/DNA codon lookup tables
+- Centralized molecular weight constants
+
+**mass_util.ts** - Calculation utilities:
+- Mass accuracy and sequence similarity scoring
+- Multi-criteria sorting algorithms
+- Complex overlap resolution for RNA/protein sequences
+- Deduplication with quality-based selection
+
+### Web Worker Integration (`src/lib/workers/`)
+
+**mass_finder.worker.ts**: Handles CPU-intensive simulated annealing calculations in background threads to maintain UI responsiveness.
+
+### Component Architecture (`src/lib/components/`)
+
+- **Selectors**: AdductSelector, NcAASelector, FormylationSelector for biochemical parameter input
+- **Results**: ResultTable, MolecularItem for calculation output display  
+- **STM Components**: Specialized components in `stm/` subdirectory for sequence-to-mass workflows
+- **Modal**: Reusable modal component for dialogs
+
+## Development Patterns
+
+### State Management
+- Svelte stores in `src/stores/` for global state
+- Local component state for UI-specific data
+- Web worker communication for async calculations
+
+### Type Safety
+- Comprehensive TypeScript definitions in `src/type/`
+- ChemDoodle integration types
+- Biochemical data model types
+
+### Algorithm Configuration
+- Externalized parameters for simulated annealing tuning
+- Configurable scoring weights and thresholds
+- Extensible ion types and amino acid definitions
+
+## Key Files for Modifications
+
+- `src/lib/helper/mass_finder_helper.ts:simulatedAnnealing()` - Core MTS algorithm
+- `src/lib/helper/stm_helper.ts:generatePossibilities()` - STM recursive generation
+- `src/lib/helper/amino_mapper.ts` - Add new amino acids or ion types
+- `src/routes/*/+page.svelte` - Page-specific UI components
+- `src/lib/workers/mass_finder.worker.ts` - Background calculation logic
+
+## Performance Considerations
+
+- Web workers prevent UI blocking during intensive calculations
+- Memoization in recursive algorithms reduces computation overhead
+- Efficient data structures for large sequence space exploration
+- Configurable algorithm parameters for speed/accuracy tradeoffs
+
+## ChemDoodle Integration
+
+ChemDoodle Web Components are included via `/static/chem_doodle/` with:
+- Molecular structure drawing and editing
+- Chemical file format support (MOL, SDF, etc.)
+- 3D visualization capabilities
+- Mass calculation from drawn structures
+
+## Biochemical Domain Knowledge
+
+The application handles:
+- Standard 20 amino acids with monoisotopic masses
+- Non-canonical amino acids (ncAA) incorporation
+- Post-translational modifications (disulfide bonds)
+- Ion adduct formation (9 types: H+, Na+, K+, etc.)
+- RNA/DNA codon translation with biological accuracy
+- Mass spectrometry ion types and their mass shifts
