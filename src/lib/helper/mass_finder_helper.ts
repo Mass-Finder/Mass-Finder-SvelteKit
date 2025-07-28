@@ -52,8 +52,9 @@ export class MassFinderHelper {
         bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence)
             .map(e => new AminoModel({ 
                 ...e, 
-                weight: (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'),
-                similarity: calculateSimilarity(targetMass, (e.weight ?? 0) + getIonWeight(e.ionType ?? 'unknown'))
+                weight: (e.weight ?? 0) + getIonWeight(this.ionType),
+                molecularWeight: (e.molecularWeight ?? 0) + getIonWeight(this.ionType),
+                similarity: calculateSimilarity(targetMass, (e.weight ?? 0) + getIonWeight(this.ionType))
             }));
         return bestSolutions;
     }
