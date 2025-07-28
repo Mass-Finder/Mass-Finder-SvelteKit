@@ -374,8 +374,8 @@ export class MassFinderHelper {
             // 분자량 차이를 정규화 (큰 값을 방지하기 위해)
             const normalizedMassDiff = massDifference / targetMass;
             
-            // 복합 평가 점수 계산 (분자량 80%, 시퀀스 유사도 20%)
-            return normalizedMassDiff * 0.8 + sequenceDifference * 0.2;
+            // 복합 평가 점수 계산 (분자량 95%, 시퀀스 유사도 5%) - difference 값 우선시
+            return normalizedMassDiff * 0.95 + sequenceDifference * 0.05;
         }
         
         // 참조 시퀀스가 없는 경우 기존 방식대로 분자량 차이만 고려

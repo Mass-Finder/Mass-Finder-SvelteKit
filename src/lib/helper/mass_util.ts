@@ -70,9 +70,9 @@ export function sortAmino(list: AminoModel[], compareValue: number, referenceSeq
             const normalizedSeqA = (100 - seqSimilarityA) / 100;
             const normalizedSeqB = (100 - seqSimilarityB) / 100;
             
-            // 복합 점수 계산 (분자량 정확도 70%, 시퀀스 유사도 30%)
-            const scoreA = normalizedDiffA * 0.7 + normalizedSeqA * 0.3;
-            const scoreB = normalizedDiffB * 0.7 + normalizedSeqB * 0.3;
+            // 복합 점수 계산 (분자량 정확도 90%, 시퀀스 유사도 10%) - difference 값 우선시
+            const scoreA = normalizedDiffA * 0.9 + normalizedSeqA * 0.1;
+            const scoreB = normalizedDiffB * 0.9 + normalizedSeqB * 0.1;
             
             return scoreA - scoreB;
         }
