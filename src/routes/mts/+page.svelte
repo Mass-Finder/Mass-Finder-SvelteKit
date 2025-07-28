@@ -282,9 +282,65 @@
     return { hasOverlap: false, message: '' };
   }
   
-  // maxResultCount가 변경될 때마다 결과를 다시 필터링
+  // 참조 시퀀스와 유사하게 결과 시퀀스를 재배열하는 함수
+  function rearrangeSequenceToMatch(resultSequence, referenceSequence) {
+    if (!resultSequence || !referenceSequence) return resultSequence;
+    
+    // 포밀화 처리
+    const hasFormylation = resultSequence.startsWith('f');
+    const cleanResult = hasFormylation ? resultSequence.slice(1) : resultSequence;
+    const cleanReference = referenceSequence.replace(/^f/, '');
+    
+    if (!cleanResult || !cleanReference) return resultSequence;
+    
+    // 결과 시퀀스의 아미노산 개수 계산
+    const resultCount = {};
+    for (const amino of cleanResult) {
+      resultCount[amino] = (resultCount[amino] || 0) + 1;
+    }
+    
+    // 참조 시퀀스 순서를 따라 재배열
+    let rearranged = '';
+    const usedCount = {};
+    
+    // 1단계: 참조 시퀀스 순서대로 매칭되는 아미노산 배치
+    for (const refAmino of cleanReference) {
+      const used = usedCount[refAmino] || 0;
+      const available = resultCount[refAmino] || 0;
+      
+      if (used < available) {
+        rearranged += refAmino;
+        usedCount[refAmino] = used + 1;
+      }
+    }
+    
+    // 2단계: 참조 시퀀스에 없거나 남은 아미노산들을 뒤에 추가
+    for (const [amino, count] of Object.entries(resultCount)) {
+      const used = usedCount[amino] || 0;
+      const remaining = count - used;
+      
+      for (let i = 0; i < remaining; i++) {
+        rearranged += amino;
+      }
+    }
+    
+    // 포밀화가 있었다면 다시 추가
+    return hasFormylation ? 'f' + rearranged : rearranged;
+  }
+
+  // maxResultCount가 변경될 때마다 결과를 다시 필터링하고 재배열
   $: if (allSolutions.length > 0) {
-    bestSolutions = allSolutions.slice(0, maxResultCount);
+    let processedSolutions = allSolutions.slice(0, maxResultCount);
+    
+    // 참조 시퀀스가 있는 경우 시퀀스 재배열
+    if (hasReferenceSequence && convertedAminoSequence) {
+      processedSolutions = processedSolutions.map(solution => ({
+        ...solution,
+        code: rearrangeSequenceToMatch(solution.code, convertedAminoSequence)
+      }));
+    }
+    
+    bestSolutions = processedSolutions;
   }
 </script>
 
