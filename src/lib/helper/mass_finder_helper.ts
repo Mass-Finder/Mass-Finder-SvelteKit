@@ -2,7 +2,7 @@ import { AminoModel } from '../model/AminoModel';
 
 import type { IonType, FormyType } from '../../type/Types';
 
-import {calculateSimilarity, calculateSequenceSimilarity, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
+import {calculateSimilarity, calculateSequenceSimilarity, calculateSequenceSimilarityWithCounts, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
 import { getIonWeight, codonTableRtoS } from './amino_mapper';
 
 // 사용가능한 아미노산의 리스트 모노이소토픽 무게
@@ -492,10 +492,12 @@ export class MassFinderHelper {
         }
 
         return bestSolutions.map(solution => {
-            const sequenceSimilarity = calculateSequenceSimilarity(solution.code ?? '', referenceSequence);
+            const similarityData = calculateSequenceSimilarityWithCounts(solution.code ?? '', referenceSequence);
             return new AminoModel({ 
                 ...solution, 
-                sequenceSimilarity: Math.round(sequenceSimilarity * 100) / 100 // 소수점 2자리로 반올림
+                sequenceSimilarity: Math.round(similarityData.similarity * 100) / 100, // 소수점 2자리로 반올림
+                matchedCount: similarityData.matchedCount,
+                totalCount: similarityData.totalCount
             });
         });
     }

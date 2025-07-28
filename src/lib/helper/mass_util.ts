@@ -48,6 +48,57 @@ export function calculateSequenceSimilarity(resultSequence: string, referenceSeq
     return Math.round(similarity * 10) / 10; // 소수점 1자리로 반올림
 }
 
+/// 시퀀스 유사도와 매칭 정보를 함께 반환하는 함수
+export function calculateSequenceSimilarityWithCounts(resultSequence: string, referenceSequence: string): {
+    similarity: number;
+    matchedCount: number;
+    totalCount: number;
+} {
+    if (!resultSequence || !referenceSequence) {
+        return { similarity: 0, matchedCount: 0, totalCount: 0 };
+    }
+    
+    // 포밀화 제거
+    const cleanResult = resultSequence.replace(/^f/, '');
+    const cleanReference = referenceSequence.replace(/^f/, '');
+    
+    if (!cleanResult || !cleanReference) {
+        return { similarity: 0, matchedCount: 0, totalCount: 0 };
+    }
+    
+    // 각 시퀀스의 아미노산 개수를 계산
+    const getAminoCount = (sequence: string): { [key: string]: number } => {
+        const count: { [key: string]: number } = {};
+        for (const amino of sequence) {
+            count[amino] = (count[amino] || 0) + 1;
+        }
+        return count;
+    };
+    
+    const resultCount = getAminoCount(cleanResult);
+    const referenceCount = getAminoCount(cleanReference);
+    
+    // 참조 시퀀스의 각 아미노산에 대해 매칭되는 개수 계산
+    let matchedCount = 0;
+    let totalReferenceCount = 0;
+    
+    for (const [amino, refCount] of Object.entries(referenceCount)) {
+        const resCount = resultCount[amino] || 0;
+        // 매칭되는 개수는 참조 시퀀스와 결과 시퀀스 중 작은 값
+        matchedCount += Math.min(refCount, resCount);
+        totalReferenceCount += refCount;
+    }
+    
+    // 참조 시퀀스 기준으로 퍼센트 계산
+    const similarity = (matchedCount / totalReferenceCount) * 100;
+    
+    return {
+        similarity: Math.round(similarity * 10) / 10, // 소수점 1자리로 반올림
+        matchedCount,
+        totalCount: totalReferenceCount
+    };
+}
+
 
 
 // 기준 크기로 정렬 (시퀀스 유사도 고려)
