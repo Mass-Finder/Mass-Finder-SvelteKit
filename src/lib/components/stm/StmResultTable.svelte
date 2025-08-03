@@ -6,7 +6,8 @@
   // 선택된 필터를 객체로 관리
   let selectedFilters = {
     'Only natural AA': false,
-    'Truncated': false,
+    'Internal initiation': false,
+    'Premature termination': false,
     'ncAA incorporated': false,
     'Skipped': false,
     'Disulfide': false
