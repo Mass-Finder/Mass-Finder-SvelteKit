@@ -102,6 +102,29 @@ export class StmHelper {
             return results;
         }
 
+        // Formylation 적용 조건 확인 함수 - 실제 번역된 시퀀스를 기반으로 확인
+        function shouldApplyFormylationWithSequence(firstCodon: string, firstLetter: PossibilityLetter, ncAAMap: any, codonTitles: any): boolean {
+            // 첫 번째 코돈이 AUG가 아니면 formylation 불가
+            if (firstCodon !== 'AUG') return false;
+            
+            // 자연 아미노산 M이 실제로 번역된 경우
+            if (firstLetter.natural && firstLetter.letter === 'M') {
+                return true;
+            }
+            
+            // ncAA가 AUG에 할당되어 실제로 번역된 경우
+            if (!firstLetter.natural && firstLetter.candidate) {
+                for (const [key] of Object.entries(ncAAMap)) {
+                    const assignedCodons = codonTitles[key] || [];
+                    if (assignedCodons.includes('AUG') && firstLetter.candidate.title === ncAAMap[key].title) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
         let basePossibilities = generatePossibilities(0);
 
         // **Skipping 및 Truncated가 적용된 결과 필터링**
@@ -133,11 +156,14 @@ export class StmHelper {
             baseWeight -= MassFinderHelper.getWaterWeight(baseCount);
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
             
-            // useFormylation이 true인 경우, 'f'를 시퀀스 앞에 추가하고, f의 분자량은 별도로 더함
-            const updatedSeqArr = useFormylation ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
+            // Formylation 조건 확인: useFormylation이 true이고 첫 번째 아미노산이 M이거나 AUG에 할당된 ncAA인 경우
+            const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
+            const shouldFormylate = useFormylation && firstLetter && 
+                                   shouldApplyFormylationWithSequence(effectiveCodons[0], firstLetter, ncAAMap, codonTitles);
+            const updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
             let finalWeight = baseWeight;
             let finalMolWeight = baseMolWeight;
-            if (useFormylation) {
+            if (shouldFormylate) {
                 finalWeight += fWeight;
                 finalMolWeight += fWeight;
             }
@@ -146,7 +172,7 @@ export class StmHelper {
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
             updatedSeqArr.forEach((item, index) => {
-                if (useFormylation && index === 0) return;
+                if (shouldFormylate && index === 0) return;
                 if (!item.natural) {
                     if (item.candidate && !item.truncated && !item.skipped) {
                         reasons.push("ncAA incorporated");
