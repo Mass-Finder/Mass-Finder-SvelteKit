@@ -38,6 +38,12 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 - **조건부 적용**: 첫 번째 코돈이 AUG이고 실제로 M 또는 AUG에 할당된 ncAA로 번역된 경우에만 적용
 - 사용자가 M을 아미노산 선택에서 제외하면 formylation 적용 안 됨
 
+#### E. Admidation
+- **파일**: `src/routes/stm/+page.svelte:24, 223`, `src/lib/helper/stm_helper.ts:167-171`
+- C-말단 아미드화 (-0.98 Da)
+- **무조건 적용**: Admidation 옵션이 "Yes"로 선택되면 모든 시퀀스 끝에 소문자 'n' 추가
+- 생물학적 조건과 무관하게 적용
+
 ### 3. 커스터마이제이션 가능한 구성요소
 
 #### A. ncAA 설정 (src/routes/stm/+page.svelte:19-32)
@@ -63,6 +69,12 @@ let selectedMonoisotopicAminos = { ...aminoMap };
 // 계산에 포함할 표준 아미노산 선택
 ```
 
+#### D. Formylation 및 Admidation 설정 (src/routes/stm/+page.svelte:23-24)
+```javascript
+let formylation = false; // 기본값 no
+let admidation = false; // 기본값 no
+```
+
 ### 4. 계산 알고리즘 핵심
 
 #### A. 재귀적 가능성 생성 (stm_helper.ts:33-103)
@@ -76,8 +88,8 @@ let selectedMonoisotopicAminos = { ...aminoMap };
 baseWeight += aminoMap[item.letter]; // 또는 ncAA 질량
 baseWeight -= MassFinderHelper.getWaterWeight(baseCount); // 물 손실
 
-// 최종 질량 = 기본 질량 + 포밀화 + 이온 부가체 + 디설파이드
-finalWeight = baseWeight + formylationWeight + adductWeight - disulfideReduction;
+// 최종 질량 = 기본 질량 + 포밀화 + 아미드화 + 이온 부가체 + 디설파이드
+finalWeight = baseWeight + formylationWeight + admidationWeight + adductWeight - disulfideReduction;
 ```
 
 #### C. 중복 제거 및 필터링 (stm_helper.ts:108, 114-115)
@@ -127,6 +139,7 @@ function checkCustomCodonTitles2() // :122-151
 - **NcAACodonSelector**: ncAA와 코돈 매핑 설정
 - **StmAdductSelector**: 이온 부가체 선택
 - **FormylationSelector**: 포밀화 옵션
+- **AdmidationSelector**: 아미드화 옵션
 - **AminoMapSelector**: 표준 아미노산 선택
 - **StmResultTable**: 계산 결과 표시
 
@@ -168,6 +181,7 @@ function checkCustomCodonTitles2() // :122-151
 ### 4. 번역 후 수정
 - **Disulfide bonds**: 가능한 모든 C-C 결합
 - **Formylation**: 조건부 N-말단 수정 (AUG 시작 + 실제 M/ncAA 번역 시에만)
+- **Admidation**: 무조건 C-말단 아미드화 (옵션 활성화 시)
 - 각 수정에 대한 질량 조정
 
 ### 5. 이온 부가체 형성
@@ -211,3 +225,20 @@ function shouldApplyFormylationWithSequence(firstCodon, firstLetter, ncAAMap, co
     return false;
 }
 ```
+
+## 최근 업데이트 2 (Admidation 기능 추가)
+
+### 새로운 기능
+- **AdmidationSelector 컴포넌트** 추가: FormylationSelector와 동일한 구조
+- **C-말단 아미드화** 기능 구현: 시퀀스 끝에 소문자 'n' 추가
+- **질량 변화**: -0.98 Da 적용
+
+### Admidation 적용 방식
+- **조건**: Admidation 드롭다운을 "Yes"로 선택
+- **결과**: 모든 시퀀스 끝에 'n' 자동 추가
+- **예시**: `TWSHPQFEK` → `TWSHPQFEKn`
+
+### 구현된 파일들
+- `src/lib/components/AdmidationSelector.svelte` - 새로운 셀렉터 컴포넌트
+- `src/routes/stm/+page.svelte` - UI에 AdmidationSelector 추가
+- `src/lib/helper/stm_helper.ts` - Admidation 로직 구현
