@@ -33,9 +33,10 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 - 각 결합당 -2.02 Da 질량 감소
 
 #### D. Formylation
-- **파일**: `src/routes/stm/+page.svelte:22, 218`
+- **파일**: `src/routes/stm/+page.svelte:22, 218`, `src/lib/helper/stm_helper.ts:105-126`
 - N-말단 포밀화 (+27.99 Da)
-- 선택적 적용 가능
+- **조건부 적용**: 첫 번째 코돈이 AUG이고 실제로 M 또는 AUG에 할당된 ncAA로 번역된 경우에만 적용
+- 사용자가 M을 아미노산 선택에서 제외하면 formylation 적용 안 됨
 
 ### 3. 커스터마이제이션 가능한 구성요소
 
@@ -142,6 +143,7 @@ function checkCustomCodonTitles2() // :122-151
 
 ## 커스터마이제이션을 위한 주요 파일들
 - `src/lib/helper/stm_helper.ts:generatePossibilities()` - 핵심 변이 생성 로직
+- `src/lib/helper/stm_helper.ts:shouldApplyFormylationWithSequence()` - Formylation 적용 조건 로직
 - `src/lib/helper/amino_mapper.ts` - 새로운 아미노산이나 이온 타입 추가
 - `src/routes/stm/+page.svelte` - UI 및 사용자 입력 처리
 - `src/lib/components/stm/NcAACodonSelector.svelte` - ncAA 선택 인터페이스
@@ -165,10 +167,47 @@ function checkCustomCodonTitles2() // :122-151
 
 ### 4. 번역 후 수정
 - **Disulfide bonds**: 가능한 모든 C-C 결합
-- **Formylation**: 선택적 N-말단 수정
+- **Formylation**: 조건부 N-말단 수정 (AUG 시작 + 실제 M/ncAA 번역 시에만)
 - 각 수정에 대한 질량 조정
 
 ### 5. 이온 부가체 형성
 - 시퀀스당 다중 이온 타입
 - 각 부가체별 별도 결과
 - 이온 타입별 질량 이동 계산
+
+## 최근 업데이트 (Formylation 로직 수정)
+
+### 변경 사항
+- **기존**: Formylation 옵션이 활성화되면 모든 시퀀스에 무조건 적용
+- **수정 후**: Formylation이 실제 생물학적 조건을 만족할 때만 적용
+
+### 새로운 Formylation 적용 조건
+1. **첫 번째 코돈이 AUG여야 함**
+2. **실제로 첫 번째 아미노산이 번역되어야 함**:
+   - 자연 아미노산 M으로 번역된 경우
+   - AUG에 할당된 ncAA로 번역된 경우
+3. **사용자가 M을 아미노산 선택에서 제외한 경우 formylation 적용 안 됨**
+
+### 예시
+- **입력**: `AUGACUUGGUCUCAUCCUCAAUUUGAAAAA`
+- **M 체크 해제 시**: `TWSHPQFEK` (f 없음)
+- **M 체크 시**: `fMTWSHPQFEK` (f 포함)
+
+### 수정된 함수
+```javascript
+// src/lib/helper/stm_helper.ts:105-126
+function shouldApplyFormylationWithSequence(firstCodon, firstLetter, ncAAMap, codonTitles) {
+    // 첫 번째 코돈이 AUG가 아니면 formylation 불가
+    if (firstCodon !== 'AUG') return false;
+    
+    // 자연 아미노산 M이 실제로 번역된 경우
+    if (firstLetter.natural && firstLetter.letter === 'M') return true;
+    
+    // ncAA가 AUG에 할당되어 실제로 번역된 경우
+    if (!firstLetter.natural && firstLetter.candidate) {
+        // AUG에 할당된 ncAA 확인 로직
+    }
+    
+    return false;
+}
+```

@@ -4,6 +4,8 @@ import type { IonType } from '../../type/Types';
 
 // 포밀레이스의 분자량
 const fWeight = 27.99;
+// Admidation의 분자량 변화 (-0.98)
+const admidationWeight = -0.98;
 
 export class StmHelper {
     static calc(
@@ -12,7 +14,8 @@ export class StmHelper {
         codonTitles: { [key: string]: string[] },
         aminoMap: { [key: string]: number },
         ionTypes: IonType[],
-        useFormylation: boolean
+        useFormylation: boolean,
+        useAdmidation: boolean
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
 
@@ -20,7 +23,7 @@ export class StmHelper {
         const codons = rnaSeq.match(/.{1,3}/g) || [];
 
         // Stop 코돈을 찾아서 그 이전까지만 처리
-        let effectiveCodons = [];
+        let effectiveCodons: string[] = [];
         for (let i = 0; i < codons.length; i++) {
             const codon = codons[i];
             const naturalAmino = codonTableRtoS[codon];
@@ -160,19 +163,30 @@ export class StmHelper {
             const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
             const shouldFormylate = useFormylation && firstLetter && 
                                    shouldApplyFormylationWithSequence(effectiveCodons[0], firstLetter, ncAAMap, codonTitles);
-            const updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
+            
+            // Admidation 적용: useAdmidation이 true이면 시퀀스 끝에 'n' 추가
+            let updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
+            if (useAdmidation) {
+                updatedSeqArr = [...updatedSeqArr, { letter: "n", natural: true }];
+            }
+            
             let finalWeight = baseWeight;
             let finalMolWeight = baseMolWeight;
             if (shouldFormylate) {
                 finalWeight += fWeight;
                 finalMolWeight += fWeight;
             }
+            if (useAdmidation) {
+                finalWeight += admidationWeight;
+                finalMolWeight += admidationWeight;
+            }
             const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
             updatedSeqArr.forEach((item, index) => {
-                if (shouldFormylate && index === 0) return;
+                if (shouldFormylate && index === 0) return; // f는 reason에 포함하지 않음
+                if (useAdmidation && index === updatedSeqArr.length - 1 && item.letter === "n") return; // n도 reason에 포함하지 않음
                 if (!item.natural) {
                     if (item.candidate && !item.truncated && !item.skipped) {
                         reasons.push("ncAA incorporated");
