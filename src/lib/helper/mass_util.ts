@@ -78,24 +78,25 @@ export function calculateSequenceSimilarityWithCounts(resultSequence: string, re
     const resultCount = getAminoCount(cleanResult);
     const referenceCount = getAminoCount(cleanReference);
     
-    // 참조 시퀀스의 각 아미노산에 대해 매칭되는 개수 계산
+    // 모든 아미노산에 대해 매칭되는 개수 계산
     let matchedCount = 0;
-    let totalReferenceCount = 0;
+    const allAminos = new Set([...Object.keys(referenceCount), ...Object.keys(resultCount)]);
     
-    for (const [amino, refCount] of Object.entries(referenceCount)) {
+    for (const amino of allAminos) {
+        const refCount = referenceCount[amino] || 0;
         const resCount = resultCount[amino] || 0;
         // 매칭되는 개수는 참조 시퀀스와 결과 시퀀스 중 작은 값
         matchedCount += Math.min(refCount, resCount);
-        totalReferenceCount += refCount;
     }
     
-    // 참조 시퀀스 기준으로 퍼센트 계산
-    const similarity = (matchedCount / totalReferenceCount) * 100;
+    // 더 긴 시퀀스 길이를 분모로 사용
+    const totalCount = Math.max(cleanReference.length, cleanResult.length);
+    const similarity = (matchedCount / totalCount) * 100;
     
     return {
         similarity: Math.round(similarity * 10) / 10, // 소수점 1자리로 반올림
         matchedCount,
-        totalCount: totalReferenceCount
+        totalCount
     };
 }
 
