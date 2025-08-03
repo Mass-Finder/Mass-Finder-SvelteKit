@@ -63,15 +63,7 @@ export class StmHelper {
                         candidate: candidate
                     });
 
-                    // (B) truncated 현상
-                    possibilitiesForCurrent.push({
-                        letter: "",
-                        natural: false,
-                        candidate: candidate,
-                        truncated: true
-                    });
-
-                    // (C) skipping 현상
+                    // (B) skipping 현상
                     possibilitiesForCurrent.push({
                         letter: "",
                         natural: false,
@@ -105,6 +97,56 @@ export class StmHelper {
             return results;
         }
 
+        // 특정 범위의 가능성 생성 함수
+        function generatePossibilitiesRange(startIndex: number, endIndex: number): PossibilityLetter[][] {
+            if (startIndex >= endIndex || startIndex >= effectiveCodons.length) return [[]];
+
+            const results: PossibilityLetter[][] = [];
+            const currentCodon = effectiveCodons[startIndex];
+            const possibilitiesForCurrent: PossibilityLetter[] = [];
+
+            // 자연 아미노산으로 변환 가능한 경우
+            const naturalAmino = codonTableRtoS[currentCodon];
+            if (naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined) {
+                possibilitiesForCurrent.push({ letter: naturalAmino, natural: true });
+            }
+
+            // ncAA 대체 가능성 확인
+            for (const [key, candidate] of Object.entries(ncAAMap)) {
+                const assignedCodons = codonTitles[key] || [];
+                if (assignedCodons.includes(currentCodon)) {
+                    // ncAA로 대체 (full incorporation만)
+                    possibilitiesForCurrent.push({
+                        letter: candidate.title,
+                        natural: false,
+                        candidate: candidate
+                    });
+                }
+            }
+
+            // 다음 범위의 가능성들
+            const nextPossibilities = startIndex + 1 < endIndex ? 
+                generatePossibilitiesRange(startIndex + 1, endIndex) : [[]];
+            
+            for (const option of possibilitiesForCurrent) {
+                for (const next of nextPossibilities) {
+                    results.push([option, ...next]);
+                }
+            }
+
+            return results;
+        }
+
+        // Internal initiation 확인 함수
+        function hasInternalInitiationAtStart(seqArr: PossibilityLetter[]): boolean {
+            return seqArr.length > 0 && seqArr[0].internalInitiation === true;
+        }
+
+        // Premature termination 확인 함수
+        function hasPrematureTerminationAtEnd(seqArr: PossibilityLetter[]): boolean {
+            return seqArr.length > 0 && seqArr[seqArr.length - 1].prematureTermination === true;
+        }
+
         // Formylation 적용 조건 확인 함수 - 실제 번역된 시퀀스를 기반으로 확인
         function shouldApplyFormylationWithSequence(firstCodon: string, firstLetter: PossibilityLetter, ncAAMap: any, codonTitles: any): boolean {
             // 첫 번째 코돈이 AUG가 아니면 formylation 불가
@@ -133,6 +175,67 @@ export class StmHelper {
         // **Skipping 및 Truncated가 적용된 결과 필터링**
         basePossibilities = basePossibilities.filter(seq => seq.filter(x => x.letter !== "").length > 0);
 
+        // **절단 가능성 추가 - Internal initiation 및 Premature termination**
+        const truncationPossibilities: PossibilityLetter[][] = [];
+        
+        // ncAA가 사용된 위치들을 찾아서 절단 가능성 생성
+        for (let truncationIndex = 0; truncationIndex < effectiveCodons.length; truncationIndex++) {
+            const codon = effectiveCodons[truncationIndex];
+            let hasNcAAAtPosition = false;
+            
+            // 해당 위치에 ncAA가 할당되었는지 확인
+            for (const [key] of Object.entries(ncAAMap)) {
+                const assignedCodons = codonTitles[key] || [];
+                if (assignedCodons.includes(codon)) {
+                    hasNcAAAtPosition = true;
+                    break;
+                }
+            }
+            
+            if (hasNcAAAtPosition) {
+                // Internal initiation: truncationIndex부터 시작하는 시퀀스
+                if (truncationIndex > 0) {
+                    const internalInitSeqs = generatePossibilities(truncationIndex);
+                    for (const seq of internalInitSeqs) {
+                        if (seq.length > 0 && seq.filter(x => x.letter !== "").length > 0) {
+                            // 첫 번째 요소에 internal initiation 마킹
+                            const markedSeq = [...seq];
+                            if (markedSeq.length > 0) {
+                                markedSeq[0] = { 
+                                    ...markedSeq[0], 
+                                    internalInitiation: true,
+                                    letter: markedSeq[0].letter
+                                };
+                            }
+                            truncationPossibilities.push(markedSeq);
+                        }
+                    }
+                }
+                
+                // Premature termination: 0부터 truncationIndex까지의 시퀀스 (ncAA 위치에서 중단)
+                if (truncationIndex < effectiveCodons.length - 1) {
+                    const prematureSeqs = generatePossibilitiesRange(0, truncationIndex + 1);
+                    for (const seq of prematureSeqs) {
+                        if (seq.length > 0 && seq.filter(x => x.letter !== "").length > 0) {
+                            // 마지막 요소에 premature termination 마킹
+                            const markedSeq = [...seq];
+                            if (markedSeq.length > 0) {
+                                markedSeq[markedSeq.length - 1] = {
+                                    ...markedSeq[markedSeq.length - 1],
+                                    prematureTermination: true,
+                                    letter: markedSeq[markedSeq.length - 1].letter
+                                };
+                            }
+                            truncationPossibilities.push(markedSeq);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 기존 가능성과 절단 가능성 합치기
+        basePossibilities = [...basePossibilities, ...truncationPossibilities];
+
         const possibilities: Possibility[] = [];
         for (const seqArr of basePossibilities) {
             // 원래 시퀀스의 실제 아미노산 문자들로 구성된 문자열
@@ -160,13 +263,16 @@ export class StmHelper {
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
             
             // Formylation 조건 확인: useFormylation이 true이고 첫 번째 아미노산이 M이거나 AUG에 할당된 ncAA인 경우
+            // 그리고 Internal initiation이 없는 경우에만 적용
             const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
             const shouldFormylate = useFormylation && firstLetter && 
+                                   !hasInternalInitiationAtStart(seqArr) &&
                                    shouldApplyFormylationWithSequence(effectiveCodons[0], firstLetter, ncAAMap, codonTitles);
             
-            // Admidation 적용: useAdmidation이 true이면 시퀀스 끝에 'n' 추가
+            // Admidation 적용: useAdmidation이 true이고 Premature termination이 없는 경우에만 시퀀스 끝에 'n' 추가
             let updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
-            if (useAdmidation) {
+            const shouldAdmidate = useAdmidation && !hasPrematureTerminationAtEnd(seqArr);
+            if (shouldAdmidate) {
                 updatedSeqArr = [...updatedSeqArr, { letter: "n", natural: true }];
             }
             
@@ -176,7 +282,7 @@ export class StmHelper {
                 finalWeight += fWeight;
                 finalMolWeight += fWeight;
             }
-            if (useAdmidation) {
+            if (shouldAdmidate) {
                 finalWeight += admidationWeight;
                 finalMolWeight += admidationWeight;
             }
@@ -184,21 +290,33 @@ export class StmHelper {
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
+            
+            // 시퀀스 레벨 절단 확인 (Internal initiation, Premature termination)
+            const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
+            const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
+            
+            if (hasInternalInitiation) {
+                reasons.push("Internal initiation");
+            }
+            if (hasPrematureTermination) {
+                reasons.push("Premature termination");
+            }
+            
+            // 개별 아미노산 레벨 reason 수집
             updatedSeqArr.forEach((item, index) => {
                 if (shouldFormylate && index === 0) return; // f는 reason에 포함하지 않음
-                if (useAdmidation && index === updatedSeqArr.length - 1 && item.letter === "n") return; // n도 reason에 포함하지 않음
+                if (shouldAdmidate && index === updatedSeqArr.length - 1 && item.letter === "n") return; // n도 reason에 포함하지 않음
                 if (!item.natural) {
-                    if (item.candidate && !item.truncated && !item.skipped) {
+                    if (item.candidate && !item.skipped) {
                         reasons.push("ncAA incorporated");
-                    }
-                    if (item.truncated) {
-                        reasons.push("Truncated");
                     }
                     if (item.skipped) {
                         reasons.push("Skipped");
                     }
                 }
             });
+            
+            // Only natural AA는 아무런 변화가 없는 경우에만 적용
             if (reasons.length === 0) {
                 reasons.push("Only natural AA");
             }
@@ -309,6 +427,7 @@ interface PossibilityLetter {
     letter: string;
     natural: boolean;
     candidate?: any;
-    truncated?: boolean;
+    internalInitiation?: boolean;
+    prematureTermination?: boolean;
     skipped?: boolean;
 }
