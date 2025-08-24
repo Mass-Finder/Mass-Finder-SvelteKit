@@ -5,9 +5,7 @@
   import NcAASelector from "$lib/components/NcAASelector.svelte";
   import ResultTable from "$lib/components/ResultTable.svelte";
   import InitialRnaInput from "$lib/components/InitialRnaInput.svelte";
-  import TemperatureSelector from "$lib/components/TemperatureSelector.svelte";
-  import AbsoluteTemperatureSelector from "$lib/components/AbsoluteTemperatureSelector.svelte";
-  import SaIterationsSelector from "$lib/components/SaIterationsSelector.svelte";
+  import SAModeSelector from "$lib/components/SAModeSelector.svelte";
   import { getContext, onDestroy } from "svelte";
   import { writable } from "svelte/store";
   import {
@@ -23,9 +21,12 @@
   let proteinSequence = "";
   let formylation = "yes";
   let adduct = "H";
-  let initialTemperature = 10000; // 시뮬레이티드 어닐링 초기 온도
-  let absoluteTemperature = 0.00001; // 시뮬레이티드 어닐링 최소 온도
-  let saIterations = 100; // 시뮬레이티드 어닐링 반복 횟수
+  // SA 모드 설정 (기본값: Think)
+  let saConfig = {
+    initialTemperature: 10000,
+    absoluteTemperature: 0.001,
+    saIterations: 50
+  };
   let selectedMonoisotopicAminos = { ...aminoMap };
   let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext("loading");
@@ -123,9 +124,9 @@
         adduct,
         monoisotopicMap,
         molecularMap,
-        initialTemperature,
-        absoluteTemperature,
-        saIterations,
+        initialTemperature: saConfig.initialTemperature,
+        absoluteTemperature: saConfig.absoluteTemperature,
+        saIterations: saConfig.saIterations,
       });
     } catch (error) {
       console.error("Error:", error);
@@ -142,17 +143,10 @@
     adduct = newAdduct;
   }
 
-  function handleTemperatureChange(newTemperature) {
-    initialTemperature = newTemperature;
+  function handleSAModeChange(newConfig) {
+    saConfig = newConfig;
   }
 
-  function handleAbsoluteTemperatureChange(newAbsoluteTemperature) {
-    absoluteTemperature = newAbsoluteTemperature;
-  }
-
-  function handleSaIterationsChange(newSaIterations) {
-    saIterations = newSaIterations;
-  }
 
   function handleNcAAChange(e) {
     fullNcAA = e.detail;
@@ -436,25 +430,8 @@
     </div>
   </div>
 
-  <div class="mb-3 row">
-    <div class="col-md-4">
-      <TemperatureSelector
-        bind:initialTemperature
-        on:change={(e) => handleTemperatureChange(e.detail)}
-      />
-    </div>
-    <div class="col-md-4">
-      <AbsoluteTemperatureSelector
-        bind:absoluteTemperature
-        on:change={(e) => handleAbsoluteTemperatureChange(e.detail)}
-      />
-    </div>
-    <div class="col-md-4">
-      <SaIterationsSelector
-        bind:saIterations
-        on:change={(e) => handleSaIterationsChange(e.detail)}
-      />
-    </div>
+  <div class="mb-3">
+    <SAModeSelector on:change={(e) => handleSAModeChange(e.detail)} />
   </div>
 
   <!-- 필수 아미노산 선택 -->
