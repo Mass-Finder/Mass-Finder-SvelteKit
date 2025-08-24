@@ -14,14 +14,8 @@ let moleMap: { [key: string]: number } = {};
 // 참조 시퀀스 (시퀀스 유사도 계산용)
 let referenceSequence: string = '';
 
-// 시뮬레이티드 어닐링 반복 횟수
-const saIterations = 100;
-// 초기 온도
-const initialTemperature = 10000.0;
 // 냉각률
 const coolingRate = 0.99;
-// 최소 온도
-const absoluteTemperature = 0.00001;
 // 포밀레이스의 분자량
 const fWeight = 27.99;
 
@@ -45,11 +39,14 @@ export class MassFinderHelper {
     // [ionType] : 이온이 들어가는지에 대한 값
     // [aminoMap] : 계산에 사용되는 아미노산의 모음
     // [proteinSequence] : 초기 솔루션으로 사용할 단백질/RNA 시퀀스 (선택사항)
+    // [initialTemperature] : 시뮬레이티드 어닐링 초기 온도 (기본값: 10000)
+    // [absoluteTemperature] : 시뮬레이티드 어닐링 최소 온도 (기본값: 0.00001)
+    // [saIterations] : 시뮬레이티드 어닐링 반복 횟수 (기본값: 100)
     // 최종적으로 AminoModel의 리스트를 리턴함
-    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string): AminoModel[] {
+    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
-        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence)
+        bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence, initialTemperature, absoluteTemperature, saIterations)
             .map(e => new AminoModel({ 
                 ...e, 
                 weight: (e.weight ?? 0) + getIonWeight(this.ionType),
@@ -60,7 +57,7 @@ export class MassFinderHelper {
     }
 
     /// calcByIonType 함수에서 이온값에따라 알아서 구분되어 호출되는 함수
-    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string): AminoModel[] {
+    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
         this.formyType = fomyType;
         dataMap = { ...aminoMap };
         moleMap = { ...molecularMap };
@@ -94,7 +91,7 @@ export class MassFinderHelper {
         const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
         for (let i = minRange; i < maxRange; i++) {
             const addWeight = this.getWaterWeight(i);
-            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, proteinSequence);
+            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
             solutions = removeDuplicates(solutions);
             solutions = removeSingleFSequences(solutions);
             bestSolutions = bestSolutions.concat(solutions);
@@ -116,27 +113,27 @@ export class MassFinderHelper {
 
     // calc 함수에서 호출되는 함수
     // FormyType 값에 따라 솔루션을 각각 구해와서 전달하는 역할을 한다.
-    static calcByFType(fType: FormyType, targetMass: number, proteinSequence?: string): AminoModel[] {
+    static calcByFType(fType: FormyType, targetMass: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
         const bestSolutions: AminoModel[] = [];
         for (let i = 0; i < saIterations; i++) {
             switch (fType) {
                 case 'no': // 포밀레이스 없으면 무게 안빼고 계산해도됨
-                    const solutionNo = this.simulatedAnnealing(targetMass, proteinSequence);
+                    const solutionNo = this.simulatedAnnealing(targetMass, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsN = Object.keys(solutionNo)[0];
                     const weightN = this.getMonoisotopicWeightSum(seqsN);
                     const molecularWeightN = this.getMolecularWeightSum(seqsN);
                     bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
-                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, proteinSequence);
+                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsY = `f${Object.keys(solutionYes)[0]}`;
                     const weightY = this.getMonoisotopicWeightSum(seqsY);
                     const molecularWeightY = this.getMolecularWeightSum(seqsY);
                     bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: weightY, molecularWeight: molecularWeightY }));
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
-                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, proteinSequence);
-                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, proteinSequence);
+                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsU1 = Object.keys(solutionUnknown1)[0];
                     const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
                     const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
@@ -152,7 +149,7 @@ export class MassFinderHelper {
     }
 
     /// 핵심로직으로 랜덤한 값과 그 랜던값에서 조금 바꾼 다른 값을 계속 비교해 나가면서 최적의 해를 찾음
-    static simulatedAnnealing(targetMass: number, proteinSequence?: string): { [key: string]: number } {
+    static simulatedAnnealing(targetMass: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
         let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, targetMass) : this.randomSolution(targetMass);

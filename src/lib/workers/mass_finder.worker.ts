@@ -8,7 +8,10 @@ self.onmessage = (e) => {
     formylation, 
     adduct, 
     monoisotopicMap, 
-    molecularMap 
+    molecularMap,
+    initialTemperature = 10000,
+    absoluteTemperature = 0.00001,
+    saIterations = 100
   } = e.data;
 
   try {
@@ -19,7 +22,10 @@ self.onmessage = (e) => {
       adduct,
       monoisotopicMap,
       molecularMap,
-      proteinSequence
+      proteinSequence,
+      initialTemperature,
+      absoluteTemperature,
+      saIterations
     );
     
     self.postMessage({ type: 'success', solutions });
