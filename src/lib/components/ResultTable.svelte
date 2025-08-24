@@ -19,7 +19,67 @@
       }
     });
   }
+
+  function downloadExcel() {
+    const headers = [
+      "No.",
+      "Monoisotopic Weight",
+      "Molecular Weight", 
+      "Sequence",
+      "Adduct",
+      "Difference"
+    ];
+    
+    if (hasReferenceSequence) {
+      headers.push("Seq. Similarity");
+    }
+
+    const rows = bestSolutions.map((solution, index) => {
+      const sequence = replaceWithTitles(solution.code).map(part => part.char).join("");
+      const row = [
+        index + 1,
+        solution.weight.toFixed(3),
+        solution.molecularWeight.toFixed(3),
+        sequence,
+        adductPrintName(solution.ionType),
+        calculateDifference(detectedMass, solution.weight).toFixed(3)
+      ];
+      
+      if (hasReferenceSequence) {
+        if (solution.sequenceSimilarity !== undefined && solution.matchedCount !== undefined && solution.totalCount !== undefined) {
+          row.push(`${solution.matchedCount}/${solution.totalCount}(${solution.sequenceSimilarity.toFixed(1)}%)`);
+        } else {
+          row.push("-");
+        }
+      }
+      
+      return row;
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `mass_finder_results_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 </script>
+
+<!-- Excel Download Button -->
+{#if bestSolutions.length > 0}
+  <div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-success" on:click={downloadExcel}>
+      <i class="fas fa-download me-2"></i>엑셀 다운로드
+    </button>
+  </div>
+{/if}
 
 <!-- Bootstrap Table -->
 <div class="table-responsive mt-3">

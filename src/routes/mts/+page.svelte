@@ -43,6 +43,9 @@
 
   // Calculate 버튼 클릭 시 호출되는 메서드
   async function handleCalculate() {
+    const startTime = performance.now();
+    console.log("계산 시작:", new Date().toISOString());
+    
     loading.set(true);
     if (!validate()) return loading.set(false);
 
@@ -97,13 +100,18 @@
       }
 
       worker.onmessage = (e) => {
+        const endTime = performance.now();
+        const calculationTime = endTime - startTime;
+        
         if (e.data.type === "success") {
           allSolutions = e.data.solutions;
           bestSolutions = allSolutions.slice(0, maxResultCount);
           console.log("All solutions count:", allSolutions.length);
           console.log("Displayed solutions:", bestSolutions.length);
+          console.log(`계산 완료 시간: ${calculationTime.toFixed(2)}ms (${(calculationTime/1000).toFixed(2)}초)`);
         } else if (e.data.type === "error") {
           console.error("Worker error:", e.data.error);
+          console.log(`계산 실패 시간: ${calculationTime.toFixed(2)}ms`);
           alert("An error occurred while calculating");
         }
         loading.set(false);
