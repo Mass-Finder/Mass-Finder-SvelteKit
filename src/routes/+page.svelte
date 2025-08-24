@@ -134,7 +134,7 @@
                 <div class="module-card manual card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/manual')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/manual')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">📖</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Documentation</h3>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Manual</h3>
                         <p class="text-muted mb-3 lh-base">Comprehensive user guide and theoretical background for all computational modules.</p>
                         <ul class="module-features ps-0 mb-0">
                             <li class="mb-2">Algorithm explanations</li>
