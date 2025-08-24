@@ -5,6 +5,7 @@
   export let detectedMass;
   export let fullNcAA;
   export let hasReferenceSequence = false;
+  export let maxResultCount = 20;
 
   function calculateDifference(target, value) {
     return Math.abs(target - value);
@@ -72,12 +73,26 @@
   }
 </script>
 
-<!-- Excel Download Button -->
+<!-- Header with Excel Download Button and Max Result Count -->
 {#if bestSolutions.length > 0}
-  <div class="d-flex justify-content-end mb-3">
-    <button type="button" class="btn btn-success" on:click={downloadExcel}>
-      <i class="fas fa-download me-2"></i>엑셀 다운로드
-    </button>
+  <div class="d-flex justify-content-end align-items-center mb-3 results-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="max-result-selector">
+        <label for="solution-count" class="form-label fw-bold mb-0 me-2">Max Result Count</label>
+        <select
+          id="solution-count"
+          class="form-select"
+          bind:value={maxResultCount}
+        >
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-success" on:click={downloadExcel}>
+        <i class="fas fa-download me-2"></i>Download Excel
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -126,3 +141,44 @@
     </tbody>
   </table>
 </div>
+
+<style>
+  .results-header {
+    margin-top: 2rem;
+  }
+  
+  .max-result-selector {
+    display: flex;
+    align-items: center;
+  }
+  
+  .max-result-selector .form-select {
+    width: auto;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 768px) {
+    .d-flex.justify-content-end {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+    
+    .d-flex.align-items-center.gap-3 {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    
+    .max-result-selector {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+    }
+    
+    .max-result-selector .form-select {
+      width: 120px;
+    }
+  }
+</style>

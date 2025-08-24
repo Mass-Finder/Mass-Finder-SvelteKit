@@ -519,23 +519,6 @@
     Calculate{hasReferenceSequence ? " with Reference Sequence" : ""}!
   </button>
 
-  <!-- 최대 결과 개수 선택 -->
-  <div class="mt-3 d-flex justify-content-end">
-    <div class="w-20">
-      <label for="solution-count" class="form-label fw-bold"
-        >Max Result Count</label
-      >
-      <select
-        id="solution-count"
-        class="form-select mb-3"
-        bind:value={maxResultCount}
-      >
-        <option value={20}>20</option>
-        <option value={50}>50</option>
-        <option value={100}>100</option>
-      </select>
-    </div>
-  </div>
 
   {#if detectedMass !== null && bestSolutions.length > 0}
     <ResultTable
@@ -543,6 +526,7 @@
       {detectedMass}
       {fullNcAA}
       {hasReferenceSequence}
+      bind:maxResultCount
     />
   {/if}
 </div>
