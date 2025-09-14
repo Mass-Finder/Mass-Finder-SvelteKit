@@ -152,7 +152,7 @@ export class MassFinderHelper {
     static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
-        let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, targetMass) : this.randomSolution(seqLength);
+        let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, seqLength) : this.randomSolution(seqLength);
         let currentEnergy = this.evaluate(currentSolution, targetMass);
         // 1차 비교군을 베스트로지정해놓음
         let bestSolution = [...currentSolution];
@@ -224,7 +224,7 @@ export class MassFinderHelper {
     }
 
     // 단백질/RNA 시퀀스를 기반으로 초기 솔루션을 생성하는 함수
-    static proteinBasedSolution(inputSequence: string, targetMass: number): string[] {
+    static proteinBasedSolution(inputSequence: string, seqLength: number): string[] {
         // RNA 시퀀스인지 확인 (A, U, G, C로만 구성되고 3의 배수 길이)
         const isRnaSequence = /^[AUGC]+$/.test(inputSequence) && inputSequence.length % 3 === 0;
         
@@ -236,32 +236,34 @@ export class MassFinderHelper {
         const solution: string[] = [];
         
         // 초기 아미노산 시퀀스에서 사용 가능한 아미노산만 추가
+        const validAminosFromSequence: string[] = [];
         for (const amino of aminoSequence.split('')) {
             if (dataMap[amino]) {
                 solution.push(amino);
+                validAminosFromSequence.push(amino);
             }
         }
         
-        let currentMass = solution.reduce((sum, amino) => sum + (dataMap[amino] || 0), 0);
-        
-        // 목표 질량보다 작으면 선택된 아미노산 중에서만 추가
-        while (currentMass < targetMass) {
-            if (availableAminos.length === 0) break;
-            const aminoAcid = availableAminos[Math.floor(Math.random() * availableAminos.length)];
-            const aminoAcidMass = dataMap[aminoAcid];
-            if (currentMass + aminoAcidMass > targetMass) break;
-            solution.push(aminoAcid);
-            currentMass += aminoAcidMass;
-        }
-        
-        // 목표 질량보다 크면 아미노산 제거 (단, 원본 시퀀스는 최대한 보존)
-        const originalLength = aminoSequence.split('').filter(amino => dataMap[amino]).length;
-        while (currentMass > targetMass && solution.length > originalLength) {
-            const removedAmino = solution.pop();
-            if (removedAmino) {
-                currentMass -= dataMap[removedAmino] || 0;
+        // seqLength에 맞춰 시퀀스 조정
+        if (solution.length < seqLength) {
+            // aminoSequence 길이가 seqLength보다 짧으면 aminoSequence에서 랜덤으로 추가
+            while (solution.length < seqLength && validAminosFromSequence.length > 0) {
+                const randomAmino = validAminosFromSequence[Math.floor(Math.random() * validAminosFromSequence.length)];
+                solution.push(randomAmino);
+            }
+            // 만약 validAminosFromSequence가 비어있으면 availableAminos에서 선택 (폴백)
+            while (solution.length < seqLength) {
+                const randomAmino = availableAminos[Math.floor(Math.random() * availableAminos.length)];
+                solution.push(randomAmino);
+            }
+        } else if (solution.length > seqLength) {
+            // aminoSequence 길이가 seqLength보다 길면 랜덤으로 제거
+            while (solution.length > seqLength) {
+                const randomIndex = Math.floor(Math.random() * solution.length);
+                solution.splice(randomIndex, 1);
             }
         }
+        // solution.length === seqLength인 경우는 그대로 유지
         
         return solution;
     }
@@ -270,69 +272,57 @@ export class MassFinderHelper {
     static neighborSolution(currentSolution: string[], targetMass: number): string[] {
         const newSolution = [...currentSolution];
         const availableAminos = Object.keys(dataMap);
-        
-        if (newSolution.length > 0 && availableAminos.length > 0) {
-            // 변경할 위치와 방법을 다양화
-            const changeType = Math.random();
             
-            if (changeType < 0.7) {
-                // 70% 확률로 기존 아미노산 교체
-                const index = Math.floor(Math.random() * newSolution.length);
-                let newAminoAcid: string;
-                
-                // 참조 시퀀스가 있는 경우 참조 시퀀스의 아미노산을 우선적으로 선택
-                if (referenceSequence) {
-                    // 60% 확률로 참조 시퀀스에서 아미노산 선택, 40% 확률로 랜덤 선택
-                    if (Math.random() < 0.6 && referenceSequence.length > 0) {
-                        // 참조 시퀀스에서 무작위로 아미노산 선택
-                        const refIndex = Math.floor(Math.random() * referenceSequence.length);
-                        const candidateAmino = referenceSequence[refIndex];
-                        
-                        // 선택된 아미노산이 사용 가능한 아미노산 목록에 있는지 확인
-                        if (dataMap[candidateAmino]) {
-                            newAminoAcid = candidateAmino;
-                        } else {
-                            // 사용 불가능하면 선택된 아미노산 중에서 랜덤 선택
-                            newAminoAcid = availableAminos[Math.floor(Math.random() * availableAminos.length)];
-                        }
+            const index = Math.floor(Math.random() * newSolution.length);
+            let newAminoAcid: string;
+            
+            // 참조 시퀀스가 있는 경우 참조 시퀀스의 아미노산을 우선적으로 선택
+            if (referenceSequence) {
+                // 60% 확률로 참조 시퀀스에서 아미노산 선택, 40% 확률로 랜덤 선택
+                if (Math.random() < 0.9 && referenceSequence.length > 0) {
+                    // 참조 시퀀스에서 무작위로 아미노산 선택
+                    const refIndex = Math.floor(Math.random() * referenceSequence.length);
+                    const candidateAmino = referenceSequence[refIndex];
+                    
+                    // 선택된 아미노산이 사용 가능한 아미노산 목록에 있는지 확인
+                    if (dataMap[candidateAmino]) {
+                        newAminoAcid = candidateAmino;
                     } else {
-                        // 선택된 아미노산 중에서 랜덤 선택
+                        // 사용 불가능하면 선택된 아미노산 중에서 랜덤 선택
                         newAminoAcid = availableAminos[Math.floor(Math.random() * availableAminos.length)];
                     }
                 } else {
-                    // 참조 시퀀스가 없는 경우 선택된 아미노산 중에서 랜덤 선택
+                    // 선택된 아미노산 중에서 랜덤 선택
                     newAminoAcid = availableAminos[Math.floor(Math.random() * availableAminos.length)];
                 }
-                
-                newSolution[index] = newAminoAcid;
-            } else if (changeType < 0.85) {
-                // 15% 확률로 아미노산 추가 (질량이 허용하는 경우)
-                const currentMass = newSolution.reduce((sum, amino) => sum + (dataMap[amino] ?? 0), 0);
-                const validAminos = availableAminos.filter(key => 
-                    currentMass + dataMap[key] <= targetMass
-                );
-                
-                if (validAminos.length > 0) {
-                    const newAmino = validAminos[Math.floor(Math.random() * validAminos.length)];
-                    newSolution.push(newAmino);
-                }
             } else {
-                // 15% 확률로 아미노산 제거 (최소 1개는 남겨둠)
-                if (newSolution.length > 1) {
-                    const removeIndex = Math.floor(Math.random() * newSolution.length);
-                    newSolution.splice(removeIndex, 1);
-                }
+                // 참조 시퀀스가 없는 경우 선택된 아미노산 중에서 랜덤 선택
+                newAminoAcid = availableAminos[Math.floor(Math.random() * availableAminos.length)];
             }
+            
+            newSolution[index] = newAminoAcid;
 
             // 질량이 목표값을 초과하는 경우 아미노산 제거
             let currentMass = newSolution.reduce((sum, amino) => sum + (dataMap[amino] ?? 0), 0);
             while (currentMass > targetMass && newSolution.length > 0) {
                 newSolution.splice(Math.floor(Math.random() * newSolution.length), 1);
-                currentMass = newSolution.reduce((sum, amino) => sum + (dataMap[amino] ?? 0), 0);
             }
-        }
         return newSolution;
     }
+
+    // static neighborSolution(currentSolution: string[], targetMass: number): string[] {
+    //     const newSolution = [...currentSolution];
+    //     if (newSolution.length > 0) {
+    //         const index = Math.floor(Math.random() * newSolution.length);
+    //         const newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
+    //         newSolution[index] = newAminoAcid;
+
+    //         while (this.evaluate(newSolution, targetMass) > targetMass) {
+    //             newSolution.splice(Math.floor(Math.random() * newSolution.length), 1);
+    //         }
+    //     }
+    //     return newSolution;
+    // }
 
     // 도출된 솔루션의 전체 질량과 목표값의 차이 도출 (시퀀스 유사도 고려)
     static evaluate(solution: string[], targetMass: number): number {
