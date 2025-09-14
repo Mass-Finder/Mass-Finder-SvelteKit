@@ -91,7 +91,7 @@ export class MassFinderHelper {
         const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
         for (let i = minRange; i < maxRange; i++) {
             const addWeight = this.getWaterWeight(i);
-            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
+            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, i, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
             solutions = removeDuplicates(solutions);
             solutions = removeSingleFSequences(solutions);
             bestSolutions = bestSolutions.concat(solutions);
@@ -113,27 +113,27 @@ export class MassFinderHelper {
 
     // calc 함수에서 호출되는 함수
     // FormyType 값에 따라 솔루션을 각각 구해와서 전달하는 역할을 한다.
-    static calcByFType(fType: FormyType, targetMass: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
+    static calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
         const bestSolutions: AminoModel[] = [];
         for (let i = 0; i < saIterations; i++) {
             switch (fType) {
                 case 'no': // 포밀레이스 없으면 무게 안빼고 계산해도됨
-                    const solutionNo = this.simulatedAnnealing(targetMass, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionNo = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsN = Object.keys(solutionNo)[0];
                     const weightN = this.getMonoisotopicWeightSum(seqsN);
                     const molecularWeightN = this.getMolecularWeightSum(seqsN);
                     bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
-                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsY = `f${Object.keys(solutionYes)[0]}`;
                     const weightY = this.getMonoisotopicWeightSum(seqsY);
                     const molecularWeightY = this.getMolecularWeightSum(seqsY);
                     bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: weightY, molecularWeight: molecularWeightY }));
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
-                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, proteinSequence, initialTemperature, absoluteTemperature);
-                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsU1 = Object.keys(solutionUnknown1)[0];
                     const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
                     const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
@@ -149,10 +149,10 @@ export class MassFinderHelper {
     }
 
     /// 핵심로직으로 랜덤한 값과 그 랜던값에서 조금 바꾼 다른 값을 계속 비교해 나가면서 최적의 해를 찾음
-    static simulatedAnnealing(targetMass: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001): { [key: string]: number } {
+    static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
-        let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, targetMass) : this.randomSolution(targetMass);
+        let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, targetMass) : this.randomSolution(seqLength);
         let currentEnergy = this.evaluate(currentSolution, targetMass);
         // 1차 비교군을 베스트로지정해놓음
         let bestSolution = [...currentSolution];
@@ -184,41 +184,19 @@ export class MassFinderHelper {
     }
 
     // 초기에 사용될 기준이 되는 조합을 랜덤으로 만드는 함수 (다양성 개선, 선택된 아미노산만 사용)
-    static randomSolution(targetMass: number): string[] {
+    static randomSolution(seqLength: number): string[] {
         const solution: string[] = [];
-        let mass = 0;
         const aminoKeys = Object.keys(dataMap);
         
         // 선택된 아미노산이 없으면 빈 배열 반환
         if (aminoKeys.length === 0) return solution;
         
-        // 시드값을 사용하여 더 다양한 초기 솔루션 생성
-        const randomSeed = Math.random();
-        
-        while (mass < targetMass) {
+        while (solution.length < seqLength) {
             // 가중치 기반 선택으로 다양성 증대 (선택된 아미노산 중에서만)
             let aminoAcid: string;
-            if (randomSeed > 0.7) {
-                // 30% 확률로 가벼운 아미노산 우선 선택
-                const lightAminos = aminoKeys.filter(key => dataMap[key] < 120);
-                aminoAcid = lightAminos.length > 0 ? 
-                    lightAminos[Math.floor(Math.random() * lightAminos.length)] :
-                    aminoKeys[Math.floor(Math.random() * aminoKeys.length)];
-            } else if (randomSeed > 0.4) {
-                // 30% 확률로 중간 무게 아미노산 우선 선택
-                const mediumAminos = aminoKeys.filter(key => dataMap[key] >= 120 && dataMap[key] < 150);
-                aminoAcid = mediumAminos.length > 0 ? 
-                    mediumAminos[Math.floor(Math.random() * mediumAminos.length)] :
-                    aminoKeys[Math.floor(Math.random() * aminoKeys.length)];
-            } else {
-                // 40% 확률로 완전 랜덤 선택 (선택된 아미노산 중에서)
-                aminoAcid = aminoKeys[Math.floor(Math.random() * aminoKeys.length)];
-            }
-            
-            const aminoAcidMass = dataMap[aminoAcid];
-            if (mass + aminoAcidMass > targetMass) break;
+            // 사용 가능한 아미노산들 중 랜덤으로 선택
+            aminoAcid = aminoKeys[Math.floor(Math.random() * aminoKeys.length)];
             solution.push(aminoAcid);
-            mass += aminoAcidMass;
         }
         return solution;
     }
