@@ -14,5 +14,9 @@
     {
         "title": "Chemical Draw",
         "link": "/draw"
+    },
+    {
+        "title": "Potential Modification",
+        "link": "/potential"
     }
 ]

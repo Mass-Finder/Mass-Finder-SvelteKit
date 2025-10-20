@@ -77,6 +77,10 @@
             --accent-color: #3498db;
         }
 
+        .module-card.potential {
+            --accent-color: #9b59b6;
+        }
+
         .module-icon {
             width: 64px;
             height: 64px;
@@ -201,6 +205,25 @@
                     </div>
                     <div class="p-4 pt-0">
                         <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open Editor</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="module-card potential card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/potential')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/potential')}>
+                    <div class="p-4 flex-grow-1">
+                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🔬</div>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Potential Modification</h3>
+                        <p class="text-muted mb-3 lh-base">Define and manage potential post-translational modifications with custom molecular structures and target specifications.</p>
+                        <ul class="module-features ps-0 mb-0">
+                            <li class="mb-2">Single-site modifications</li>
+                            <li class="mb-2">Crosslinking configurations</li>
+                            <li class="mb-2">Custom structure drawing</li>
+                            <li class="mb-2">Target amino acid selection</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/potential')}>Define Modifications</button>
                     </div>
                 </div>
             </div>
