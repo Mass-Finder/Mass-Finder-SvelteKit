@@ -10,6 +10,7 @@
   export let molecularFormula = writable('');
   export let monoisotopicWeight = writable('');
   export let molecularWeight = writable('');
+  export let moleculeJson = writable({});
 
   onMount(() => {
     // ChemDoodle 기본 설정
@@ -26,6 +27,13 @@
     sketcher.repaint();
   });
 
+  export function clearCanvas() {
+    if (sketcher) {
+      sketcher.clear();
+      sketcher.repaint();
+    }
+  }
+
   function calculateChemical() {
     try {
       let mol = sketcher.getMolecule();
@@ -34,11 +42,13 @@
       let asString = JSON.stringify(obj);
       const molecule = Molecule.fromJson(asString);
 
+      moleculeJson.set(molJson);
       molecularFormula.set(molecule.getMolecularFormula());
       monoisotopicWeight.set(molecule.getMonoisotopicMass().toFixed(3).toString());
       molecularWeight.set(molecule.getMolecularMass().toFixed(3).toString());
 
       dispatch('calculated', {
+        moleculeJson: molJson,
         molecularFormula: $molecularFormula,
         monoisotopicWeight: $monoisotopicWeight,
         molecularWeight: $molecularWeight
@@ -60,7 +70,8 @@
         type="text"
         bind:value={structureName}
         class="form-control"
-        placeholder="Enter structure name (optional)"
+        placeholder="Enter structure name (required)"
+        required
       />
     </div>
 

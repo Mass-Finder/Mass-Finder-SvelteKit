@@ -1,8 +1,10 @@
 <script>
+  import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import SingleSiteSection from '$lib/components/potential/SingleSiteSection.svelte';
   import CrosslinkingSection from '$lib/components/potential/CrosslinkingSection.svelte';
   import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
+  import ModificationItem from '$lib/components/potential/ModificationItem.svelte';
   import { SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
 
   let modificationName = '';
@@ -24,15 +26,71 @@
   let molecularFormula = writable('');
   let monoisotopicWeight = writable('');
   let molecularWeight = writable('');
+  let moleculeJson = writable({});
+  let chemDoodleCanvas;
+
+  // Saved modifications
+  let savedModifications = writable([]);
+
+  onMount(() => {
+    loadSavedModifications();
+  });
 
   function handleSave() {
+    // Validation: Modification name
     if (!modificationName.trim()) {
       alert('Please enter a modification name.');
       return;
     }
 
+    // Validation: Check for spaces in modification name
+    if (modificationName.includes(' ')) {
+      alert('Spaces cannot be entered in modification name.');
+      return;
+    }
+
+    // Validation: Target amino acid(s)
+    if (modificationType === 'Single-site') {
+      if (!targetAminoAcid) {
+        alert('Please select a target amino acid.');
+        return;
+      }
+    } else {
+      if (!target1AminoAcid || !target2AminoAcid) {
+        alert('Please select both target amino acids.');
+        return;
+      }
+    }
+
+    // Validation: Distance value for crosslinking
     if (modificationType === 'Crosslinking' && crosslinkingCondition === CrosslinkingCondition.DISTANCE && distanceValue < 1) {
       alert('Distance value must be at least 1.');
+      return;
+    }
+
+    // Validation: Structure name
+    if (!structureName.trim()) {
+      alert('Please enter a structure name.');
+      return;
+    }
+
+    // Validation: Check for spaces in structure name
+    if (structureName.includes(' ')) {
+      alert('Spaces cannot be entered in structure name.');
+      return;
+    }
+
+    // Validation: Molecular properties must be calculated
+    if (!$molecularFormula || !$monoisotopicWeight || !$molecularWeight) {
+      alert('Please calculate molecular properties first.');
+      return;
+    }
+
+    // Check for duplicate modification name
+    const storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    const isDuplicate = storedData.some(data => data.name === modificationName);
+    if (isDuplicate) {
+      alert('The modification name already exists.');
       return;
     }
 
@@ -54,14 +112,52 @@
             })
           }
       ),
-      structureName: structureName || 'Unnamed Structure',
+      structureName: structureName,
+      moleculeJson: $moleculeJson,
       molecularFormula: $molecularFormula,
       monoisotopicWeight: $monoisotopicWeight,
       molecularWeight: $molecularWeight
     };
 
+    // Save to localStorage
+    storedData.push(modificationData);
+    localStorage.setItem('potentialModifications', JSON.stringify(storedData));
+
     console.log('Saved Modification Data:', modificationData);
     alert('Modification saved successfully!');
+
+    // Reset form after saving
+    resetForm();
+    loadSavedModifications();
+  }
+
+  function resetForm() {
+    modificationName = '';
+    targetAminoAcid = '';
+    target1AminoAcid = '';
+    target2AminoAcid = '';
+    structureName = '';
+    molecularFormula.set('');
+    monoisotopicWeight.set('');
+    molecularWeight.set('');
+    moleculeJson.set({});
+
+    // Clear the ChemDoodle canvas
+    if (chemDoodleCanvas) {
+      chemDoodleCanvas.clearCanvas();
+    }
+  }
+
+  function loadSavedModifications() {
+    let storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    savedModifications.set(storedData);
+  }
+
+  function deleteModification(index) {
+    let storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    storedData.splice(index, 1);
+    localStorage.setItem('potentialModifications', JSON.stringify(storedData));
+    savedModifications.set([...storedData]);
   }
 </script>
 
@@ -108,10 +204,12 @@
 
   <!-- ChemDoodle Canvas -->
   <ChemDoodleCanvas
+    bind:this={chemDoodleCanvas}
     bind:structureName
     bind:molecularFormula
     bind:monoisotopicWeight
     bind:molecularWeight
+    bind:moleculeJson
   />
 
   <!-- Save Button -->
@@ -120,6 +218,20 @@
       Save Modification
     </button>
   </div>
+
+  <!-- Saved Modifications List -->
+  <h2 class="text-start my-4">Saved Modifications</h2>
+  {#if $savedModifications.length > 0}
+    <ul class="list-group mb-5">
+      {#each $savedModifications as modification, index (modification.name)}
+        <li class="list-group-item">
+          <ModificationItem {modification} {index} {deleteModification} />
+        </li>
+      {/each}
+    </ul>
+  {:else}
+    <p class="alert alert-info">No saved modifications yet.</p>
+  {/if}
 </div>
 
 <style>
