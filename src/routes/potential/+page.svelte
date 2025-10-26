@@ -1,23 +1,22 @@
-<script lang="ts">
+<script>
   import { writable } from 'svelte/store';
   import SingleSiteSection from '$lib/components/potential/SingleSiteSection.svelte';
   import CrosslinkingSection from '$lib/components/potential/CrosslinkingSection.svelte';
   import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
-  import type { ModificationType, DistanceOperator } from '../../type/Types';
   import { SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
 
   let modificationName = '';
-  let modificationType: ModificationType = 'Single-site';
+  let modificationType = 'Single-site';
 
   // Single-site variables
-  let targetAminoAcid = 'G';
-  let singleSiteCondition: SingleSiteCondition = SingleSiteCondition.N_TERMINUS;
+  let targetAminoAcid = '';
+  let singleSiteCondition = SingleSiteCondition.N_TERMINUS;
 
   // Crosslinking variables
-  let target1AminoAcid = 'G';
-  let target2AminoAcid = 'G';
-  let crosslinkingCondition: CrosslinkingCondition = CrosslinkingCondition.EVERYWHERE;
-  let distanceOperator: DistanceOperator = '>';
+  let target1AminoAcid = '';
+  let target2AminoAcid = '';
+  let crosslinkingCondition = CrosslinkingCondition.EVERYWHERE;
+  let distanceOperator = '>';
   let distanceValue = 1;
 
   // ChemDoodle variables

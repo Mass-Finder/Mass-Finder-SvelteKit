@@ -1,16 +1,15 @@
-<script lang="ts">
+<script>
   import { onMount, createEventDispatcher } from 'svelte';
-  import type { Writable } from 'svelte/store';
   import { writable } from 'svelte/store';
   import { Molecule } from '$lib/model/atom';
 
   const dispatch = createEventDispatcher();
 
-  let sketcher: any;
+  let sketcher;
   export let structureName = '';
-  export let molecularFormula: Writable<string> = writable('');
-  export let monoisotopicWeight: Writable<string> = writable('');
-  export let molecularWeight: Writable<string> = writable('');
+  export let molecularFormula = writable('');
+  export let monoisotopicWeight = writable('');
+  export let molecularWeight = writable('');
 
   onMount(() => {
     // ChemDoodle 기본 설정

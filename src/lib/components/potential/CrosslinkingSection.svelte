@@ -1,25 +1,35 @@
-<script lang="ts">
+<script>
   import { createEventDispatcher } from 'svelte';
-  import AminoAcidSelector from '../AminoAcidSelector.svelte';
+  import ProteinSelectDialog from './ProteinSelectDialog.svelte';
   import { CrosslinkingCondition } from '../../../type/Types';
-  import type { DistanceOperator } from '../../../type/Types';
 
-  export let target1AminoAcid = 'G';
-  export let target2AminoAcid = 'G';
+  export let target1AminoAcid = '';
+  export let target2AminoAcid = '';
   export let condition = CrosslinkingCondition.EVERYWHERE;
-  export let distanceOperator: DistanceOperator = '>';
+  export let distanceOperator = '>';
   export let distanceValue = 1;
 
   const dispatch = createEventDispatcher();
+  let showDialog = false;
+  let currentTarget = null;
 
-  function handleTarget1Change(event: CustomEvent) {
-    target1AminoAcid = event.detail;
-    dispatch('target1Change', target1AminoAcid);
+  $: currentSelectedValue = currentTarget === 1 ? target1AminoAcid : currentTarget === 2 ? target2AminoAcid : '';
+
+  function handleOpenDialog(targetNumber) {
+    currentTarget = targetNumber;
+    showDialog = true;
   }
 
-  function handleTarget2Change(event: CustomEvent) {
-    target2AminoAcid = event.detail;
-    dispatch('target2Change', target2AminoAcid);
+  function handleSelectAminoAcid(event) {
+    if (currentTarget === 1) {
+      target1AminoAcid = event.detail.code;
+      dispatch('target1Change', target1AminoAcid);
+    } else if (currentTarget === 2) {
+      target2AminoAcid = event.detail.code;
+      dispatch('target2Change', target2AminoAcid);
+    }
+    showDialog = false;
+    currentTarget = null;
   }
 
   function handleConditionChange() {
@@ -41,16 +51,6 @@
 </script>
 
 <div class="crosslinking-section mb-3">
-  <!-- Target 1 and Target 2 -->
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <AminoAcidSelector label="Target 1" on:change={handleTarget1Change} />
-    </div>
-    <div class="col-md-6">
-      <AminoAcidSelector label="Target 2" on:change={handleTarget2Change} />
-    </div>
-  </div>
-
   <!-- Condition Radio Buttons -->
   <div class="mb-3">
     <label class="form-label fw-bold">Condition</label>
@@ -96,7 +96,30 @@
       {/each}
     </div>
   </div>
+
+  <!-- Target 1 and Target 2 -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label class="form-label fw-bold">Target 1</label>
+      <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(1)}>
+        {target1AminoAcid === '' ? 'Select Amino Acid' : target1AminoAcid}
+      </button>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-bold">Target 2</label>
+      <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(2)}>
+        {target2AminoAcid === '' ? 'Select Amino Acid' : target2AminoAcid}
+      </button>
+    </div>
+  </div>
 </div>
+
+<ProteinSelectDialog
+  bind:showDialog
+  showAllOption={false}
+  selectedValue={currentSelectedValue}
+  on:select={handleSelectAminoAcid}
+/>
 
 <style>
   .condition-group {
@@ -109,5 +132,13 @@
 
   .distance-options {
     gap: 5px;
+  }
+
+  .target-btn {
+    background-color: white;
+  }
+
+  .target-btn:hover {
+    background-color: #e7f1ff;
   }
 </style>

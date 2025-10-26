@@ -9,9 +9,7 @@ export type ModificationType = 'Single-site' | 'Crosslinking';
 export enum SingleSiteCondition {
   N_TERMINUS = 'N-terminus',
   C_TERMINUS = 'C-terminus',
-  EVERYWHERE = 'Everywhere',
   INTERNAL_SITE = 'Internal site',
-  EDGE_SITE = 'Edge site'
 }
 
 // Crosslinking Condition

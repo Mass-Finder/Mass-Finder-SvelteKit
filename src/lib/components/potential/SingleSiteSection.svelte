@@ -1,15 +1,28 @@
-<script lang="ts">
+<script>
   import { createEventDispatcher } from 'svelte';
-  import AminoAcidSelector from '../AminoAcidSelector.svelte';
+  import ProteinSelectDialog from './ProteinSelectDialog.svelte';
   import { SingleSiteCondition } from '../../../type/Types';
 
-  export let targetAminoAcid = 'G';
+  export let targetAminoAcid = '';
   export let condition = SingleSiteCondition.N_TERMINUS;
 
   const dispatch = createEventDispatcher();
+  let showDialog = false;
 
-  function handleTargetChange(event: CustomEvent) {
-    targetAminoAcid = event.detail;
+  $: showAllOption = condition === SingleSiteCondition.N_TERMINUS || condition === SingleSiteCondition.C_TERMINUS;
+
+  // Condition이 바뀌면 ALL 옵션이 없는 경우 target을 초기화
+  $: if (!showAllOption && targetAminoAcid === 'ALL') {
+    targetAminoAcid = '';
+  }
+
+  function handleOpenDialog() {
+    showDialog = true;
+  }
+
+  function handleSelectAminoAcid(event) {
+    targetAminoAcid = event.detail.code;
+    showDialog = false;
     dispatch('targetChange', targetAminoAcid);
   }
 
@@ -19,9 +32,6 @@
 </script>
 
 <div class="single-site-section mb-3">
-  <!-- Target Amino Acid Selector -->
-  <AminoAcidSelector label="Target" on:change={handleTargetChange} />
-
   <!-- Condition Radio Buttons -->
   <div class="mb-3">
     <label class="form-label fw-bold">Condition</label>
@@ -44,7 +54,26 @@
       {/each}
     </div>
   </div>
+
+  <!-- Target Amino Acid Selector -->
+  <div class="mb-3">
+    <div class="row">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Target</label>
+        <button class="btn btn-outline-primary w-100 target-btn" on:click={handleOpenDialog}>
+          {targetAminoAcid === '' ? 'Select Amino Acid' : targetAminoAcid === 'ALL' ? 'ALL' : targetAminoAcid}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<ProteinSelectDialog
+  bind:showDialog
+  showAllOption={showAllOption}
+  selectedValue={targetAminoAcid}
+  on:select={handleSelectAminoAcid}
+/>
 
 <style>
   .condition-group {
@@ -53,5 +82,13 @@
 
   .form-check {
     margin-bottom: 8px;
+  }
+
+  .target-btn {
+    background-color: white;
+  }
+
+  .target-btn:hover {
+    background-color: #e7f1ff;
   }
 </style>
