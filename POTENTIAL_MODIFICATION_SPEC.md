@@ -153,7 +153,11 @@
 ### 6.1 UI 요구사항
 1. Potential 화면에서 저장된 modification 목록을 불러오기
 2. 사용자가 적용할 modification을 선택할 수 있는 UI 추가
-3. 기존 Formylation, Admidation, Disulfide와 함께 사용 가능해야 함
+3. **선택 제한**: 사용자는 **최대 4개**의 modification만 선택 가능
+   - 4개 초과 선택 시 경고 메시지 표시 및 추가 선택 방지
+   - 체크박스 UI에서 4개 선택 시 나머지 체크박스 비활성화
+   - 선택된 modification만 계산에 적용됨
+4. 기존 Formylation, Admidation, Disulfide와 함께 사용 가능해야 함
 
 ### 6.2 계산 로직 통합
 1. `stm_helper.ts`의 `generatePossibilities` 함수 확장
@@ -178,6 +182,7 @@
 - ✅ 이미 구현됨: Distance value 최소값 검증 (≥ 1)
 
 ### 7.2 STM 화면에서의 검증
+- ✅ 이미 구현됨: 최대 4개 modification 선택 제한
 - RNA sequence와 modification 조합의 유효성 체크
 - 계산 불가능한 조합에 대한 사용자 알림
 

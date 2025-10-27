@@ -1,11 +1,9 @@
 import { codonTableRtoS, molecularWeightMap, getIonWeight } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
-import type { IonType } from '../../type/Types';
+import type { IonType, PotentialModification, SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
 
 // 포밀레이스의 분자량
 const fWeight = 27.99;
-// Admidation의 분자량 변화 (-0.98)
-const admidationWeight = -0.98;
 
 export class StmHelper {
     static calc(
@@ -15,9 +13,13 @@ export class StmHelper {
         aminoMap: { [key: string]: number },
         ionTypes: IonType[],
         useFormylation: boolean,
-        useAdmidation: boolean
+        potentialModifications: PotentialModification[] = []
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
+
+        // Potential Modifications를 타입별로 분류
+        const singleSiteModifications = potentialModifications.filter(mod => mod.type === 'Single-site') as any[];
+        const crosslinkingModifications = potentialModifications.filter(mod => mod.type === 'Crosslinking') as any[];
 
         // RNA 시퀀스를 3개씩 나누어 코돈 배열로 변환
         const codons = rnaSeq.match(/.{1,3}/g) || [];
@@ -265,47 +267,84 @@ export class StmHelper {
             // Formylation 조건 확인: useFormylation이 true이고 첫 번째 아미노산이 M이거나 AUG에 할당된 ncAA인 경우
             // 그리고 Internal initiation이 없는 경우에만 적용
             const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
-            const shouldFormylate = useFormylation && firstLetter && 
+            const shouldFormylate = useFormylation && firstLetter &&
                                    !hasInternalInitiationAtStart(seqArr) &&
                                    shouldApplyFormylationWithSequence(effectiveCodons[0], firstLetter, ncAAMap, codonTitles);
-            
-            // Admidation 적용: useAdmidation이 true이고 Premature termination이 없는 경우에만 시퀀스 끝에 'n' 추가
+
             let updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
-            const shouldAdmidate = useAdmidation && !hasPrematureTerminationAtEnd(seqArr);
-            if (shouldAdmidate) {
-                updatedSeqArr = [...updatedSeqArr, { letter: "n", natural: true }];
-            }
-            
+
             let finalWeight = baseWeight;
             let finalMolWeight = baseMolWeight;
             if (shouldFormylate) {
                 finalWeight += fWeight;
                 finalMolWeight += fWeight;
             }
-            if (shouldAdmidate) {
-                finalWeight += admidationWeight;
-                finalMolWeight += admidationWeight;
+
+            // Apply Single-site Potential Modifications
+            const appliedModifications: Array<{mod: any, position: number}> = [];
+
+            for (const mod of singleSiteModifications) {
+                const modWeight = parseFloat(mod.monoisotopicWeight);
+                const modMolWeight = parseFloat(mod.molecularWeight);
+
+                if (mod.condition === 'N-terminus') {
+                    // N-terminus: 맨 앞 아미노산 체크
+                    if (!hasInternalInitiationAtStart(seqArr)) {
+                        const firstAA = seqArr.find(item => item.letter !== "");
+                        if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
+                            appliedModifications.push({mod, position: -1}); // -1 = N-terminus
+                            finalWeight += modWeight;
+                            finalMolWeight += modMolWeight;
+                        }
+                    }
+                } else if (mod.condition === 'C-terminus') {
+                    // C-terminus: 맨 뒤 아미노산 체크
+                    if (!hasPrematureTerminationAtEnd(seqArr)) {
+                        const lastAA = [...seqArr].reverse().find(item => item.letter !== "");
+                        if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
+                            appliedModifications.push({mod, position: -2}); // -2 = C-terminus
+                            finalWeight += modWeight;
+                            finalMolWeight += modMolWeight;
+                        }
+                    }
+                } else if (mod.condition === 'Internal site') {
+                    // Internal site: 맨 앞과 맨 뒤가 아닌 위치의 특정 아미노산
+                    const nonEmptyIndices: number[] = [];
+                    seqArr.forEach((item, idx) => {
+                        if (item.letter !== "") nonEmptyIndices.push(idx);
+                    });
+
+                    // 내부 위치만 선택 (첫 번째와 마지막 제외)
+                    for (let i = 1; i < nonEmptyIndices.length - 1; i++) {
+                        const idx = nonEmptyIndices[i];
+                        if (seqArr[idx].letter === mod.target) {
+                            appliedModifications.push({mod, position: idx});
+                            finalWeight += modWeight;
+                            finalMolWeight += modMolWeight;
+                        }
+                    }
+                }
             }
+
             const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
-            
+
             // 시퀀스 레벨 절단 확인 (Internal initiation, Premature termination)
             const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
             const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
-            
+
             if (hasInternalInitiation) {
                 reasons.push("Internal initiation");
             }
             if (hasPrematureTermination) {
                 reasons.push("Premature termination");
             }
-            
+
             // 개별 아미노산 레벨 reason 수집
             updatedSeqArr.forEach((item, index) => {
                 if (shouldFormylate && index === 0) return; // f는 reason에 포함하지 않음
-                if (shouldAdmidate && index === updatedSeqArr.length - 1 && item.letter === "n") return; // n도 reason에 포함하지 않음
                 if (!item.natural) {
                     if (item.candidate && !item.skipped) {
                         reasons.push("ncAA incorporated");
@@ -315,7 +354,12 @@ export class StmHelper {
                     }
                 }
             });
-            
+
+            // Single-site Potential Modifications를 reason에 추가
+            appliedModifications.forEach(({mod}) => {
+                reasons.push(`${mod.name}`);
+            });
+
             // Only natural AA는 아무런 변화가 없는 경우에만 적용
             if (reasons.length === 0) {
                 reasons.push("Only natural AA");
@@ -335,79 +379,100 @@ export class StmHelper {
             }
         }
 
-        // **Disulfide 처리 (C가 2개 이상일 경우)**
+        // **Crosslinking modifications 처리**
         const finalPossibilities: Possibility[] = [];
         const uniqueSequences = new Set<string>();
 
         for (const poss of possibilities) {
-            const sIndices: number[] = [];
-            poss.sequence.forEach((item, idx) => {
-                if (item.letter === "C") sIndices.push(idx);
-            });
+            // 새 possibility 생성
+            const newPoss: Possibility = {
+                ...poss,
+                crosslinking: []
+            };
 
-            let allDisulfidePossibilities: Array<Array<[number, number]>> = [[]];
-            if (sIndices.length >= 2) {
-                allDisulfidePossibilities = getAllValidDisulfideCombinations(sIndices);
+            // Crosslinking modifications 적용
+            for (const mod of crosslinkingModifications) {
+                const target1Indices: number[] = [];
+                const target2Indices: number[] = [];
+
+                poss.sequence.forEach((item, idx) => {
+                    if (item.letter === mod.target1) target1Indices.push(idx);
+                    if (item.letter === mod.target2) target2Indices.push(idx);
+                });
+
+                // 조건에 따라 유효한 페어링 생성
+                const validPairs: Array<[number, number]> = [];
+
+                for (const idx1 of target1Indices) {
+                    for (const idx2 of target2Indices) {
+                        if (idx1 === idx2) continue; // 같은 위치는 제외
+
+                        const distance = Math.abs(idx2 - idx1) - 1; // 사이에 있는 아미노산 개수
+
+                        let isValid = false;
+
+                        if (mod.condition === 'Everywhere') {
+                            isValid = true;
+                        } else if (mod.condition === 'Adjacent') {
+                            isValid = distance === 0;
+                        } else if (mod.condition === 'Adjacent (Target 1→2)' || mod.condition === 'Adjacent(Target 1->2)') {
+                            isValid = (idx2 === idx1 + 1);
+                        } else if (mod.condition === 'Adjacent (Target 2→1)' || mod.condition === 'Adjacent(Target 2->1)') {
+                            isValid = (idx1 === idx2 + 1);
+                        } else if (mod.condition === 'Distance') {
+                            const operator = mod.distanceOperator;
+                            const value = mod.distanceValue || 0;
+
+                            if (operator === '=') {
+                                isValid = distance === value;
+                            } else if (operator === '<') {
+                                isValid = distance < value;
+                            } else if (operator === '>') {
+                                isValid = distance > value;
+                            }
+                        }
+
+                        if (isValid) {
+                            // 중복 방지: 순서 정렬해서 저장
+                            const pair: [number, number] = idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
+                            const pairKey = `${pair[0]}-${pair[1]}`;
+                            if (!validPairs.some(p => `${p[0]}-${p[1]}` === pairKey)) {
+                                validPairs.push(pair);
+                            }
+                        }
+                    }
+                }
+
+                // 각 valid pair 적용
+                for (const pair of validPairs) {
+                    const modWeight = parseFloat(mod.monoisotopicWeight);
+                    const modMolWeight = parseFloat(mod.molecularWeight);
+
+                    newPoss.weight += modWeight;
+                    newPoss.molecularWeight += modMolWeight;
+                    newPoss.reasons.push(`${mod.name}`);
+                    newPoss.crosslinking!.push({modification: mod.name, pair});
+                }
             }
 
-            for (const pairing of allDisulfidePossibilities) {
-                // 새로운 possibility를 생성하여 disulfide 적용에 따른 질량 변경 및 reason 추가
-                // disulfide가 적용되면 "Only natural AA" 이유는 제거됨
-                const newPoss: Possibility = {
-                    ...poss,
-                    disulfide: pairing,
-                    reasons: poss.reasons.filter(reason => reason !== "Only natural AA"),
-                    weight: poss.weight,
-                    molecularWeight: poss.molecularWeight
-                };
+            // Crosslinking이 적용되었으면 "Only natural AA" 제거
+            if (newPoss.crosslinking!.length > 0) {
+                newPoss.reasons = newPoss.reasons.filter(reason => reason !== "Only natural AA");
+            }
 
-                // 한 쌍의 disulfide마다 질량에서 -2.02씩 감소하고, reason에 "Disulfide"를 반복적으로 추가
-                for (let i = 0; i < pairing.length; i++) {
-                    newPoss.weight -= 2.02;
-                    newPoss.molecularWeight -= 2.02;
-                    newPoss.reasons.push("Disulfide");
-                }
+            // Crosslinking 정보를 uniqueKey에 포함
+            const crosslinkingKey = newPoss.crosslinking!.map(c => `${c.modification}-${c.pair.join(',')}`).join('|');
 
-                // 시퀀스 전체에 다이서파이드 적용된 인덱스를 순서대로 정렬
-                const flattenedPairing: number[] = pairing.reduce((acc: number[], curr: [number, number]) => {
-                    return acc.concat(curr);
-                }, []);
-                flattenedPairing.sort((a, b) => a - b);
-
-                // 중복 방지를 위해 Disulfide 개수와 시퀀스 문자열, adduct를 기준으로 유니크한 값만 저장
-                const uniqueKey = `${newPoss.sequenceString}-D${flattenedPairing.join(",")}-${newPoss.adduct}`;
-                if (!uniqueSequences.has(uniqueKey)) {
-                    uniqueSequences.add(uniqueKey);
-                    finalPossibilities.push(newPoss);
-                }
+            // 중복 방지를 위해 시퀀스 문자열, adduct, crosslinking을 기준으로 유니크한 값만 저장
+            const uniqueKey = `${newPoss.sequenceString}-C${crosslinkingKey}-${newPoss.adduct}`;
+            if (!uniqueSequences.has(uniqueKey)) {
+                uniqueSequences.add(uniqueKey);
+                finalPossibilities.push(newPoss);
             }
         }
 
         return finalPossibilities;
     }
-}
-
-//
-// **Disulfide 페어링 조합 생성**
-//
-function getAllValidDisulfideCombinations(indices: number[]): Array<Array<[number, number]>> {
-    const results: Array<Array<[number, number]>> = [[]];
-
-    function generatePairs(remaining: number[], currentPairs: Array<[number, number]>) {
-        if (currentPairs.length > 0) {
-            results.push([...currentPairs]);
-        }
-
-        for (let i = 0; i < remaining.length; i++) {
-            for (let j = i + 1; j < remaining.length; j++) {
-                const newPair: [number, number] = [remaining[i], remaining[j]];
-                generatePairs(remaining.filter((_, idx) => idx !== i && idx !== j), [...currentPairs, newPair]);
-            }
-        }
-    }
-
-    generatePairs(indices, []);
-    return results;
 }
 
 //
@@ -420,7 +485,7 @@ interface Possibility {
     weight: number;
     molecularWeight: number;
     adduct: IonType;
-    disulfide?: Array<[number, number]>;
+    crosslinking?: Array<{modification: string, pair: [number, number]}>;
 }
 
 interface PossibilityLetter {

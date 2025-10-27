@@ -23,3 +23,33 @@ export enum CrosslinkingCondition {
 
 // Distance Operator
 export type DistanceOperator = '>' | '=' | '<';
+
+// Base Potential Modification Interface
+interface BasePotentialModification {
+  name: string;
+  structureName: string;
+  moleculeJson: any;
+  molecularFormula: string;
+  monoisotopicWeight: string;
+  molecularWeight: string;
+}
+
+// Single-site Potential Modification
+export interface SingleSitePotentialModification extends BasePotentialModification {
+  type: 'Single-site';
+  target: string; // Amino acid code or 'ALL'
+  condition: SingleSiteCondition;
+}
+
+// Crosslinking Potential Modification
+export interface CrosslinkingPotentialModification extends BasePotentialModification {
+  type: 'Crosslinking';
+  target1: string; // Amino acid code
+  target2: string; // Amino acid code
+  condition: CrosslinkingCondition;
+  distanceOperator?: DistanceOperator; // Only for Distance condition
+  distanceValue?: number; // Only for Distance condition
+}
+
+// Union type for all Potential Modifications
+export type PotentialModification = SingleSitePotentialModification | CrosslinkingPotentialModification;

@@ -10,7 +10,7 @@
     import { getContext } from "svelte";
     import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
     import FormylationSelector from "$lib/components/FormylationSelector.svelte";
-    import AdmidationSelector from "$lib/components/stm/AdmidationSelector.svelte";
+    import PotentialModificationSelector from "$lib/components/stm/PotentialModificationSelector.svelte";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
     let rnaSeq = ""; // RNA 시퀀스로 변경
@@ -21,7 +21,7 @@
 
     let ionTypes = ['H']; // 배열로 변경
     let formylation = false; // 기본값 no
-    let admidation = false; // 기본값 no
+    let potentialModifications = []; // Potential modifications
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
     let codonTitles = writable({
@@ -63,7 +63,7 @@
                 selectedMonoisotopicAminos,
                 ionTypes,
                 formylation,
-                admidation,
+                potentialModifications
             );
         } finally {
             loading.set(false);
@@ -202,6 +202,10 @@
     function handleAdductChange(e) {
         ionTypes = e.detail;
     }
+
+    function handlePotentialModificationChange(e) {
+        potentialModifications = e.detail;
+    }
 </script>
 
 <div class="container mt-5">
@@ -220,9 +224,12 @@
         <div class="ms-3">
             <FormylationSelector showUnknown={false} fomyType="no" on:change={(e) => formylation = (e.detail === 'yes')} />
         </div>
-        <div class="ms-3">
-            <AdmidationSelector showUnknown={false} admidationType="no" on:change={(e) => admidation = (e.detail === 'yes')} />
-        </div>
+    </div>
+
+    <div class="mb-3">
+        <PotentialModificationSelector
+            on:change={handlePotentialModificationChange}
+        />
     </div>
 
     <div class="mb-3">
