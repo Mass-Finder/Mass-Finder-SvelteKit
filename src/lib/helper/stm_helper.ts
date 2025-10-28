@@ -379,99 +379,303 @@ export class StmHelper {
             }
         }
 
-        // **Crosslinking modifications 처리**
-        const finalPossibilities: Possibility[] = [];
+        // **Crosslinking modifications 처리 - 모든 조합 생성**
+        const finalPossibilities = StmHelper.applyCrosslinkingModifications(possibilities, crosslinkingModifications);
+
+        return finalPossibilities;
+    }
+
+    /**
+     * Crosslinking modifications를 모든 조합으로 적용
+     */
+    private static applyCrosslinkingModifications(
+        basePossibilities: Possibility[],
+        crosslinkingModifications: any[]
+    ): Possibility[] {
+        if (crosslinkingModifications.length === 0) {
+            return basePossibilities;
+        }
+
+        // 각 base possibility에 대해 처리
+        const allResults: Possibility[] = [];
+
+        for (const basePoss of basePossibilities) {
+            // 이 possibility에 대해 모든 crosslinking modifications를 재귀적으로 적용
+            const possWithAllMods = this.applyCrosslinkingRecursive(
+                basePoss,
+                crosslinkingModifications,
+                0
+            );
+            allResults.push(...possWithAllMods);
+        }
+
+        // 중복 제거
         const uniqueSequences = new Set<string>();
+        const dedupedResults: Possibility[] = [];
 
-        for (const poss of possibilities) {
-            // 새 possibility 생성
-            const newPoss: Possibility = {
-                ...poss,
-                crosslinking: []
-            };
+        for (const poss of allResults) {
+            const crosslinkingKey = (poss.crosslinking || [])
+                .map(c => `${c.modification}-${c.pair.join(',')}`)
+                .sort()
+                .join('|');
+            const uniqueKey = `${poss.sequenceString}-C${crosslinkingKey}-${poss.adduct}`;
 
-            // Crosslinking modifications 적용
-            for (const mod of crosslinkingModifications) {
-                const target1Indices: number[] = [];
-                const target2Indices: number[] = [];
-
-                poss.sequence.forEach((item, idx) => {
-                    if (item.letter === mod.target1) target1Indices.push(idx);
-                    if (item.letter === mod.target2) target2Indices.push(idx);
-                });
-
-                // 조건에 따라 유효한 페어링 생성
-                const validPairs: Array<[number, number]> = [];
-
-                for (const idx1 of target1Indices) {
-                    for (const idx2 of target2Indices) {
-                        if (idx1 === idx2) continue; // 같은 위치는 제외
-
-                        const distance = Math.abs(idx2 - idx1) - 1; // 사이에 있는 아미노산 개수
-
-                        let isValid = false;
-
-                        if (mod.condition === 'Everywhere') {
-                            isValid = true;
-                        } else if (mod.condition === 'Adjacent') {
-                            isValid = distance === 0;
-                        } else if (mod.condition === 'Adjacent (Target 1→2)' || mod.condition === 'Adjacent(Target 1->2)') {
-                            isValid = (idx2 === idx1 + 1);
-                        } else if (mod.condition === 'Adjacent (Target 2→1)' || mod.condition === 'Adjacent(Target 2->1)') {
-                            isValid = (idx1 === idx2 + 1);
-                        } else if (mod.condition === 'Distance') {
-                            const operator = mod.distanceOperator;
-                            const value = mod.distanceValue || 0;
-
-                            if (operator === '=') {
-                                isValid = distance === value;
-                            } else if (operator === '<') {
-                                isValid = distance < value;
-                            } else if (operator === '>') {
-                                isValid = distance > value;
-                            }
-                        }
-
-                        if (isValid) {
-                            // 중복 방지: 순서 정렬해서 저장
-                            const pair: [number, number] = idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
-                            const pairKey = `${pair[0]}-${pair[1]}`;
-                            if (!validPairs.some(p => `${p[0]}-${p[1]}` === pairKey)) {
-                                validPairs.push(pair);
-                            }
-                        }
-                    }
-                }
-
-                // 각 valid pair 적용
-                for (const pair of validPairs) {
-                    const modWeight = parseFloat(mod.monoisotopicWeight);
-                    const modMolWeight = parseFloat(mod.molecularWeight);
-
-                    newPoss.weight += modWeight;
-                    newPoss.molecularWeight += modMolWeight;
-                    newPoss.reasons.push(`${mod.name}`);
-                    newPoss.crosslinking!.push({modification: mod.name, pair});
-                }
-            }
-
-            // Crosslinking이 적용되었으면 "Only natural AA" 제거
-            if (newPoss.crosslinking!.length > 0) {
-                newPoss.reasons = newPoss.reasons.filter(reason => reason !== "Only natural AA");
-            }
-
-            // Crosslinking 정보를 uniqueKey에 포함
-            const crosslinkingKey = newPoss.crosslinking!.map(c => `${c.modification}-${c.pair.join(',')}`).join('|');
-
-            // 중복 방지를 위해 시퀀스 문자열, adduct, crosslinking을 기준으로 유니크한 값만 저장
-            const uniqueKey = `${newPoss.sequenceString}-C${crosslinkingKey}-${newPoss.adduct}`;
             if (!uniqueSequences.has(uniqueKey)) {
                 uniqueSequences.add(uniqueKey);
-                finalPossibilities.push(newPoss);
+                dedupedResults.push(poss);
             }
         }
 
-        return finalPossibilities;
+        return dedupedResults;
+    }
+
+    /**
+     * Crosslinking modifications를 재귀적으로 적용
+     * 여러 modification이 있을 때 모든 조합을 생성
+     */
+    private static applyCrosslinkingRecursive(
+        basePoss: Possibility,
+        modifications: any[],
+        modIndex: number
+    ): Possibility[] {
+        // 모든 modification을 처리했으면 현재 possibility 반환
+        if (modIndex >= modifications.length) {
+            return [basePoss];
+        }
+
+        const currentMod = modifications[modIndex];
+
+        // 현재 modification의 모든 조합 생성
+        const combinations = this.generateCrosslinkingCombinations(basePoss, currentMod);
+
+        // 다음 modification도 적용
+        const results: Possibility[] = [];
+        for (const combo of combinations) {
+            const nextResults = this.applyCrosslinkingRecursive(combo, modifications, modIndex + 1);
+            results.push(...nextResults);
+        }
+
+        return results;
+    }
+
+    /**
+     * 한 가지 crosslinking modification에 대한 모든 조합 생성
+     */
+    private static generateCrosslinkingCombinations(
+        basePossibility: Possibility,
+        modification: any
+    ): Possibility[] {
+        // 1. Valid pairs 찾기
+        const validPairs = this.findValidCrosslinkingPairs(basePossibility, modification);
+
+        // 2. Non-overlapping combinations 생성
+        const combinations = this.generateNonOverlappingCombinations(validPairs);
+
+        // 3. 각 조합마다 새로운 Possibility 생성
+        const results: Possibility[] = [];
+        for (const combo of combinations) {
+            const newPoss: Possibility = this.deepClonePossibility(basePossibility);
+
+            if (combo.length > 0) {
+                // 질량 업데이트
+                const modWeight = parseFloat(modification.monoisotopicWeight);
+                const modMolWeight = parseFloat(modification.molecularWeight);
+                newPoss.weight += modWeight * combo.length;
+                newPoss.molecularWeight += modMolWeight * combo.length;
+
+                // 시퀀스 업데이트 (structure name 사용)
+                this.updateSequenceWithCrosslinking(newPoss, combo, modification.structureName);
+
+                // Reasons 업데이트 (modification name 사용)
+                newPoss.reasons.push(`${modification.name} (x${combo.length})`);
+
+                // "Only natural AA" 제거
+                newPoss.reasons = newPoss.reasons.filter(r => r !== "Only natural AA");
+
+                // Crosslinking 정보 저장
+                newPoss.crosslinking = (newPoss.crosslinking || []).concat(
+                    combo.map(pair => ({
+                        modification: modification.name,
+                        pair: pair
+                    }))
+                );
+            }
+
+            results.push(newPoss);
+        }
+
+        return results;
+    }
+
+    /**
+     * Valid crosslinking pairs 찾기
+     */
+    private static findValidCrosslinkingPairs(
+        possibility: Possibility,
+        modification: any
+    ): Array<[number, number]> {
+        const target1Indices: number[] = [];
+        const target2Indices: number[] = [];
+
+        // Crosslinked 아미노산도 포함 - 원래 letter 기준으로 찾기
+        possibility.sequence.forEach((item, idx) => {
+            if (item.letter === modification.target1) target1Indices.push(idx);
+            if (item.letter === modification.target2) target2Indices.push(idx);
+        });
+        const validPairs: Array<[number, number]> = [];
+
+        for (const idx1 of target1Indices) {
+            for (const idx2 of target2Indices) {
+                if (idx1 === idx2) continue; // 같은 위치는 제외
+
+                const distance = Math.abs(idx2 - idx1) - 1;
+
+                let isValid = false;
+
+                if (modification.condition === 'Everywhere') {
+                    isValid = true;
+                } else if (modification.condition === 'Adjacent') {
+                    isValid = distance === 0;
+                } else if (modification.condition === 'Adjacent (Target 1→2)' || modification.condition === 'Adjacent(Target 1->2)') {
+                    isValid = (idx2 === idx1 + 1);
+                } else if (modification.condition === 'Adjacent (Target 2→1)' || modification.condition === 'Adjacent(Target 2->1)') {
+                    isValid = (idx1 === idx2 + 1);
+                } else if (modification.condition === 'Distance') {
+                    const operator = modification.distanceOperator;
+                    const value = modification.distanceValue || 0;
+
+                    if (operator === '=') {
+                        isValid = distance === value;
+                    } else if (operator === '<') {
+                        isValid = distance < value;
+                    } else if (operator === '>') {
+                        isValid = distance > value;
+                    }
+                }
+
+                if (isValid) {
+                    const pair: [number, number] = idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
+                    const pairKey = `${pair[0]}-${pair[1]}`;
+                    if (!validPairs.some(p => `${p[0]}-${p[1]}` === pairKey)) {
+                        validPairs.push(pair);
+                    }
+                }
+            }
+        }
+
+        return validPairs;
+    }
+
+    /**
+     * Non-overlapping combinations 생성 (Backtracking)
+     */
+    private static generateNonOverlappingCombinations(
+        pairs: Array<[number, number]>
+    ): Array<Array<[number, number]>> {
+        const results: Array<Array<[number, number]>> = [[]]; // 빈 조합 (0개 적용)
+
+        const backtrack = (
+            startIndex: number,
+            currentCombo: Array<[number, number]>,
+            usedIndices: Set<number>
+        ) => {
+            // currentCombo를 결과에 추가 (1개 이상인 경우)
+            if (currentCombo.length > 0) {
+                results.push([...currentCombo]);
+                console.log(`[Combination Debug] Added combination of size ${currentCombo.length}:`, currentCombo);
+            }
+
+            // 다음 페어 선택
+            for (let i = startIndex; i < pairs.length; i++) {
+                const [idx1, idx2] = pairs[i];
+
+                // 이미 사용된 인덱스는 건너뛰기
+                if (usedIndices.has(idx1) || usedIndices.has(idx2)) continue;
+
+                // 현재 페어 추가
+                currentCombo.push(pairs[i]);
+                usedIndices.add(idx1);
+                usedIndices.add(idx2);
+
+                // 재귀 호출
+                backtrack(i + 1, currentCombo, usedIndices);
+
+                // Backtrack
+                currentCombo.pop();
+                usedIndices.delete(idx1);
+                usedIndices.delete(idx2);
+            }
+        };
+
+        backtrack(0, [], new Set<number>());
+
+        // 조합 개수 요약
+        const summary = new Map<number, number>();
+        results.forEach(combo => {
+            const count = summary.get(combo.length) || 0;
+            summary.set(combo.length, count + 1);
+        });
+        console.log('[Combination Debug] Summary by combination size:');
+        summary.forEach((count, size) => {
+            console.log(`  - Size ${size}: ${count} combinations`);
+        });
+        console.log(`[Combination Debug] Total combinations: ${results.length}`);
+
+        return results;
+    }
+
+    /**
+     * Crosslinking이 적용된 시퀀스 업데이트
+     */
+    private static updateSequenceWithCrosslinking(
+        possibility: Possibility,
+        pairs: Array<[number, number]>,
+        modificationName: string
+    ): void {
+        // pairs에 포함된 인덱스들을 Set으로 변환
+        const affectedIndices = new Set<number>();
+        pairs.forEach(([idx1, idx2]) => {
+            affectedIndices.add(idx1);
+            affectedIndices.add(idx2);
+        });
+
+        // sequence array 업데이트
+        possibility.sequence = possibility.sequence.map((item, idx) => {
+            if (affectedIndices.has(idx) && item.letter !== "") {
+                return {
+                    ...item,
+                    crosslinked: true,
+                    crosslinkModification: modificationName
+                };
+            }
+            return item;
+        });
+
+        // sequenceString 재생성
+        possibility.sequenceString = possibility.sequence
+            .filter(item => item.letter !== "")
+            .map(item => {
+                if (item.crosslinked && item.crosslinkModification) {
+                    return item.crosslinkModification + item.letter;
+                }
+                return item.letter;
+            })
+            .join("");
+    }
+
+    /**
+     * Possibility deep clone
+     */
+    private static deepClonePossibility(poss: Possibility): Possibility {
+        return {
+            sequence: poss.sequence.map(item => ({ ...item })),
+            sequenceString: poss.sequenceString,
+            reasons: [...poss.reasons],
+            weight: poss.weight,
+            molecularWeight: poss.molecularWeight,
+            adduct: poss.adduct,
+            crosslinking: poss.crosslinking ? poss.crosslinking.map(c => ({ ...c, pair: [...c.pair] })) : []
+        };
     }
 }
 
@@ -495,4 +699,6 @@ interface PossibilityLetter {
     internalInitiation?: boolean;
     prematureTermination?: boolean;
     skipped?: boolean;
+    crosslinked?: boolean;
+    crosslinkModification?: string;
 }

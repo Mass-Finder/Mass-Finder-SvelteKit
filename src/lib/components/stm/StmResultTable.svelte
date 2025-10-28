@@ -2,16 +2,9 @@
   import { adductPrintName, aminoMap } from '$lib/helper/amino_mapper';
 
   export let possibilities = [];
-  
+
   // 선택된 필터를 객체로 관리
-  let selectedFilters = {
-    'Only natural AA': false,
-    'Internal initiation': false,
-    'Premature termination': false,
-    'ncAA incorporated': false,
-    'Skipped': false,
-    'Disulfide': false
-  };
+  let selectedFilters = {};
 
   // 정렬 상태 관리
   let sortState = {
@@ -20,7 +13,30 @@
     sequence: 0  // 0: 초기상태, 1: 오름차순, 2: 내림차순
   };
 
-  const noteOptions = Object.keys(selectedFilters);
+  // possibilities에서 동적으로 필터 옵션 추출
+  $: {
+    const allReasons = new Set();
+    possibilities.forEach(poss => {
+      if (poss.reasons && poss.reasons.length > 0) {
+        poss.reasons.forEach(reason => {
+          // "dC (x2)" 같은 형식에서 기본 이름만 추출 (카운트 제거)
+          const baseReason = reason.replace(/\s*\(x\d+\)$/, '');
+          allReasons.add(baseReason);
+        });
+      } else {
+        allReasons.add('Only natural AA');
+      }
+    });
+
+    // 기존 selectedFilters 상태 유지하면서 새로운 필터 추가
+    const newFilters = {};
+    allReasons.forEach(reason => {
+      newFilters[reason] = selectedFilters[reason] || false;
+    });
+    selectedFilters = newFilters;
+  }
+
+  $: noteOptions = Object.keys(selectedFilters);
 
   // 필터링 및 정렬 로직
   $: filteredPossibilities = possibilities
@@ -28,7 +44,11 @@
       const activeFilters = Object.entries(selectedFilters).filter(([_, isSelected]) => isSelected);
       if (activeFilters.length === 0) return true;
       if (!solution.reasons || solution.reasons.length === 0) return selectedFilters['Only natural AA'];
-      return activeFilters.some(([filter]) => solution.reasons.includes(filter));
+
+      // reasons에 "dC (x2)" 같은 카운트가 포함되어 있으므로, 기본 이름으로 비교
+      return activeFilters.some(([filter]) =>
+        solution.reasons.some(reason => reason.replace(/\s*\(x\d+\)$/, '') === filter)
+      );
     })
     .sort((a, b) => {
       // Monoisotopic Weight 정렬
@@ -86,9 +106,15 @@
     return formatted.join(', ');
   }
 
-  function isDisulfideIndex(solution, index) {
-    if (!solution.disulfide) return false;
-    return solution.disulfide.some(pair => pair[0] === index || pair[1] === index);
+  function isCrosslinkedIndex(solution, index) {
+    if (!solution.crosslinking) return false;
+    return solution.crosslinking.some(c => c.pair[0] === index || c.pair[1] === index);
+  }
+
+  function getCrosslinkModification(solution, index) {
+    if (!solution.crosslinking) return null;
+    const crosslink = solution.crosslinking.find(c => c.pair[0] === index || c.pair[1] === index);
+    return crosslink ? crosslink.modification : null;
   }
 </script>
 
@@ -167,7 +193,7 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
-            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{item.letter.letter}{#if isDisulfideIndex(solution,item.origIndex)}<span class="disulfide-marker">d</span>{/if}</span>{/each}
+            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{#if item.letter.crosslinked && item.letter.crosslinkModification}{item.letter.crosslinkModification}{/if}{item.letter.letter}</span>{/each}
           </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
           <td>{formatReasons(solution.reasons)}</td>
@@ -232,14 +258,6 @@
 
   th {
     white-space: nowrap;
-  }
-
-  .disulfide-marker {
-    position: absolute;
-    bottom: -2px;
-    left: 7px;
-    font-size: 0.7em;
-    color: #00008B;
   }
 
   .text-danger {

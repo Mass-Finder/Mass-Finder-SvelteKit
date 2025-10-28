@@ -160,16 +160,235 @@
 4. 기존 Formylation, Admidation, Disulfide와 함께 사용 가능해야 함
 
 ### 6.2 계산 로직 통합
+
+#### 6.2.1 Single-site Modification
 1. `stm_helper.ts`의 `generatePossibilities` 함수 확장
 2. Single-site modification 적용 로직 구현
    - N-terminus, C-terminus, Internal site 조건 처리
    - Target 필터링 로직
-3. Crosslinking modification 적용 로직 구현
-   - Everywhere, Adjacent, Distance 조건 처리
-   - 기존 Disulfide 로직 재사용 및 일반화
+3. 적용된 modification은 reasons에 추가
+
+#### 6.2.2 Crosslinking Modification - 조합 생성 알고리즘
+
+**핵심 요구사항**: Crosslinking modification은 여러 개가 적용될 수 있으므로, **모든 가능한 조합**을 생성해야 함.
+
+##### 현재 문제점 (2025-10-28 발견)
+
+**문제 1: 조합 생성 부재**
+- 현재 구현은 모든 valid pairs를 한 번에 적용함
+- 예: C가 4개 있으면 6개의 C-C 페어가 모두 적용된 1개의 결과만 생성
+- **필요한 것**: 0개 적용, 1개 적용 (각 페어별), 2개 적용 (겹치지 않는 조합들)... 등 **모든 조합** 생성
+
+**문제 2: 시퀀스 표시**
+- Crosslinking이 적용된 아미노산이 원래 문자 그대로 표시됨 (C → C)
+- **필요한 것**: Modification name을 prefix로 표시 (C → dC, modification name이 "dC"인 경우)
+
+##### 조합 생성 예시
+
+시퀀스: `MCSTINCM` (C가 2개)
+Modification: C-C Crosslinking (이름: dC, 조건: Everywhere)
+
+**생성되어야 하는 결과**:
+1. **0개 적용**: `MCSTINCM` (원본)
+2. **1개 적용**: `MdCSTINdCM` (C₁-C₇ 결합, dC (x1) 노트 표시)
+
+시퀀스: `MCSTINCMCM` (C가 4개)
+Modification: C-C Crosslinking (이름: dC, 조건: Everywhere)
+
+**생성되어야 하는 결과**:
+1. **0개 적용**: `MCSTINCMCM` (원본)
+2. **1개 적용** (6가지):
+   - C₁-C₇: `MdCSTINdCMCM` 노트: dC (x1)
+   - C₁-C₈: `MdCSTINCMdCM` 노트: dC (x1)
+   - C₁-C₉: `MdCSTINCMCdM` 노트: dC (x1)
+   - C₇-C₈: `MCSTINdCdCM` 노트: dC (x1)
+   - C₇-C₉: `MCSTINdCMdCM` 노트: dC (x1)
+   - C₈-C₉: `MCSTINCMdCdCM` 노트: dC (x1)
+3. **2개 적용** (3가지, 겹치지 않는 조합):
+   - C₁-C₇ + C₈-C₉: `MdCSTINdCMdCdCM` 노트: dC (x2)
+   - C₁-C₈ + C₇-C₉: `MdCSTINdCMdCdCM` 노트: dC (x2)
+   - C₁-C₉ + C₇-C₈: `MdCSTINdCdCMdCM` 노트: dC (x2)
+
+##### 시퀀스 표시 규칙
+
+Crosslinking이 적용된 아미노산은 **modification name을 prefix로 표시**:
+
+- **원본**: `MCSTINCM`
+- **C₁-C₇ 결합 적용 후** (modification name: "dC"): `MdCSTINdCM`
+  - 첫 번째 C와 마지막 C가 dC로 변경됨
+  - 시퀀스에서 직접적으로 modification이 적용된 것을 확인 가능
+
+**여러 modification이 있는 경우**:
+- modification name이 "dC", "eC"인 경우, 각각 "dC", "eC"로 prefix 표시
+- 동일한 modification이 여러 쌍에 적용되면 모두 같은 prefix 사용
+
+**Note(이유) 표시**:
+- 적용된 crosslinking 개수를 표시: `dC (x2)` 형식
+- 0개 적용된 경우는 crosslinking reason 표시 안 함
+
+##### 구현 방법
+
+1. **Valid Pairs 찾기**:
+   - 조건(Everywhere, Adjacent, Distance 등)을 만족하는 모든 페어링 찾기
+   - 예: C가 4개 → [(0,2), (0,3), (0,4), (2,3), (2,4), (3,4)] (인덱스 기준)
+
+2. **Non-overlapping Combinations 생성** (Backtracking):
+   - 겹치지 않는 페어 조합 생성 (한 아미노산은 최대 1번만 결합)
+   - 0개, 1개, 2개, ... 최대 개수까지 모든 조합 생성
+   - 알고리즘: Recursive backtracking
+
+3. **각 조합마다 Possibility 생성**:
+   - 질량 계산: base weight + (modification weight × 적용된 페어 개수)
+   - 시퀀스 문자열 업데이트: 결합된 아미노산을 modification name prefix로 변경
+   - Reasons 업데이트: "dC (x2)" 형식으로 표시
+   - Crosslinking 정보 저장
+
+##### 알고리즘 의사코드
+
+```javascript
+function applyCrosslinkingModifications(basePossibilities, crosslinkingModifications) {
+  let results = basePossibilities;
+
+  // 각 crosslinking modification에 대해
+  for (const modification of crosslinkingModifications) {
+    const newResults = [];
+
+    // 각 base possibility에 대해
+    for (const basePoss of results) {
+      // 이 modification의 모든 조합 생성
+      const combinations = generateCrosslinkingCombinations(basePoss, modification);
+      newResults.push(...combinations);
+    }
+
+    results = newResults;
+  }
+
+  return results;
+}
+
+function generateCrosslinkingCombinations(basePossibility, modification) {
+  // 1. Valid pairs 찾기
+  const validPairs = findValidPairs(basePossibility, modification);
+
+  // 2. Non-overlapping combinations 생성
+  const combinations = generateNonOverlappingCombinations(validPairs);
+  // combinations = [[], [pair1], [pair2], ..., [pair1, pair3], ...]
+
+  // 3. 각 조합마다 새로운 Possibility 생성
+  const results = [];
+  for (const combo of combinations) {
+    const newPoss = clonePossibility(basePossibility);
+
+    // 질량 업데이트
+    const modWeight = parseFloat(modification.monoisotopicWeight);
+    const modMolWeight = parseFloat(modification.molecularWeight);
+    newPoss.weight += modWeight * combo.length;
+    newPoss.molecularWeight += modMolWeight * combo.length;
+
+    // 시퀀스 업데이트 (sequence array와 sequenceString 둘 다)
+    if (combo.length > 0) {
+      updateSequenceWithCrosslinking(newPoss, combo, modification.name);
+
+      // Reasons 업데이트
+      newPoss.reasons.push(`${modification.name} (x${combo.length})`);
+
+      // "Only natural AA" 제거
+      newPoss.reasons = newPoss.reasons.filter(r => r !== "Only natural AA");
+    }
+
+    // Crosslinking 정보 저장
+    newPoss.crosslinking = (newPoss.crosslinking || []).concat(
+      combo.map(pair => ({
+        modification: modification.name,
+        pair: pair
+      }))
+    );
+
+    results.push(newPoss);
+  }
+
+  return results;
+}
+
+function generateNonOverlappingCombinations(pairs) {
+  // Recursive backtracking으로 겹치지 않는 조합 생성
+  const results = [[]]; // 빈 조합 (0개 적용)
+
+  function backtrack(startIndex, currentCombo, usedIndices) {
+    // currentCombo를 결과에 추가 (1개 이상인 경우)
+    if (currentCombo.length > 0) {
+      results.push([...currentCombo]);
+    }
+
+    // 다음 페어 선택
+    for (let i = startIndex; i < pairs.length; i++) {
+      const [idx1, idx2] = pairs[i];
+
+      // 이미 사용된 인덱스는 건너뛰기
+      if (usedIndices.has(idx1) || usedIndices.has(idx2)) continue;
+
+      // 현재 페어 추가
+      currentCombo.push(pairs[i]);
+      usedIndices.add(idx1);
+      usedIndices.add(idx2);
+
+      // 재귀 호출
+      backtrack(i + 1, currentCombo, usedIndices);
+
+      // Backtrack
+      currentCombo.pop();
+      usedIndices.delete(idx1);
+      usedIndices.delete(idx2);
+    }
+  }
+
+  backtrack(0, [], new Set());
+  return results;
+}
+
+function updateSequenceWithCrosslinking(possibility, pairs, modificationName) {
+  // pairs에 포함된 인덱스들을 Set으로 변환
+  const affectedIndices = new Set();
+  pairs.forEach(([idx1, idx2]) => {
+    affectedIndices.add(idx1);
+    affectedIndices.add(idx2);
+  });
+
+  // sequence array 업데이트
+  possibility.sequence = possibility.sequence.map((item, idx) => {
+    if (affectedIndices.has(idx) && item.letter !== "") {
+      return {
+        ...item,
+        crosslinked: true,
+        crosslinkModification: modificationName
+      };
+    }
+    return item;
+  });
+
+  // sequenceString 재생성
+  possibility.sequenceString = possibility.sequence
+    .filter(item => item.letter !== "")
+    .map(item => {
+      if (item.crosslinked && item.crosslinkModification) {
+        return item.crosslinkModification + item.letter;
+      }
+      return item.letter;
+    })
+    .join("");
+}
+```
 
 ### 6.3 성능 고려사항
 - 여러 custom modification이 동시에 적용될 경우 조합 폭발 가능성
+  - **최악의 경우**: n개의 target이 있을 때, 조합의 수는 Catalan number에 비례 (대략 O(4^n / n^(3/2)))
+  - 예: C가 4개 → 8개 조합, C가 6개 → 132개 조합, C가 8개 → 1,430개 조합
+  - C가 10개 → 16,796개 조합 (매우 큰 수)
+- **대응 방안**:
+  - Modification 선택 개수 제한 (최대 4개)
+  - Target 개수가 많은 경우 경고 메시지 (예: 10개 이상)
+  - 계산 시간 모니터링 및 timeout 설정 (선택 사항)
+  - 조합 개수 제한 옵션 (선택 사항)
 - Memoization 전략 유지
 - 사용자에게 계산 복잡도 경고 (선택 사항)
 
