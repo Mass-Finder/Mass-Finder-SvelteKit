@@ -320,22 +320,6 @@ export class StmHelper {
                             }
                         }
                     }
-                } else if (mod.condition === 'Internal site') {
-                    // Internal site: 맨 앞과 맨 뒤가 아닌 위치의 특정 아미노산
-                    const nonEmptyIndices: number[] = [];
-                    seqArr.forEach((item, idx) => {
-                        if (item.letter !== "") nonEmptyIndices.push(idx);
-                    });
-
-                    // 내부 위치만 선택 (첫 번째와 마지막 제외)
-                    for (let i = 1; i < nonEmptyIndices.length - 1; i++) {
-                        const idx = nonEmptyIndices[i];
-                        if (seqArr[idx].letter === mod.target) {
-                            appliedModifications.push({mod, position: idx});
-                            finalWeight += modWeight;
-                            finalMolWeight += modMolWeight;
-                        }
-                    }
                 }
             }
 
