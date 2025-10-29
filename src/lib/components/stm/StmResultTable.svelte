@@ -193,7 +193,7 @@
           <td>{solution.weight.toFixed(3)}</td>
           <td>{solution.molecularWeight.toFixed(3)}</td>
           <td>
-            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{#if item.letter.crosslinked && item.letter.crosslinkModification}{item.letter.crosslinkModification}{/if}{item.letter.letter}</span>{/each}
+            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{#if item.letter.crosslinked && item.letter.crosslinkModification}{item.letter.crosslinkModification}{:else}{item.letter.letter}{/if}</span>{/each}
           </td>
           <td>{adductPrintName(solution.adduct) || '-'}</td>
           <td>{formatReasons(solution.reasons)}</td>

@@ -532,9 +532,7 @@ export class StmHelper {
 
                 let isValid = false;
 
-                if (modification.condition === 'Everywhere') {
-                    isValid = true;
-                } else if (modification.condition === 'Adjacent') {
+                if (modification.condition === 'Adjacent') {
                     isValid = distance === 0;
                 } else if (modification.condition === 'Adjacent (Target 1→2)' || modification.condition === 'Adjacent(Target 1->2)') {
                     isValid = (idx2 === idx1 + 1);
@@ -667,7 +665,7 @@ export class StmHelper {
             .filter(item => item.letter !== "")
             .map(item => {
                 if (item.crosslinked && item.crosslinkModification) {
-                    return item.crosslinkModification + item.letter;
+                    return item.crosslinkModification;
                 }
                 return item.letter;
             })

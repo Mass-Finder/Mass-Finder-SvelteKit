@@ -5,7 +5,7 @@
 
   export let target1AminoAcid = '';
   export let target2AminoAcid = '';
-  export let condition = CrosslinkingCondition.EVERYWHERE;
+  export let condition = CrosslinkingCondition.ADJACENT;
   export let distanceOperator = '>';
   export let distanceValue = 1;
 
