@@ -1,9 +1,9 @@
 //
-// ChemDoodle Web Components 10.0.0
+// ChemDoodle Web Components 11.0.0
 //
 // https://web.chemdoodle.com
 //
-// Copyright 2009-2024 iChemLabs, LLC.  All rights reserved.
+// Copyright 2009-2025 iChemLabs, LLC.  All rights reserved.
 //
 // The ChemDoodle Web Components library is licensed under version 3
 // of the GNU GENERAL PUBLIC LICENSE.
@@ -38,7 +38,7 @@ let ChemDoodle = (function() {
 	c.structures.d2 = {};
 	c.structures.d3 = {};
 
-	let VERSION = '10.0.0';
+	let VERSION = '11.0.0';
 
 	c.getVersion = function() {
 		return VERSION;
@@ -4976,6 +4976,17 @@ ChemDoodle.math = (function(c, structures, m, document, undefined) {
 			return false;
 		}
 	};
+	
+	pack.getParameterizedIntersectionPt = function(x1, y1, x2, y2, x3, y3, x4, y4) {
+		let vx1 = x2 - x1, vy1 = y2 - y1;
+		let vx2 = x4 - x3, vy2 = y4 - y3;
+		let bx = x3 - x1, by = y3 - y1;
+		let det = vy1 * vx2 - vx1 * vy2;
+		if (Math.abs(det) < 1e-6) { return [ Infinity, Infinity ]; }
+		let s = (by * vx2 - bx * vy2) / det;
+		let t = (vx1 * by - vy1 * bx) / det;
+		return [ s, t ];
+	};
 
 	pack.clamp = function(value, min, max) {
 		return value < min ? min : value > max ? max : value;
@@ -5032,8 +5043,7 @@ ChemDoodle.math = (function(c, structures, m, document, undefined) {
 
 (function(math, m, undefined) {
 	'use strict';
-	math.Bounds = function() {
-	};
+	math.Bounds = function() {};
 	let _ = math.Bounds.prototype;
 	_.minX = _.minY = _.minZ = Infinity;
 	_.maxX = _.maxY = _.maxZ = -Infinity;
@@ -5714,8 +5724,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 	structures.Atom = function (label, x, y, z) {
 		this.label = label ? label.trim() : 'C';
-		this.x = x ? x : 0;
-		this.y = y ? y : 0;
+		structures.Point.call(this, x, y);
 		this.z = z ? z : 0;
 		// objects cannot be placed directly on the prototype
 		this.enhancedStereo = {type:structures.Atom.ESTEREO_ABSOLUTE, group:1};
@@ -5724,7 +5733,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 	structures.Atom.ESTEREO_ABSOLUTE = 'abs';
 	structures.Atom.ESTEREO_OR = 'or';
 	structures.Atom.ESTEREO_AND = '&';
-	let _ = structures.Atom.prototype = new structures.Point(0, 0);
+	let _ = structures.Atom.prototype = new structures.Point();
 	_.charge = 0;
 	_.numLonePair = 0;
 	_.numRadical = 0;
@@ -6005,21 +6014,21 @@ ChemDoodle.RESIDUE = (function(undefined) {
 				}
 			}
 		}
-		let attributes = [];
+		this.attributes = [];
 		for (let i = 0; i < this.numLonePair; i++) {
-			attributes.push({
+			this.attributes.push({
 				t: 2
 			});
 		}
 		for (let i = 0; i < this.numRadical; i++) {
-			attributes.push({
+			this.attributes.push({
 				t: 1
 			});
 		}
 		if(this.enhancedStereo.type!==structures.Atom.ESTEREO_ABSOLUTE){
-			attributes.push(this.enhancedStereo);
+			this.attributes.push(this.enhancedStereo);
 		}
-		if (attributes.length>0) {
+		if (this.attributes.length>0) {
 			ctx.fillStyle = 'black';
 			ctx.font = extensions.getFontString(styles.atoms_font_size_2D * .8, styles.atoms_font_families_2D, styles.atoms_font_bold_2D, styles.atoms_font_italic_2D);
 			ctx.textAlign = 'center';
@@ -6038,12 +6047,12 @@ ChemDoodle.RESIDUE = (function(undefined) {
 				la = angleData.largest;
 			}
 			if (hAngle === undefined && m.abs(la - 2 * m.PI / as.length) < m.PI / 60) {
-				let mid = m.ceil(attributes.length / as.length);
-				for (let i = 0, ii = attributes.length; i < ii; i += mid, ali += la) {
-					this.drawAttribute(ctx, styles, attributes.slice(i, m.min(attributes.length, i + mid)), ali, la, hAngle, labelVisible);
+				let mid = m.ceil(this.attributes.length / as.length);
+				for (let i = 0, ii = this.attributes.length; i < ii; i += mid, ali += la) {
+					this.drawAttribute(ctx, styles, this.attributes.slice(i, m.min(this.attributes.length, i + mid)), ali, la, hAngle, labelVisible);
 				}
 			} else {
-				this.drawAttribute(ctx, styles, attributes, ali, la, hAngle, labelVisible);
+				this.drawAttribute(ctx, styles, this.attributes, ali, la, hAngle, labelVisible);
 			}
 		}
 		// for debugging atom label dimensions
@@ -6053,7 +6062,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 	_.drawAttribute = function (ctx, styles, attributes, angle, largest, hAngle, labelVisible) {
 		let segment = largest / (attributes.length + (this.bonds.length === 0 && hAngle === undefined ? 0 : 1));
 		let angleStart = angle - largest / 2 + segment;
-		for (let i = 0; i < attributes.length; i++) {
+		for (let i = 0, ii = attributes.length; i < ii; i++) {
 			let t = attributes[i];
 			let angle = angleStart + i * segment;
 			let distance = styles.atoms_lonePairDistance_2D;
@@ -6077,10 +6086,22 @@ ChemDoodle.RESIDUE = (function(undefined) {
 				ctx.beginPath();
 				ctx.arc(p1x - difx, p1y - dify, styles.atoms_lonePairDiameter_2D, 0, m.PI * 2, false);
 				ctx.fill();
+				t.bounds = {
+					x: Math.min(p1x+difx, p1x-difx) - styles.atoms_lonePairDiameter_2D/2,
+					y: Math.min(p1y+dify, p1y-dify) - styles.atoms_lonePairDiameter_2D/2,
+					w: Math.abs(difx)*2+styles.atoms_lonePairDiameter_2D,
+					h: Math.abs(dify)*2+styles.atoms_lonePairDiameter_2D
+				};
 			} else if (t.t === 1) {
 				ctx.beginPath();
 				ctx.arc(p1x, p1y, styles.atoms_lonePairDiameter_2D, 0, m.PI * 2, false);
 				ctx.fill();
+				t.bounds = {
+					x: p1x - styles.atoms_lonePairDiameter_2D/2,
+					y: p1y - styles.atoms_lonePairDiameter_2D/2,
+					w: styles.atoms_lonePairDiameter_2D,
+					h: styles.atoms_lonePairDiameter_2D
+				};
 			}
 		}
 	};
@@ -8123,8 +8144,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(structures, undefined) {
 	'use strict';
 
-	structures.Reaction = function() {
-	};
+	structures.Reaction = function() {};
 	let _ = structures.Reaction.prototype;
 	_.resolve = function(arrow, molecules) {
 		if (!arrow || !molecules) {
@@ -8693,8 +8713,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(math, d2, m, undefined) {
 	'use strict';
-	d2._Shape = function() {
-	};
+	d2._Shape = function() {};
 	let _ = d2._Shape.prototype;
 	_.drawDecorations = function(ctx, styles) {
 		if (this.isHover) {
@@ -9304,71 +9323,298 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(math, jsb, structures, d2, m, undefined) {
 	'use strict';
-	let getPossibleAngles = function(o) {
+	let getPossibleAngles = function(o1, o2, numElectron) {
 		let as = [];
-		if (o instanceof structures.Atom) {
-			if (o.bondNumber === 0) {
-				as.push(m.PI);
-			} else if (o.angles) {
-				if (o.angles.length === 1) {
-					as.push(o.angles[0] + m.PI);
-				} else {
-					for ( let i = 1, ii = o.angles.length; i < ii; i++) {
-						as.push(o.angles[i - 1] + (o.angles[i] - o.angles[i - 1]) / 2);
+		let c1 = o1 instanceof structures.Atom ? o1 : o1.getCenter();
+		let c2 = o2 instanceof structures.Atom ? o2 : o2.getCenter();
+		let ang = c1.angle(c2);
+		for(let i = 0; i < 2; i++) {
+			let o = i === 0 ? o1 : o2;
+			let currentas = [];
+			as.push(currentas);
+			if (o instanceof structures.Atom) {
+				if(i === 0 && o.attributes!==undefined) {
+					let dist0 = Infinity;
+					let dist1 = Infinity;
+					let p0 = new structures.Point(Infinity, Infinity);
+					let p1 = new structures.Point(Infinity, Infinity);
+					for(let j = 0, jj = o.attributes.length; j < jj; j++) {
+						let att = o.attributes[j];
+						if(att.t !== undefined && (att.t === 2 && numElectron === 2 || att.t !== 2 && numElectron !== 2)) {
+							let p = new structures.Point(att.bounds.x+att.bounds.w/2, att.bounds.y+att.bounds.h/2);
+							let d = p.distance(o);
+							if(d < dist0) {
+								p1 = p0;
+								p0 = p;
+								dist1 = dist0;
+								dist0 = d;
+							} else if(d < dist1) {
+								p1 = p;
+								dist1 = d;
+							}
+						}
 					}
-					let firstIncreased = o.angles[0] + m.PI * 2;
-					let last = o.angles[o.angles.length - 1];
-					as.push(last + (firstIncreased - last) / 2);
+					if(p0.x !== Infinity) {
+						currentas.push(o.angle(p0));
+					} 
+					if(p1.x !== Infinity) {
+						currentas.push(o.angle(p1));
+					}
 				}
-				if (o.largestAngle > m.PI) {
-					// always use angle of least interfearence if it is greater
-					// than 120
-					as = [ o.angleOfLeastInterference ];
-				}
-				if (o.bonds) {
-					// point up towards a carbonyl
-					for ( let i = 0, ii = o.bonds.length; i < ii; i++) {
-						let b = o.bonds[i];
-						if (b.bondOrder === 2) {
-							let n = b.getNeighbor(o);
-							if (n.label === 'O') {
-								as = [ n.angle(o) ];
-								break;
+				if(currentas.length === 0) {
+					if (o.bondNumber === 0) {
+						if (i === 0) {
+								currentas.push(ang);
+								currentas.push(ang + m.PI / 6);
+								currentas.push(ang - m.PI / 6);
+							} else {
+								currentas.push(ang + m.PI);
+								currentas.push(ang + m.PI + m.PI / 6);
+								currentas.push(ang + m.PI - m.PI / 6);
+							}
+					} else if (o.angles) {
+						if (o.largestAngle > m.PI + .0001) {
+							let jj = o.angles.length;
+							for (let j = 1; j < jj; j++) {
+								currentas.push((o.angles[j - 1] + o.angles[j]) / 2);
+							}
+							currentas.push((o.angles[jj - 1] + o.angles[0]) / 2 + m.PI);
+							currentas.push(o.angleOfLeastInterference - o.largestAngle / 4);
+							currentas.push(o.angleOfLeastInterference + o.largestAngle / 4);
+						} else if (o.largestAngle > m.PI - .0001) {
+							if (o.angles.length === 2) {
+								currentas.push((o.angles[0] + o.angles[1]) / 2);
+								currentas.push(currentas[0] + m.PI / 6);
+								currentas.push(currentas[0] - m.PI / 6);
+								for (let j = 0; j < 3; j++) {
+									currentas.push(currentas[j] + m.PI);
+								}
+							} else {
+								let jj = o.angles.length;
+								for (let j = 1; j < jj; j++) {
+									currentas.push((o.angles[j - 1] + o.angles[j]) / 2);
+								}
+								currentas.push((o.angles[jj - 1] + o.angles[0]) / 2 + m.PI);
+								currentas.push(o.angleOfLeastInterference - o.largestAngle / 6);
+								currentas.push(o.angleOfLeastInterference + o.largestAngle / 6);
+							}
+						} else {
+							let jj = o.angles.length;
+							for (let j = 1; j < jj; j++) {
+								currentas.push((o.angles[j - 1] + o.angles[j]) / 2);
+							}
+							currentas.push((o.angles[jj - 1] + o.angles[0]) / 2 + m.PI);
+						}
+						if (o.bonds && o.bonds.length === 3 && o.label === 'C') {
+							// point up towards a carbonyl
+							for (let j = 0; j < 3; j++) {
+								let b = o.bonds[j];
+								if (b.bondOrder === 2) {
+									let n = b.getNeighbor(o);
+									if(n.label === 'O') {
+										let carbonylangle = 0;
+										let angledouble = o.angle(n);
+										for (let k = 0, kk = o.angles.length; k < kk; k++) {
+											if(m.abs(angledouble - o.angles[k]) > .0001) {
+												carbonylangle+=o.angles[k];
+											}
+										}
+										carbonylangle/=2;
+										if (m.abs(angledouble - o.angles[1]) < .0001) {
+											carbonylangle += m.PI;
+										}
+										currentas.length = 0;
+										currentas.push(carbonylangle);
+										break;
+									}
+								}
 							}
 						}
 					}
 				}
+			} else {
+				let angle = o.a1.angle(o.a2);
+				currentas.push(angle + m.PI / 2);
+				currentas.push(angle + 3 * m.PI / 2);
 			}
-		} else {
-			let angle = o.a1.angle(o.a2);
-			as.push(angle + m.PI / 2);
-			as.push(angle + 3 * m.PI / 2);
-		}
-		for ( let i = 0, ii = as.length; i < ii; i++) {
-			while (as[i] > m.PI * 2) {
-				as[i] -= m.PI * 2;
-			}
-			while (as[i] < 0) {
-				as[i] += m.PI * 2;
+			for ( let j = 0, jj = currentas.length; j < jj; j++) {
+				while (currentas[j] > m.PI * 2) {
+					currentas[j] -= m.PI * 2;
+				}
+				while (currentas[j] < 0) {
+					currentas[j] += m.PI * 2;
+				}
 			}
 		}
 		return as;
 	};
-	let getPullBack = function(o, styles) {
-		let pullback = 3;
-		if (o instanceof structures.Atom) {
-			if (o.isLabelVisible(styles)) {
-				pullback = 8;
+	
+	let getControlDistance = function(o1, o2) {
+		let o1IsAtom = o1 instanceof structures.Atom;
+		let o2IsAtom = o2 instanceof structures.Atom;
+	    let p1 = o1IsAtom ? new structures.Point(o1.x, o1.y) : o1.getCenter();
+		let p2 = o2IsAtom ? new structures.Point(o2.x, o2.y) : o2.getCenter();
+		let controlDist = 0;
+		let count = 0;
+		if(o1IsAtom) {
+			// bonds array may not always be set for atoms
+			if(o1.bonds){
+				for(let b of o1.bonds) {
+					controlDist += b.getLength();
+					count++;
+				}
 			}
-			if (o.charge !== 0 || o.numRadical !== 0 || o.numLonePair !== 0) {
-				pullback = 13;
+		} else {
+			controlDist += o1.getLength();
+			count++;
+		}
+		if(o2IsAtom) {
+			// bonds array may not always be set for atoms
+			if(o2.bonds){
+				for(let b of o2.bonds) {
+					controlDist += b.getLength();
+					count++;
+				}
+			}
+		} else {
+			controlDist += o2.getLength();
+			count++;
+		}
+		if(count === 0) {
+			return 35;
+		} else if(!o1IsAtom && !o2IsAtom) {
+			return m.max(30, p1.distance(p2)/3)
+		} else {
+			controlDist /= count;
+			controlDist = m.max(controlDist, 30, p1.distance(p2)/3);
+			if(!o1IsAtom && o1.contains(o2) || !o2IsAtom && o2.contains(o1)) {
+				controlDist = m.max(30, controlDist/2);
+			}
+		}
+		return controlDist;
+	};
+	
+	let getPullBack = function(o, c, styles) {
+		let pullback = 5;
+		if (o instanceof structures.Atom) {
+			let angle = o.angle(c);
+			let xLimit = o.x, yLimit = o.y;
+			if (o.isLabelVisible(styles)) {
+				for(let i = 0, ii = o.textBounds.length; i < ii; i++) {
+					let rect = o.textBounds[i];
+					if(angle>=0 && angle <= m.PI) {
+						yLimit = m.min(yLimit, rect.y-2);
+					} else {
+						yLimit = m.max(yLimit, rect.y+rect.h+2);
+					}
+					if(angle >= m.PI/2 && angle <= 3*m.PI/2) {
+						xLimit = m.min(xLimit, rect.x-2);
+					} else {
+						xLimit = m.max(xLimit, rect.x+rect.w+2);
+					}
+				}
+				let xdif = xLimit - o.x, ydif = yLimit - o.y;
+				let length = m.sqrt(xdif*xdif+ydif*ydif)+1;
+				let xFar = o.x + m.cos(angle)*length, yFar = o.y-m.sin(angle)*length;
+				let t = 0;
+				for(let i = 0, ii = o.textBounds.length; i < ii; i++) {
+					let rect = o.textBounds[i];
+					let minX = rect.x - 2, maxX = rect.x + rect.w + 2, minY = rect.y - 2, maxY = rect.y + rect.h+2;
+					if(angle>=0 && angle <= m.PI) {
+						let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, minY, maxX, minY);
+						if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+							t = intersection[0];
+						}
+					} else {
+						let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, maxY, maxX, maxY);
+						if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+							t = intersection[0];
+						}
+					}
+					if(angle >= m.PI/2 && angle <= 3*m.PI/2) {
+						let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, minY, minX, maxY);
+						if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+							t = intersection[0];
+						}
+					} else {
+						let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, maxX, minY, maxX, maxY);
+						if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+							t = intersection[0];
+						}
+					}
+				}
+				pullback = m.max(pullback, length*t);
+			}
+			if(o.attributes !== undefined) {
+				for(let i = 0, ii = o.attributes.length; i < ii; i++) {
+					let att = o.attributes[i];
+					if(att.t !== undefined) {
+						let rect = att.bounds;
+						if(angle>=0 && angle <= m.PI) {
+							yLimit = m.min(yLimit, rect.y-2);
+						} else {
+							yLimit = m.max(yLimit, rect.y+rect.h+2);
+						}
+						if(angle >= m.PI/2 && angle <= 3*m.PI/2) {
+							xLimit = m.min(xLimit, rect.x-2);
+						} else {
+							xLimit = m.max(xLimit, rect.x+rect.w+2);
+						}
+					}
+				}
+				let xdif = xLimit - o.x, ydif = yLimit - o.y;
+				let length = m.sqrt(xdif*xdif+ydif*ydif)+1;
+				let xFar = o.x + m.cos(angle)*length, yFar = o.y-m.sin(angle)*length;
+				let t = 0;
+				for(let i = 0, ii = o.attributes.length; i < ii; i++) {
+					let att = o.attributes[i];
+					if(att.t!==undefined) {
+						let rect = att.bounds;
+						let minX = rect.x - 2, maxX = rect.x + rect.w + 2, minY = rect.y - 2, maxY = rect.y + rect.h+2;
+						if(angle>=0 && angle <= m.PI) {
+							let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, minY, maxX, minY);
+							if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+								t = intersection[0];
+							}
+						} else {
+							let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, maxY, maxX, maxY);
+							if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+								t = intersection[0];
+							}
+						}
+						if(angle >= m.PI/2 && angle <= 3*m.PI/2) {
+							let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, minX, minY, minX, maxY);
+							if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+								t = intersection[0];
+							}
+						} else {
+							let intersection = math.getParameterizedIntersectionPt(o.x, o.y, xFar, yFar, maxX, minY, maxX, maxY);
+							if(intersection[1] >=0 && intersection[1] <= 1 && intersection[0] < 1 && intersection[0] > t) {
+								t = intersection[0];
+							}
+						}
+					}
+				}
+				pullback = m.max(pullback, length*t);
 			}
 		} else if (o instanceof structures.Point) {
 			// this is the midpoint of a bond forming pusher
 			pullback = 0;
 		} else {
 			if (o.bondOrder > 1) {
-				pullback = 5;
+				pullback = styles.bonds_useAbsoluteSaturationWidths_2D?styles.bonds_saturationWidthAbs_2D+3:o.getLength() * styles.bonds_saturationWidth_2D + 3;
+				if(o.bondOrder === 2) {
+					if(styles.bonds_symmetrical_2D || !(o.ring || o.a1.label === 'C' && o.a2.label === 'C')) {
+						pullback = styles.bonds_useAbsoluteSaturationWidths_2D?styles.bonds_saturationWidthAbs_2D/2+5.5:o.getLength() * styles.bonds_saturationWidth_2D/2 + 5.5;
+					} else {
+						let center = o.getCenter();
+						let dot = (o.a2.x - center.x)*(c.y - center.y) - (o.a2.y - center.y)*(c.x - center.x);
+						let flip = !o.ring || (o.ring.center.angle(o.a1) > o.ring.center.angle(o.a2) && !(o.ring.center.angle(o.a1) - o.ring.center.angle(o.a2) > m.PI) || (o.ring.center.angle(o.a1) - o.ring.center.angle(o.a2) < -m.PI));
+						if(flip && dot < 0 || !flip && dot > 0) {
+							pullback = 3;
+						}
+					}
+				}
 			}
 		}
 		return pullback;
@@ -9379,7 +9625,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		let mcosa = m.cos(angle1);
 		let msina = m.sin(angle1);
 		// pull back from start
-		let pullBack = getPullBack(o1, styles);
+		let pullBack = getPullBack(o1, c1, styles);
 		p1.x -= mcosa * pullBack;
 		p1.y += msina * pullBack;
 		// arrow
@@ -9389,17 +9635,13 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		msina = m.sin(angle2);
 		let mcosp = m.cos(perpendicular);
 		let msinp = m.sin(perpendicular);
-		p2.x -= mcosa * 5;
-		p2.y += msina * 5;
-		let nap = new structures.Point(p2.x, p2.y);
 		// pull back from end
-		pullBack = getPullBack(o2, styles) / 3;
-		nap.x -= mcosa * pullBack;
-		nap.y += msina * pullBack;
-		p2.x -= mcosa * (retract * 0.8 + pullBack);
-		p2.y += msina * (retract * 0.8 + pullBack);
-		let rx1 = nap.x - mcosa * retract * 0.8;
-		let ry1 = nap.y + msina * retract * 0.8;
+		pullBack = getPullBack(o2, c2, styles);
+		p2.x -= mcosa * pullBack;
+		p2.y += msina * pullBack;
+		let nap = new structures.Point(p2.x, p2.y);
+		p2.x -= mcosa * (retract * 0.8);
+		p2.y += msina * (retract * 0.8);
 		let a1 = new structures.Point(nap.x + mcosp * styles.shapes_arrowLength_2D / 3 - mcosa * retract, nap.y - msinp * styles.shapes_arrowLength_2D / 3 + msina * retract);
 		let a2 = new structures.Point(nap.x - mcosp * styles.shapes_arrowLength_2D / 3 - mcosa * retract, nap.y + msinp * styles.shapes_arrowLength_2D / 3 + msina * retract);
 		let include1 = true, include2 = true;
@@ -9415,7 +9657,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		if (include2) {
 			ctx.lineTo(a2.x, a2.y);
 		}
-		ctx.lineTo(rx1, ry1);
+		ctx.lineTo(p2.x, p2.y);
 		if (include1) {
 			ctx.lineTo(a1.x, a1.y);
 		}
@@ -9434,6 +9676,9 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.o1 = o1;
 		this.o2 = o2;
 		this.numElectron = numElectron ? numElectron : 1;
+		this.startAngle = 0;
+		this.endAngle = 0;
+		this.controlDistance = 30;
 	};
 	let _ = d2.Pusher.prototype = new d2._Shape();
 	_.drawDecorations = function(ctx, styles) {
@@ -9456,22 +9701,16 @@ ChemDoodle.RESIDUE = (function(undefined) {
 			ctx.lineCap = 'butt';
 			let p1 = this.o1 instanceof structures.Atom ? new structures.Point(this.o1.x, this.o1.y) : this.o1.getCenter();
 			let p2 = this.o2 instanceof structures.Atom ? new structures.Point(this.o2.x, this.o2.y) : this.o2.getCenter();
-			let controlDist = 35;
-			let as1 = getPossibleAngles(this.o1);
-			let as2 = getPossibleAngles(this.o2);
-			let c1, c2;
-			let minDif = Infinity;
-			for ( let i = 0, ii = as1.length; i < ii; i++) {
-				for ( let j = 0, jj = as2.length; j < jj; j++) {
-					let c1c = new structures.Point(p1.x + controlDist * m.cos(as1[i]), p1.y - controlDist * m.sin(as1[i]));
-					let c2c = new structures.Point(p2.x + controlDist * m.cos(as2[j]), p2.y - controlDist * m.sin(as2[j]));
-					let dif = c1c.distance(c2c);
-					if (dif < minDif) {
-						minDif = dif;
-						c1 = c1c;
-						c2 = c2c;
-					}
-				}
+
+			let c1 = new structures.Point(p1.x + this.controlDistance * m.cos(this.startAngle), p1.y - this.controlDistance * m.sin(this.startAngle));
+			let c2 = new structures.Point(p2.x + this.controlDistance * m.cos(this.endAngle), p2.y - this.controlDistance * m.sin(this.endAngle));
+			if (c1.distance(p2)+c2.distance(p1) < c1.distance(p1)+c2.distance(p2)) {
+				let temp = c1.x;
+				c1.x = c2.x;
+				c2.x = temp;
+				temp = c1.y;
+				c1.y = c2.y;
+				c2.y = temp;
 			}
 			this.caches = [];
 			if (this.numElectron === -1) {
@@ -9481,30 +9720,12 @@ ChemDoodle.RESIDUE = (function(undefined) {
 				let mcosa = m.cos(angle);
 				let msina = m.sin(angle);
 				let m1 = new structures.Point(p1.x+(dist-1)*mcosa, p1.y-(dist-1)*msina);
-				let cm1 = new structures.Point(m1.x+m.cos(perp+m.PI/6)*controlDist, m1.y - m.sin(perp+m.PI/6)*controlDist);
+				let cm1 = new structures.Point(m1.x+m.cos(perp+m.PI/6)*this.controlDistance, m1.y - m.sin(perp+m.PI/6)*this.controlDistance);
 				let m2 = new structures.Point(p1.x+(dist+1)*mcosa, p1.y-(dist+1)*msina);
-				let cm2 = new structures.Point(m2.x+m.cos(perp-m.PI/6)*controlDist, m2.y - m.sin(perp-m.PI/6)*controlDist);
+				let cm2 = new structures.Point(m2.x+m.cos(perp-m.PI/6)*this.controlDistance, m2.y - m.sin(perp-m.PI/6)*this.controlDistance);
 				drawPusher(ctx, styles, this.o1, m1, p1, c1, cm1, m1, 1, this.caches);
 				drawPusher(ctx, styles, this.o2, m2, p2, c2, cm2, m2, 1, this.caches);
 			} else {
-				if (math.intersectLines(p1.x, p1.y, c1.x, c1.y, p2.x, p2.y, c2.x, c2.y)) {
-					let tmp = c1;
-					c1 = c2;
-					c2 = tmp;
-				}
-				// try to clean up problems, like loops
-				let angle1 = c1.angle(p1);
-				let angle2 = c2.angle(p2);
-				let angleDif = (m.max(angle1, angle2) - m.min(angle1, angle2));
-				if (m.abs(angleDif - m.PI) < .001 && this.o1.molCenter === this.o2.molCenter) {
-					// in the case where the control tangents are parallel
-					angle1 += m.PI / 2;
-					angle2 -= m.PI / 2;
-					c1.x = p1.x + controlDist * m.cos(angle1 + m.PI);
-					c1.y = p1.y - controlDist * m.sin(angle1 + m.PI);
-					c2.x = p2.x + controlDist * m.cos(angle2 + m.PI);
-					c2.y = p2.y - controlDist * m.sin(angle2 + m.PI);
-				}
 				drawPusher(ctx, styles, this.o1, this.o2, p1, c1, c2, p2, this.numElectron, this.caches);
 			}
 		}
@@ -9521,6 +9742,258 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		}
 		return false;
 	};
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// static function
+	d2.Pusher.setupPushers = function(shapes, molecules) {
+		let pusherLists = [];
+		for(let shape of shapes) {
+			if(shape instanceof d2.Pusher) {
+				let o1 = shape.o1;
+				let o2 = shape.o2;
+				let m1 = undefined;
+				let m2 = undefined;
+				for(let mol of molecules) {
+					if(o1 instanceof structures.Atom) {
+						if(mol.atoms.includes(o1)) {
+							m1 = mol;
+						}
+					} else {
+						if(mol.bonds.includes(o1)) {
+							m1 = mol;
+						}
+					}
+					if(o2 instanceof structures.Atom) {
+						if(mol.atoms.includes(o2)) {
+							m2 = mol;
+						}
+					} else {
+						if(mol.bonds.includes(o2)) {
+							m2 = mol;
+						}
+					}
+					if(m1 && m2) {
+						break;
+					}
+				}
+				if(m1 && m2){
+					let found = false;
+					for(let pusherList of pusherLists) {
+						if(pusherList[1].includes(m1)) {
+							found = true;
+							pusherList[0].push(shape);
+							if(m1!==m2 && !(pusherList.includes(m2))) {
+								pusherList[1].push(m2);
+							}
+							break;
+						} else if(pusherList[1].includes(m2)) {
+							found = true;
+							pusherList[0].push(shape);
+							pusherList[1].push(m1);
+							break;
+						}
+					}
+					if(!found) {
+						if(m1 === m2) {
+							pusherLists.push([[shape], [m1]]);
+						} else {
+							pusherLists.push([[shape], [m1, m2]]);
+						}
+					}
+				}
+			}
+		}
+		for(let i = pusherLists.length - 1; i>=0; i--) {
+			let pusherList = pusherLists[i];
+			mergeLoop: for(let k = 0, kk= pusherList[1].length; k < kk; k++) {
+				let mi1k = pusherLists[i][1][k];
+				for(let j = 0; j < i; j++) {
+					if(pusherLists[j][1].includes(mi1k)) {
+						pusherLists[j][0].concat(pusherList[0]);
+						for(let l = 0; l < k; l++) {
+							pusherLists[j][1].push(pusherList[1][l]);
+						}
+						pusherLists[j][1].push(mi1k);
+						for(let l = k+1; l < kk; l++) {
+							let m2 = pusherList[1][l];
+							if(!pusherLists[j][1].includes(m2)) {
+								pusherLists[j][1].push(m2);
+							}
+						}
+						pusherLists.splice(i,1);
+						break mergeLoop;
+					}
+				}
+			}
+		}
+		
+		for(let pusherList of pusherLists) {
+			let atomAndBondPts = [];
+			for(let mol of pusherList[1]) {
+				for(let a of mol.atoms) {
+					atomAndBondPts.push(a);
+				}
+				for(let b of mol.bonds) {
+					atomAndBondPts.push(b.getCenter());
+				}
+			}
+			
+			let numPushers = pusherList[0].length;
+			let angles = [];
+			let controlDistances = [];
+			let arrowPoints = [];
+			let c1c = new structures.Point();
+			let c2c = new structures.Point();
+			let allEnergies = [];
+			for(let i =0; i < numPushers; i++) {
+				let pusher = pusherList[0][i];
+				angles.push(getPossibleAngles(pusher.o1, pusher.o2, pusher.numElectron));
+				controlDistances.push(getControlDistance(pusher.o1, pusher.o2));
+				let endpoints = [];
+				endpoints.push(pusher.o1 instanceof structures.Atom ? new structures.Point(pusher.o1.x, pusher.o1.y) : pusher.o1.getCenter());
+				endpoints.push(pusher.o2 instanceof structures.Atom ? new structures.Point(pusher.o2.x, pusher.o2.y) : pusher.o2.getCenter());
+				let distance = endpoints[0].distance(endpoints[1]);
+				let distanceSq = distance*distance;
+				arrowPoints.push([]);
+				let minE0 = [0,0,Number.POSITIVE_INFINITY];
+				let minE1 = [0,0,Number.POSITIVE_INFINITY];
+				let minE2 = [0,0,Number.POSITIVE_INFINITY];
+				let index = 0;
+				for(let j = 0, jj = angles[i][0].length; j < jj; j++) {
+					for(let k = 0, kk = angles[i][1].length; k < kk; k++ ) {
+						
+						c1c.x = endpoints[0].x + controlDistances[i] * m.cos(angles[i][0][j]);
+						c1c.y = endpoints[0].y - controlDistances[i] * m.sin(angles[i][0][j]);
+						
+						c2c.x = endpoints[1].x + controlDistances[i] * m.cos(angles[i][1][k]);
+						c2c.y = endpoints[1].y - controlDistances[i] * m.sin(angles[i][1][k]);
+						
+						if (c1c.distance(endpoints[1])+c2c.distance(endpoints[0]) < c1c.distance(endpoints[0])+c2c.distance(endpoints[1])) {
+							let temp = c1c.x;
+							c1c.x = c2c.x;
+							c2c.x = temp;
+							temp = c1c.y;
+							c1c.y = c2c.y;
+							c2c.y = temp;
+						}
+						
+						let currentPoints = [];
+						currentPoints.push(new structures.Point((64*endpoints[0].x+48*c1c.x+12*c2c.x+endpoints[1].x)/125, (64*endpoints[0].y+48*c1c.y+12*c2c.y+endpoints[1].y)/125));
+						currentPoints.push(new structures.Point((endpoints[0].x+3*c1c.x+3*c2c.x+endpoints[1].x)/8, (endpoints[0].y+3*c1c.y+3*c2c.y+endpoints[1].y)/8));
+						currentPoints.push(new structures.Point((endpoints[0].x+12*c1c.x+48*c2c.x+64*endpoints[1].x)/125, (endpoints[0].y+12*c1c.y+48*c2c.y+64*endpoints[1].y)/125));
+						arrowPoints[i].push(currentPoints);
+						
+						let energy = currentPoints[2].distance(currentPoints[0])/distance;
+						energy *= .5*energy;
+						for(let p of atomAndBondPts) {
+							for(let l = 0; l < 3; l++) {
+								let difx = currentPoints[l].x - p.x, dify = currentPoints[l].y - p.y;
+								energy+=(1/m.sqrt(difx*difx + dify*dify));
+							}
+						}
+						
+						if(energy < minE0[2]) {
+							minE2[0] = minE1[0];
+							minE2[1] = minE1[1];
+							minE2[2] = minE1[2];
+							minE1[0] = minE0[0];
+							minE1[1] = minE0[1];
+							minE1[2] = minE0[2];
+							minE0[0] = j;
+							minE0[1] = k;
+							minE0[2] = energy;
+						} else if (energy < minE1[2]) {
+							minE2[0] = minE1[0];
+							minE2[1] = minE1[1];
+							minE2[2] = minE1[2];
+							minE1[0] = j;
+							minE1[1] = k;
+							minE1[2] = energy;
+						} else if (energy < minE2[2]) {
+							minE2[0] = j;
+							minE2[1] = k;
+							minE2[2] = energy;
+						}
+						index++;
+					}
+				}
+				let energies = [];
+				if(minE0[2] < Number.POSITIVE_INFINITY) {
+					energies.push(minE0);
+				}
+				if(minE1[2] < Number.POSITIVE_INFINITY) {
+					energies.push(minE1);
+				}
+				if(minE2[2] < Number.POSITIVE_INFINITY) {
+					energies.push(minE2);
+				}
+				allEnergies.push(energies);
+			}
+			
+			let tracker = [];
+			let best = [];
+			for(let i = 0; i < numPushers; i++) {
+				tracker.push(0);
+				best.push(0);
+			}
+			
+			if(numPushers > 1) {
+				let minE = Number.POSITIVE_INFINITY;
+				let n = numPushers - 1;
+				let stop = allEnergies[0].length;
+				while(tracker[0] < stop) {
+					let energy = 0;
+					for(let i = 0; i < numPushers; i++) {
+						energy += allEnergies[i][tracker[i]][2];
+					 	let pointIndexi = angles[i][1].length * allEnergies[i][tracker[i]][0]+ allEnergies[i][tracker[i]][1];
+					 	for(let j = 0; j < i; j++) {
+					 		let pointIndexj = angles[j][1].length * allEnergies[j][tracker[j]][0]+ allEnergies[j][tracker[j]][1];
+					 		for(let k = 0; k < 3; k++) {
+					 			for(let l = 0; l < 3; l++) {
+					 				energy += 1 / arrowPoints[j][pointIndexj][l].distance(arrowPoints[i][pointIndexi][k]);
+					 			}
+					 		}
+					 	}
+					}
+					
+					if(energy < minE) {
+						minE = energy;
+						for(let i = 0; i < numPushers; i++) {
+							best[i] = tracker[i];
+						}
+					}
+					tracker[n]++;
+					while(n>0 && (tracker[n] == allEnergies[n].length)) {
+						tracker[n] = 0;
+						n--;
+						tracker[n]++;
+					}
+					n = numPushers - 1;
+				}
+			}
+			
+			for(let i = 0; i < numPushers; i++) {
+				let pusher = pusherList[0][i];
+				pusher.startAngle = angles[i][0][allEnergies[i][best[i]][0]];
+				pusher.endAngle = angles[i][1][allEnergies[i][best[i]][1]];
+				pusher.controlDistance = controlDistances[i];
+			}
+			
+		}
+	};
+	
+	
+	if(window.TESTING){
+		d2.Pusher.getPossibleAngles = getPossibleAngles;
+		d2.Pusher.getControlDistance = getControlDistance;
+	}
 
 })(ChemDoodle.math, ChemDoodle.lib.jsBezier, ChemDoodle.structures, ChemDoodle.structures.d2, Math);
 
@@ -9616,8 +10089,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, m, undefined) {
 	'use strict';
-	d3._Mesh = function() {
-	};
+	d3._Mesh = function() {};
 	let _ = d3._Mesh.prototype;
 	_.storeData = function(positionData, normalData, indexData) {
 		this.positionData = positionData;
@@ -9699,8 +10171,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, undefined) {
 	'use strict';
-	d3._Measurement = function() {
-	};
+	d3._Measurement = function() {};
 	let _ = d3._Measurement.prototype = new d3._Mesh();
 	_.render = function(gl, styles) {
 		gl.shader.setMatrixUniforms(gl);
@@ -10211,8 +10682,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(ELEMENT, d3, undefined) {
 
-	d3.Label = function(textImage) {
-	};
+	d3.Label = function(textImage) {};
 	let _ = d3.Label.prototype;
 	_.updateVerticesBuffer = function(gl, molecules, styles) {
 		for ( let i = 0, ii = molecules.length; i < ii; i++) {
@@ -10639,8 +11109,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(math, d3, undefined) {
 	'use strict';
-	d3.Material = function() {
-	};
+	d3.Material = function() {};
 	let _ = d3.Material.prototype;
 	_.setTempColors = function(gl, ambientColor, diffuseColor, specularColor, shininess) {
 		if (ambientColor) {
@@ -10666,8 +11135,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, math, document, undefined) {
 	'use strict';
-	d3.Picker = function() {
-	};
+	d3.Picker = function() {};
 	let _ = d3.Picker.prototype;
 
 	_.init = function(gl) {
@@ -11520,8 +11988,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, m, undefined) {
 	'use strict';
-	d3.TextMesh = function() {
-	};
+	d3.TextMesh = function() {};
 	let _ = d3.TextMesh.prototype;
 	_.init = function(gl) {
 		// set vertex buffer
@@ -12112,8 +12579,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, math, document, undefined) {
 	'use strict';
-	d3.Framebuffer = function() {
-	};
+	d3.Framebuffer = function() {};
 	let _ = d3.Framebuffer.prototype;
 
 	_.init = function(gl) {
@@ -12159,8 +12625,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, math, document, undefined) {
 	'use strict';
-	d3.Renderbuffer = function() {
-	};
+	d3.Renderbuffer = function() {};
 	let _ = d3.Renderbuffer.prototype;
 
 	_.init = function(gl, format) {
@@ -12181,8 +12646,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(math, d3, m, undefined) {
 	'use strict';
-	d3.SSAO = function() {
-	};
+	d3.SSAO = function() {};
 	let _ = d3.SSAO.prototype;
 
 	_.initSampleKernel = function(kernelSize) {
@@ -12232,8 +12696,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, math, document, undefined) {
 	'use strict';
-	d3.Texture = function() {
-	};
+	d3.Texture = function() {};
 	let _ = d3.Texture.prototype;
 
 	_.init = function(gl, type, internalFormat, format) {
@@ -12263,8 +12726,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
-	d3._Shader = function() {
-	};
+	d3._Shader = function() {};
 	let _ = d3._Shader.prototype;
 	_.useShaderProgram = function(gl) {
 		gl.useProgram(this.gProgram);
@@ -12310,7 +12772,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		gl.shaderSource(shader, strSrc);
 		gl.compileShader(shader);
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			alert(shaderScript.type + ' ' + gl.getShaderInfoLog(shader));
+			alert(shaderType + ' ' + gl.getShaderInfoLog(shader));
 			gl.deleteShader(shader);
 			return undefined;
 		}
@@ -12350,10 +12812,8 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.modelViewMatrixUniform = gl.getUniformLocation(this.gProgram, 'u_model_view_matrix');
 		this.projectionMatrixUniform = gl.getUniformLocation(this.gProgram, 'u_projection_matrix');
 	};
-	_.loadDefaultVertexShader = function(gl) {
-	};
-	_.loadDefaultFragmentShader = function(gl) {
-	};
+	_.loadDefaultVertexShader = function(gl) {};
+	_.loadDefaultFragmentShader = function(gl) {};
 	_.setMatrixUniforms = function(gl, modelMatrix) {
 		if(modelMatrix === undefined) {
 			this.setModelViewMatrix(gl, gl.modelViewMatrix);
@@ -12367,24 +12827,18 @@ ChemDoodle.RESIDUE = (function(undefined) {
 	_.setModelViewMatrix = function(gl, mvMatrix) {
 		gl.uniformMatrix4fv(this.modelViewMatrixUniform, false, mvMatrix);
 	};
-	_.setMaterialAmbientColor = function(gl, ambient) {
-	};
-	_.setMaterialDiffuseColor = function(gl, diffuse) {
-	};
-	_.setMaterialSpecularColor = function(gl, specular) {
-	};
-	_.setMaterialShininess = function(gl, shininess) {
-	};
-	_.setMaterialAlpha = function(gl, alpha) {
-	};
+	_.setMaterialAmbientColor = function(gl, ambient) {};
+	_.setMaterialDiffuseColor = function(gl, diffuse) {};
+	_.setMaterialSpecularColor = function(gl, specular) {};
+	_.setMaterialShininess = function(gl, shininess) {};
+	_.setMaterialAlpha = function(gl, alpha) {};
 
 })(ChemDoodle.structures.d3, ChemDoodle.lib.mat3, ChemDoodle.lib.mat4, document);
 
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.FXAAShader = function() {
-	};
+	d3.FXAAShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.FXAAShader.prototype = new d3._Shader();
 	_.initUniformLocations = function(gl) {
@@ -12425,186 +12879,185 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		gl.uniform1f(this.subpixTrimUniform, val);
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 
-		'void main() {',
-			'gl_Position = vec4(a_vertex_position, 1.);',
-        	'v_texcoord = a_vertex_position.xy * .5 + .5;',
-		'}'].join('');
+		void main() {
+			gl_Position = vec4(a_vertex_position, 1.);
+        	v_texcoord = a_vertex_position.xy * .5 + .5;
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 
-		'const int fxaaMaxSearchSteps = 128;',
+		const int fxaaMaxSearchSteps = 128;
 
-		'uniform float u_edge_threshold;',
-		'uniform float u_edge_threshold_min;',
-		'uniform int u_search_steps;',
-		'uniform float u_search_threshold;',
-		'uniform float u_subpix_cap;',
-		'uniform float u_subpix_trim;',
+		uniform float u_edge_threshold;
+		uniform float u_edge_threshold_min;
+		uniform int u_search_steps;
+		uniform float u_search_threshold;
+		uniform float u_subpix_cap;
+		uniform float u_subpix_trim;
 
-		'uniform sampler2D u_sampler0;',
-		'uniform vec2 u_buffersize;',
-		'uniform bool u_antialias;',
+		uniform sampler2D u_sampler0;
+		uniform vec2 u_buffersize;
+		uniform bool u_antialias;
 
-		'varying vec2 v_texcoord;',
+		varying vec2 v_texcoord;
 
-		'float FxaaLuma(vec3 rgb) {',
-			'return rgb.y * (0.587/0.299) + rgb.x;',
-		'}',
+		float FxaaLuma(vec3 rgb) {
+			return rgb.y * (0.587/0.299) + rgb.x;
+		}
 
-		'vec3 FxaaLerp3(vec3 a, vec3 b, float amountOfA) {',
-		    'return (vec3(-amountOfA) * b) + ((a * vec3(amountOfA)) + b);',
-		'}',
+		vec3 FxaaLerp3(vec3 a, vec3 b, float amountOfA) {
+		    return (vec3(-amountOfA) * b) + ((a * vec3(amountOfA)) + b);
+		}
 
-		'vec4 FxaaTexOff(sampler2D tex, vec2 pos, vec2 off, vec2 rcpFrame) {',
-		    'return texture2D(tex, pos + off * rcpFrame);',
-		'}',
+		vec4 FxaaTexOff(sampler2D tex, vec2 pos, vec2 off, vec2 rcpFrame) {
+		    return texture2D(tex, pos + off * rcpFrame);
+		}
 
-		'vec3 FxaaPixelShader(vec2 pos, sampler2D tex, vec2 rcpFrame) {',
-			'float subpix_trim_scale = (1.0/(1.0 - u_subpix_trim));',
-		    'vec3 rgbN = FxaaTexOff(tex, pos.xy, vec2( 0.,-1.), rcpFrame).xyz;',
-		    'vec3 rgbW = FxaaTexOff(tex, pos.xy, vec2(-1., 0.), rcpFrame).xyz;',
-		    'vec3 rgbM = FxaaTexOff(tex, pos.xy, vec2( 0., 0.), rcpFrame).xyz;',
-		    'vec3 rgbE = FxaaTexOff(tex, pos.xy, vec2( 1., 0.), rcpFrame).xyz;',
-		    'vec3 rgbS = FxaaTexOff(tex, pos.xy, vec2( 0., 1.), rcpFrame).xyz;',
+		vec3 FxaaPixelShader(vec2 pos, sampler2D tex, vec2 rcpFrame) {
+			float subpix_trim_scale = (1.0/(1.0 - u_subpix_trim));
+		    vec3 rgbN = FxaaTexOff(tex, pos.xy, vec2( 0.,-1.), rcpFrame).xyz;
+		    vec3 rgbW = FxaaTexOff(tex, pos.xy, vec2(-1., 0.), rcpFrame).xyz;
+		    vec3 rgbM = FxaaTexOff(tex, pos.xy, vec2( 0., 0.), rcpFrame).xyz;
+		    vec3 rgbE = FxaaTexOff(tex, pos.xy, vec2( 1., 0.), rcpFrame).xyz;
+		    vec3 rgbS = FxaaTexOff(tex, pos.xy, vec2( 0., 1.), rcpFrame).xyz;
 
-		    'float lumaN = FxaaLuma(rgbN);',
-		    'float lumaW = FxaaLuma(rgbW);',
-		    'float lumaM = FxaaLuma(rgbM);',
-		    'float lumaE = FxaaLuma(rgbE);',
-		    'float lumaS = FxaaLuma(rgbS);',
-		    'float rangeMin = min(lumaM, min(min(lumaN, lumaW), min(lumaS, lumaE)));',
-		    'float rangeMax = max(lumaM, max(max(lumaN, lumaW), max(lumaS, lumaE)));',
+		    float lumaN = FxaaLuma(rgbN);
+		    float lumaW = FxaaLuma(rgbW);
+		    float lumaM = FxaaLuma(rgbM);
+		    float lumaE = FxaaLuma(rgbE);
+		    float lumaS = FxaaLuma(rgbS);
+		    float rangeMin = min(lumaM, min(min(lumaN, lumaW), min(lumaS, lumaE)));
+		    float rangeMax = max(lumaM, max(max(lumaN, lumaW), max(lumaS, lumaE)));
 
-		    'float range = rangeMax - rangeMin;',
-		    'if(range < max(u_edge_threshold_min, rangeMax * u_edge_threshold)) {',
-		        'return rgbM;',
-		    '}',
+		    float range = rangeMax - rangeMin;
+		    if(range < max(u_edge_threshold_min, rangeMax * u_edge_threshold)) {
+		        return rgbM;
+		    }
 
-		    'vec3 rgbL = rgbN + rgbW + rgbM + rgbE + rgbS;',
+		    vec3 rgbL = rgbN + rgbW + rgbM + rgbE + rgbS;
 
-		    'float lumaL = (lumaN + lumaW + lumaE + lumaS) * 0.25;',
-		    'float rangeL = abs(lumaL - lumaM);',
-		    'float blendL = max(0.0, (rangeL / range) - u_subpix_trim) * subpix_trim_scale;',
-		    'blendL = min(u_subpix_cap, blendL);',
+		    float lumaL = (lumaN + lumaW + lumaE + lumaS) * 0.25;
+		    float rangeL = abs(lumaL - lumaM);
+		    float blendL = max(0.0, (rangeL / range) - u_subpix_trim) * subpix_trim_scale;
+		    blendL = min(u_subpix_cap, blendL);
 
-		    'vec3 rgbNW = FxaaTexOff(tex, pos.xy, vec2(-1.,-1.), rcpFrame).xyz;',
-		    'vec3 rgbNE = FxaaTexOff(tex, pos.xy, vec2( 1.,-1.), rcpFrame).xyz;',
-		    'vec3 rgbSW = FxaaTexOff(tex, pos.xy, vec2(-1., 1.), rcpFrame).xyz;',
-		    'vec3 rgbSE = FxaaTexOff(tex, pos.xy, vec2( 1., 1.), rcpFrame).xyz;',
-		    'rgbL += (rgbNW + rgbNE + rgbSW + rgbSE);',
-		    'rgbL *= vec3(1.0/9.0);',
+		    vec3 rgbNW = FxaaTexOff(tex, pos.xy, vec2(-1.,-1.), rcpFrame).xyz;
+		    vec3 rgbNE = FxaaTexOff(tex, pos.xy, vec2( 1.,-1.), rcpFrame).xyz;
+		    vec3 rgbSW = FxaaTexOff(tex, pos.xy, vec2(-1., 1.), rcpFrame).xyz;
+		    vec3 rgbSE = FxaaTexOff(tex, pos.xy, vec2( 1., 1.), rcpFrame).xyz;
+		    rgbL += (rgbNW + rgbNE + rgbSW + rgbSE);
+		    rgbL *= vec3(1.0/9.0);
 
-		    'float lumaNW = FxaaLuma(rgbNW);',
-		    'float lumaNE = FxaaLuma(rgbNE);',
-		    'float lumaSW = FxaaLuma(rgbSW);',
-		    'float lumaSE = FxaaLuma(rgbSE);',
+		    float lumaNW = FxaaLuma(rgbNW);
+		    float lumaNE = FxaaLuma(rgbNE);
+		    float lumaSW = FxaaLuma(rgbSW);
+		    float lumaSE = FxaaLuma(rgbSE);
 
-		    'float edgeVert =',
-		        'abs((0.25 * lumaNW) + (-0.5 * lumaN) + (0.25 * lumaNE)) +',
-		        'abs((0.50 * lumaW ) + (-1.0 * lumaM) + (0.50 * lumaE )) +',
-		        'abs((0.25 * lumaSW) + (-0.5 * lumaS) + (0.25 * lumaSE));',
-		    'float edgeHorz =',
-		        'abs((0.25 * lumaNW) + (-0.5 * lumaW) + (0.25 * lumaSW)) +',
-		        'abs((0.50 * lumaN ) + (-1.0 * lumaM) + (0.50 * lumaS )) +',
-		        'abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE));',
+		    float edgeVert =
+		        abs((0.25 * lumaNW) + (-0.5 * lumaN) + (0.25 * lumaNE)) +
+		        abs((0.50 * lumaW ) + (-1.0 * lumaM) + (0.50 * lumaE )) +
+		        abs((0.25 * lumaSW) + (-0.5 * lumaS) + (0.25 * lumaSE));
+		    float edgeHorz =
+		        abs((0.25 * lumaNW) + (-0.5 * lumaW) + (0.25 * lumaSW)) +
+		        abs((0.50 * lumaN ) + (-1.0 * lumaM) + (0.50 * lumaS )) +
+		        abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE));
 
-		    'bool horzSpan = edgeHorz >= edgeVert;',
-		    'float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;',
+		    bool horzSpan = edgeHorz >= edgeVert;
+		    float lengthSign = horzSpan ? -rcpFrame.y : -rcpFrame.x;
 
-		    'if(!horzSpan) {',
-		        'lumaN = lumaW;',
-		        'lumaS = lumaE;',
-		    '}',
+		    if(!horzSpan) {
+		        lumaN = lumaW;
+		        lumaS = lumaE;
+		    }
 
-		    'float gradientN = abs(lumaN - lumaM);',
-		    'float gradientS = abs(lumaS - lumaM);',
-		    'lumaN = (lumaN + lumaM) * 0.5;',
-		    'lumaS = (lumaS + lumaM) * 0.5;',
+		    float gradientN = abs(lumaN - lumaM);
+		    float gradientS = abs(lumaS - lumaM);
+		    lumaN = (lumaN + lumaM) * 0.5;
+		    lumaS = (lumaS + lumaM) * 0.5;
 
-		    'if (gradientN < gradientS) {',
-		        'lumaN = lumaS;',
-		        'lumaN = lumaS;',
-		        'gradientN = gradientS;',
-		        'lengthSign *= -1.0;',
-		    '}',
+		    if (gradientN < gradientS) {
+		        lumaN = lumaS;
+		        lumaN = lumaS;
+		        gradientN = gradientS;
+		        lengthSign *= -1.0;
+		    }
 
-		    'vec2 posN;',
-		    'posN.x = pos.x + (horzSpan ? 0.0 : lengthSign * 0.5);',
-		    'posN.y = pos.y + (horzSpan ? lengthSign * 0.5 : 0.0);',
+		    vec2 posN;
+		    posN.x = pos.x + (horzSpan ? 0.0 : lengthSign * 0.5);
+		    posN.y = pos.y + (horzSpan ? lengthSign * 0.5 : 0.0);
 
-		    'gradientN *= u_search_threshold;',
+		    gradientN *= u_search_threshold;
 
-		    'vec2 posP = posN;',
-		    'vec2 offNP = horzSpan ? vec2(rcpFrame.x, 0.0) : vec2(0.0, rcpFrame.y);',
-		    'float lumaEndN = lumaN;',
-		    'float lumaEndP = lumaN;',
-		    'bool doneN = false;',
-		    'bool doneP = false;',
-		    'posN += offNP * vec2(-1.0, -1.0);',
-		    'posP += offNP * vec2( 1.0,  1.0);',
+		    vec2 posP = posN;
+		    vec2 offNP = horzSpan ? vec2(rcpFrame.x, 0.0) : vec2(0.0, rcpFrame.y);
+		    float lumaEndN = lumaN;
+		    float lumaEndP = lumaN;
+		    bool doneN = false;
+		    bool doneP = false;
+		    posN += offNP * vec2(-1.0, -1.0);
+		    posP += offNP * vec2( 1.0,  1.0);
 
-		    'for(int i = 0; i < fxaaMaxSearchSteps; i++) {',
-		    	'if(i >= u_search_steps) break;',
-		        'if(!doneN) {',
-		            'lumaEndN = FxaaLuma(texture2D(tex, posN.xy).xyz);',
-		        '}',
-		        'if(!doneP) {',
-		            'lumaEndP = FxaaLuma(texture2D(tex, posP.xy).xyz);',
-		        '}',
+		    for(int i = 0; i < fxaaMaxSearchSteps; i++) {
+		    	if(i >= u_search_steps) break;
+		        if(!doneN) {
+		            lumaEndN = FxaaLuma(texture2D(tex, posN.xy).xyz);
+		        }
+		        if(!doneP) {
+		            lumaEndP = FxaaLuma(texture2D(tex, posP.xy).xyz);
+		        }
 
-		        'doneN = doneN || (abs(lumaEndN - lumaN) >= gradientN);',
-		        'doneP = doneP || (abs(lumaEndP - lumaN) >= gradientN);',
+		        doneN = doneN || (abs(lumaEndN - lumaN) >= gradientN);
+		        doneP = doneP || (abs(lumaEndP - lumaN) >= gradientN);
 
-		        'if(doneN && doneP) {',
-		            'break;',
-		        '}',
-		        'if(!doneN) {',
-		            'posN -= offNP;',
-		        '}',
-		        'if(!doneP) {',
-		            'posP += offNP;',
-		        '}',
-		    '}',
+		        if(doneN && doneP) {
+		            break;
+		        }
+		        if(!doneN) {
+		            posN -= offNP;
+		        }
+		        if(!doneP) {
+		            posP += offNP;
+		        }
+		    }
 
-		    'float dstN = horzSpan ? pos.x - posN.x : pos.y - posN.y;',
-		    'float dstP = horzSpan ? posP.x - pos.x : posP.y - pos.y;',
-		    'bool directionN = dstN < dstP;',
-		    'lumaEndN = directionN ? lumaEndN : lumaEndP;',
+		    float dstN = horzSpan ? pos.x - posN.x : pos.y - posN.y;
+		    float dstP = horzSpan ? posP.x - pos.x : posP.y - pos.y;
+		    bool directionN = dstN < dstP;
+		    lumaEndN = directionN ? lumaEndN : lumaEndP;
 
-		    'if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0)) {',
-		        'lengthSign = 0.0;',
-		    '}',
+		    if(((lumaM - lumaN) < 0.0) == ((lumaEndN - lumaN) < 0.0)) {
+		        lengthSign = 0.0;
+		    }
 
 
-		    'float spanLength = (dstP + dstN);',
-		    'dstN = directionN ? dstN : dstP;',
-		    'float subPixelOffset = (0.5 + (dstN * (-1.0/spanLength))) * lengthSign;',
-		    'vec3 rgbF = texture2D(tex, vec2(',
-		        'pos.x + (horzSpan ? 0.0 : subPixelOffset),',
-		        'pos.y + (horzSpan ? subPixelOffset : 0.0))).xyz;',
-		    'return FxaaLerp3(rgbL, rgbF, blendL);',
-		'}',
+		    float spanLength = (dstP + dstN);
+		    dstN = directionN ? dstN : dstP;
+		    float subPixelOffset = (0.5 + (dstN * (-1.0/spanLength))) * lengthSign;
+		    vec3 rgbF = texture2D(tex, vec2(
+		        pos.x + (horzSpan ? 0.0 : subPixelOffset),
+		        pos.y + (horzSpan ? subPixelOffset : 0.0))).xyz;
+		    return FxaaLerp3(rgbL, rgbF, blendL);
+		}
 
-		'void main() {',
-			'gl_FragColor = texture2D(u_sampler0, v_texcoord);',
-			'if(u_antialias) {',
-				'gl_FragColor.xyz = FxaaPixelShader(v_texcoord, u_sampler0, 1. / u_buffersize).xyz;',
-			'}',
-		'}'
-		].join('\n');
+		void main() {
+			gl_FragColor = texture2D(u_sampler0, v_texcoord);
+			if(u_antialias) {
+				gl_FragColor.xyz = FxaaPixelShader(v_texcoord, u_sampler0, 1. / u_buffersize).xyz;
+			}
+		}`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -12613,8 +13066,471 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
-	d3.LabelShader = function() {
+
+	d3.SMAAEdgesShader = function() {};
+	let _super = d3._Shader.prototype;
+	let _ = d3.SMAAEdgesShader.prototype = new d3._Shader();
+	_.initUniformLocations = function(gl) {
+		// assign uniform properties
+		_super.initUniformLocations.call(this, gl);
+		this.buffersizeUniform = gl.getUniformLocation(this.gProgram, 'u_buffersize');
+		this.edgeThresholdUniform = gl.getUniformLocation(this.gProgram, 'u_threshold');
+		this.contrastFactorUniform = gl.getUniformLocation(this.gProgram, 'u_contrast_factor');
+		this.backgroundColorUniform = gl.getUniformLocation(this.gProgram, 'u_bgnd_color');
+		this.imageSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_image_sampler');
+		};
+		
+	_.setBuffersize = function(gl, width, height) {
+		gl.uniform2f(this.buffersizeUniform, width, height);
 	};
+	_.setEdgeThreshold = function(gl, val) {
+		gl.uniform1f(this.edgeThresholdUniform, val);
+	};
+	_.setContrastFactor = function(gl, val) {
+		gl.uniform1f(this.contrastFactorUniform, val);
+	};
+	_.setBackgroundColor = function(gl, r, g, b) {
+		gl.uniform3f(this.backgroundColorUniform, r, g, b);
+	};
+	
+	_.loadDefaultVertexShader = function(gl) {
+		let sb = `
+			precision highp float;
+
+			attribute vec3 a_vertex_position;
+			uniform vec2 u_buffersize;
+			varying vec2 vTexCoord;
+			varying vec4 vOffset[3];
+
+			void main() {
+				vec2 resVals = vec2(1.0 / u_buffersize.x, 1.0 / u_buffersize.y);
+
+				vTexCoord = vec2((a_vertex_position.xy + 1.0) / 2.0);
+
+				// Set UVs of offset checks as varyings to be more efficient in frag shader
+				vOffset[0] = vTexCoord.xyxy + resVals.xyxy * vec4(-1.0, 0.0, 0.0, -1.0);
+				vOffset[1] = vTexCoord.xyxy + resVals.xyxy * vec4( 1.0, 0.0, 0.0, 1.0);
+				vOffset[2] = vTexCoord.xyxy + resVals.xyxy * vec4(-2.0, 0.0, 0.0, -2.0);
+
+				gl_Position = vec4(a_vertex_position.xy, 0.0, 1.0);
+			}
+		`
+			
+			return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
+		};
+			
+	_.loadDefaultFragmentShader = function(gl) {
+		let sb = `
+			precision highp float;
+			
+			uniform float u_threshold;
+			uniform float u_contrast_factor;
+			uniform sampler2D u_image_sampler;
+			uniform vec3 u_bgnd_color;
+
+			varying vec2 vTexCoord;
+			varying vec4 vOffset[3];
+
+			vec3 handleAlpha(vec4 color) {
+				// Allows for edge detection between transparent and non-transparent sections by forcing full transparency to background color
+				if (color.a < 1e-6) {
+					color = vec4(u_bgnd_color, 1.);
+				}
+				return color.rgb;
+			}
+				
+			float calcColDelta(vec3 col, vec2 offset) {
+				// Calculates the max difference of color from one direction from the fragment
+				vec3 colDir = handleAlpha(texture2D(u_image_sampler, offset));
+				vec3 tDiff = abs(col - colDir);
+				return max(max(tDiff.r, tDiff.g), tDiff.b);
+			}
+
+			void main() {
+
+				// Get the base color at fragment position
+				vec4 delta;
+				vec3 col = handleAlpha(texture2D(u_image_sampler, vTexCoord));
+
+				// Get the color deltas for the left and top positions
+				delta.x = calcColDelta(col, vOffset[0].xy);
+				delta.y = calcColDelta(col, vOffset[0].zw);
+
+				// Threshold check to leave when there is no edge
+				vec2 edges = step(u_threshold, delta.xy);
+				if (dot(edges, vec2(1.0, 1.0)) == 0.0) { discard; }
+
+				// Get the color deltas for the right and bottom positions
+				delta.z = calcColDelta(col, vOffset[1].xy);
+				delta.w = calcColDelta(col, vOffset[1].zw);
+
+				// Get the max color delta of these four positions
+				vec2 maxDelta = max(delta.xy, delta.zw);
+
+				// Get the color deltas for the pixels next positions further left and top
+				delta.z = calcColDelta(col, vOffset[2].xy);
+				delta.w = calcColDelta(col, vOffset[2].zw);
+
+				// Get the max color delta from all of these
+				maxDelta = max(maxDelta.xy, delta.zw);
+				float finalDelta = max(maxDelta.x, maxDelta.y);
+
+				// Adjust for local contrast
+				edges.xy *= step(finalDelta, u_contrast_factor * delta.xy);
+
+				gl_FragColor = vec4(edges, 0.0, 1.0);
+			}
+		`
+			
+			return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
+		};
+				
+})(ChemDoodle.structures.d3, ChemDoodle.lib.mat3, ChemDoodle.lib.mat4, document);
+
+(function(d3, m3, m4, document, undefined) {
+	'use strict';
+	
+	d3.SMAAWeightsShader = function() {};
+	let _super = d3._Shader.prototype;
+	let _ = d3.SMAAWeightsShader.prototype = new d3._Shader();
+	_.initUniformLocations = function(gl) {
+		// assign uniform properties
+		_super.initUniformLocations.call(this, gl);
+		this.buffersizeUniform = gl.getUniformLocation(this.gProgram, 'u_buffersize');
+		this.searchStepsUniform = gl.getUniformLocation(this.gProgram, 'u_search_steps');
+		this.edgesSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_edges_sampler');
+		this.areaSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_area_ref_sampler');
+		this.searchSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_search_ref_sampler');
+	};
+	
+	_.setBuffersize = function(gl, width, height) {
+		gl.uniform2f(this.buffersizeUniform, width, height);
+	};
+	_.setSearchSteps = function(gl, val) {
+		gl.uniform1f(this.searchStepsUniform, val);
+	};
+	
+	_.loadDefaultVertexShader = function(gl) {
+		let sb = `
+			precision highp float;
+
+			attribute vec3 a_vertex_position;
+			uniform float u_search_steps;
+			uniform vec2 u_buffersize;
+			varying vec2 vTexCoord;
+			varying vec2 vPixCoord;
+			varying vec4 vOffset[3];
+
+			void main() {
+				vec2 resVals = vec2(1.0 / u_buffersize.x, 1.0 / u_buffersize.y);
+
+				vTexCoord = vec2((a_vertex_position.xy + 1.0) / 2.0);
+				vPixCoord = vTexCoord * u_buffersize;
+
+				// Set UVs of offset checks as varyings to be more efficient in frag shader
+				vOffset[0] = vTexCoord.xyxy + resVals.xyxy * vec4(-0.25, -0.125,  1.25, -0.125);
+				vOffset[1] = vTexCoord.xyxy + resVals.xyxy * vec4(-0.125, -0.25, -0.125, 1.25);
+				vOffset[2] = vec4(vOffset[0].xz, vOffset[1].yw) + resVals.xxyy * vec4(-2.0, 2.0, -2.0, 2.0) * u_search_steps;
+
+				gl_Position = vec4(a_vertex_position.xy, 0.0, 1.0);
+			}
+		`
+
+		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
+	};
+
+	_.loadDefaultFragmentShader = function(gl) {
+		let sb = `
+			precision highp float;
+	
+			#define MAX_SEARCH_STEPS 32
+			#define AREATEX_MAX_DISTANCE 16
+			#define AREATEX_PIXEL_SIZE (1.0 / vec2(160.0, 560.0))
+			#define AREATEX_SUBTEX_SIZE (1.0 / 7.0)
+			#define SEARCHTEX_SIZE vec2(66.0, 33.0)
+			#define SEARCHTEX_PACKED_SIZE vec2(64.0, 16.0)
+
+			#define mad(a, b, c) (a * b + c)		
+
+			uniform vec2 u_buffersize;
+			uniform float u_search_steps;
+			uniform sampler2D u_edges_sampler;
+			uniform sampler2D u_area_ref_sampler;
+			uniform sampler2D u_search_ref_sampler;
+
+			varying vec2 vTexCoord;
+			varying vec4 vOffset[3];
+			varying vec2 vPixCoord;
+
+			#define INVRES 1.0/u_buffersize
+
+			vec2 areaTextureSelect(vec4 sample) { return sample.rg; }
+			float searchTextureSelect(vec4 sample) { return sample.r; }
+
+			vec4 SMAASampleLevelZeroOffset(sampler2D tex, vec2 coord, vec2 offset) {
+				return texture2D(tex, coord + offset * INVRES);
+			}
+
+			// Determines amount to add to final steps
+			// Find interpolated edge, adding 0-2 depending on what is active (on search texture)
+			float SMAASearchLength(sampler2D searchSampler, vec2 e, float offset) {
+				// The texture is y-flipped, split horizontally for left and right cases
+				// Coords are adjusted to get to the texel center, and converted from pixel to texture coordinates
+				vec2 scale = (SEARCHTEX_SIZE * vec2(0.5, 1.0) + vec2(-1.0,  1.0)) / SEARCHTEX_PACKED_SIZE;
+				vec2 bias = (SEARCHTEX_SIZE * vec2(offset, 1.0) + vec2( 0.5, -0.5)) / SEARCHTEX_PACKED_SIZE;
+
+				// Lookup the search texture
+				return searchTextureSelect(texture2D(searchSampler, mad(scale, e, bias)));
+
+			}
+
+			// Search functions in all directions using offset texcoords to fetch edges and determine which are active
+			float SMAASearchXLeft(sampler2D u_edges_sampler, sampler2D searchSampler, vec2 texcoord, float end) {
+				vec2 e = vec2(0.0, 1.0);
+				for (int i = 0; i < MAX_SEARCH_STEPS; i++) { 
+					if (i >= int(u_search_steps)) break;
+					if (!(texcoord.x > end && e.g > 0.8281 && e.r == 0.0)) break;
+					e = texture2D(u_edges_sampler, texcoord).rg;
+					texcoord = mad(-vec2(2.0, 0.0), INVRES.xy, texcoord);
+				}
+
+				float offset = mad(-(255.0 / 127.0), SMAASearchLength(searchSampler, e, 0.0), 3.25);
+				return mad(INVRES.x, offset, texcoord.x);
+			}
+
+			float SMAASearchXRight(sampler2D u_edges_sampler, sampler2D searchSampler, vec2 texcoord, float end) {
+				vec2 e = vec2(0.0, 1.0);
+				for (int i = 0; i < MAX_SEARCH_STEPS; i++) { 
+					if (i >= int(u_search_steps)) break;
+					if (!(texcoord.x < end && e.g > 0.8281 && e.r == 0.0)) break;
+					e = texture2D(u_edges_sampler, texcoord).rg;
+					texcoord = mad(vec2(2.0, 0.0), INVRES.xy, texcoord);
+				}
+				float offset = mad(-(255.0 / 127.0), SMAASearchLength(searchSampler, e, 0.5), 3.25);
+				return mad(-INVRES.x, offset, texcoord.x);
+			}
+
+			float SMAASearchYUp(sampler2D u_edges_sampler, sampler2D searchSampler, vec2 texcoord, float end) {
+				vec2 e = vec2(1.0, 0.0);
+				for (int i = 0; i < MAX_SEARCH_STEPS; i++) { 
+					if (i >= int(u_search_steps)) break;
+					if (!(texcoord.y > end && e.r > 0.8281 && e.g == 0.0)) break;
+					e = texture2D(u_edges_sampler, texcoord).rg;
+					texcoord = mad(-vec2(0.0, 2.0), INVRES.xy, texcoord);
+				}
+				float offset = mad(-(255.0 / 127.0), SMAASearchLength(searchSampler, e.gr, 0.0), 3.25);
+				return mad(INVRES.y, offset, texcoord.y);
+			}
+
+			float SMAASearchYDown(sampler2D u_edges_sampler, sampler2D searchSampler, vec2 texcoord, float end) {
+				vec2 e = vec2(1.0, 0.0);
+				for (int i = 0; i < MAX_SEARCH_STEPS; i++) { 
+					if (i >= int(u_search_steps)) break;
+					if (!(texcoord.y < end && e.r > 0.8281 && e.g == 0.0)) break;
+					e = texture2D(u_edges_sampler, texcoord).rg;
+					texcoord = mad(vec2(0.0, 2.0), INVRES.xy, texcoord);
+				}
+				float offset = mad(-(255.0 / 127.0), SMAASearchLength(searchSampler, e.gr, 0.5), 3.25);
+				return mad(-INVRES.y, offset, texcoord.y);
+			}
+
+			// Determine areas of each side of edge
+			vec2 SMAAArea(sampler2D u_area_ref_sampler, vec2 dist, float e1, float e2, float offset) {
+				vec2 texcoord = mad(vec2(AREATEX_MAX_DISTANCE, AREATEX_MAX_DISTANCE), floor(4.0 * vec2(e1, e2) + 0.5), dist);
+				// Map to texel space
+				texcoord = mad(AREATEX_PIXEL_SIZE, texcoord, 0.5 * AREATEX_PIXEL_SIZE);
+				texcoord.y = mad(AREATEX_SUBTEX_SIZE, offset, texcoord.y);
+				return areaTextureSelect(texture2D(u_area_ref_sampler, texcoord));
+			}
+
+			void main() {
+				vec4 subsampleIndices = vec4(0.0); 
+				vec4 weights = vec4(0.0, 0.0, 0.0, 0.0);
+				vec2 e = texture2D(u_edges_sampler, vTexCoord).rg;
+	
+				if (e.g > 0.0) { // Northern Edge
+
+					vec2 d;
+
+					// Get distance of left
+					vec3 coords;
+					coords.x = SMAASearchXLeft(u_edges_sampler, u_search_ref_sampler, vOffset[0].xy, vOffset[2].x);
+					coords.y = vOffset[1].y;
+					d.x = coords.x;
+
+					// Get the left crossing edges
+					float e1 = texture2D(u_edges_sampler, coords.xy).r;
+
+					// Get distance of right
+					coords.z = SMAASearchXRight(u_edges_sampler, u_search_ref_sampler, vOffset[0].zw, vOffset[2].y);
+					d.y = coords.z;
+
+					// Set to pixel units and find square root
+					d = abs(mad(u_buffersize.xx, d, -vPixCoord.xx));
+					vec2 sqrt_d = sqrt(d);
+
+					// Get the left crossing edge
+					float e2 = SMAASampleLevelZeroOffset(u_edges_sampler, coords.zy, vec2(1, 0)).r;
+
+					// Get the area
+					weights.rg = SMAAArea(u_area_ref_sampler, sqrt_d, e1, e2, subsampleIndices.y);
+
+				}
+
+				if (e.r > 0.0) { // Western Edge
+					vec2 d;
+
+					// Get distance of top
+					vec3 coords;
+					coords.y = SMAASearchYUp(u_edges_sampler, u_search_ref_sampler, vOffset[1].xy, vOffset[2].z);
+					coords.x = vOffset[0].x; 
+					d.x = coords.y;
+
+					// Get the top crossing edge
+					float e1 = texture2D(u_edges_sampler, coords.xy).g;
+
+					// Get distance of bottom
+					coords.z = SMAASearchYDown(u_edges_sampler, u_search_ref_sampler, vOffset[1].zw, vOffset[2].w);
+					d.y = coords.z;
+
+					//  Set to pixel units and find square root
+					d = abs(mad(u_buffersize.yy, d, -vPixCoord.yy));
+					vec2 sqrt_d = sqrt(d);
+
+					// Get the bottom crossing edge
+					float e2 = SMAASampleLevelZeroOffset(u_edges_sampler, coords.xz, vec2(0, 1)).g;
+
+					// Get the area 
+					weights.ba = SMAAArea(u_area_ref_sampler, sqrt_d, e1, e2, subsampleIndices.x);
+				}
+
+				gl_FragColor = weights;
+
+			}			
+		`
+
+		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
+	};
+
+})(ChemDoodle.structures.d3, ChemDoodle.lib.mat3, ChemDoodle.lib.mat4, document);
+
+(function(d3, m3, m4, document, undefined) {
+	'use strict';
+
+	d3.SMAABlendShader = function() {};
+	let _super = d3._Shader.prototype;
+	let _ = d3.SMAABlendShader.prototype = new d3._Shader();
+	_.initUniformLocations = function(gl) {
+		// assign uniform properties
+		_super.initUniformLocations.call(this, gl);
+		this.buffersizeUniform = gl.getUniformLocation(this.gProgram, 'u_buffersize');
+		this.antialiasUniform = gl.getUniformLocation(this.gProgram, 'u_antialias');
+		this.imageSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_image_sampler');
+		this.weightsSamplerUniform = gl.getUniformLocation(this.gProgram, 'u_weights_sampler');
+	};
+
+	_.setBuffersize = function(gl, width, height) {
+		gl.uniform2f(this.buffersizeUniform, width, height);
+	};
+	_.setAntialias = function(gl, val) {
+		gl.uniform1f(this.antialiasUniform, val);
+	};
+
+	_.loadDefaultVertexShader = function(gl) {
+		let sb = `
+			precision highp float;
+
+			attribute vec3 a_vertex_position;
+			uniform vec2 u_buffersize;
+			varying vec2 vTexCoord;
+			varying vec4 vOffset;
+
+			void main() {
+				vec2 resVals = vec2(1.0 / u_buffersize.x, 1.0 / u_buffersize.y);
+
+				vTexCoord = vec2((a_vertex_position.xy + 1.0) / 2.0);
+
+				// Set UVs of offset check as varying to be more efficient in frag shader
+				vOffset = vTexCoord.xyxy + resVals.xyxy * vec4( 1.0, 0.0, 0.0, 1.0);
+
+				gl_Position = vec4(a_vertex_position.xy, 0.0, 1.0);
+			}
+		`
+
+		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
+	};
+
+	_.loadDefaultFragmentShader = function(gl) {
+		let sb = `
+			precision highp float;
+	
+			uniform vec2 u_buffersize;
+			uniform bool u_antialias;
+			uniform sampler2D u_weights_sampler;
+			uniform sampler2D u_image_sampler;
+			varying vec2 vTexCoord;
+			varying vec4 vOffset;
+
+			// Conditional move
+			void SMAAMovc(bvec2 cond, inout vec2 variable, vec2 value) {
+				if (cond.x) variable.x = value.x;
+				if (cond.y) variable.y = value.y;
+			}
+
+			void SMAAMovc(bvec4 cond, inout vec4 variable, vec4 value) {
+				SMAAMovc(cond.xy, variable.xy, value.xy);
+				SMAAMovc(cond.zw, variable.zw, value.zw);
+			}
+
+			void main() {
+				vec4 color;
+
+				// Get the blending weights for this fragment (x is right, y is top, z is bottom, w is left)
+				vec4 a;
+				a.x = texture2D(u_weights_sampler, vOffset.xy).a; 
+				a.y = texture2D(u_weights_sampler, vOffset.zw).g; 
+				a.wz = texture2D(u_weights_sampler, vTexCoord).xz; 
+
+				// Check for blending weight greater than 0
+				if (dot(a, vec4(1.0, 1.0, 1.0, 1.0)) <= 1e-5) {
+					color = texture2D(u_image_sampler, vTexCoord);
+				} else {
+					bool h = max(a.x, a.z) > max(a.y, a.w); // max(horizontal) > max(vertical)
+
+					// Get the blending offsets
+					vec4 blendingOffset = vec4(0.0, a.y, 0.0, a.w);
+					vec2 blendingWeight = a.yw;
+					SMAAMovc(bvec4(h, h, h, h), blendingOffset, vec4(a.x, 0.0, a.z, 0.0));
+					SMAAMovc(bvec2(h, h), blendingWeight, a.xz);
+					blendingWeight /= dot(blendingWeight, vec2(1.0, 1.0));
+
+					// Get the texture coordinates
+					vec2 resVals = vec2(1.0 / u_buffersize.x, 1.0 / u_buffersize.y);
+					vec4 blendingCoord = vTexCoord.xyxy + blendingOffset * vec4(resVals, -resVals);
+
+					// Mix current fragment and neighbor with bilinear interpolation
+					color = blendingWeight.x * texture2D(u_image_sampler, blendingCoord.xy);
+					color += blendingWeight.y * texture2D(u_image_sampler, blendingCoord.zw);
+				}
+
+				gl_FragColor = color;
+
+				if (!u_antialias) {
+					// Bypass anti-alias and use original image
+					gl_FragColor = texture2D(u_image_sampler, vTexCoord);
+				}
+			}
+		`
+
+		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
+	};
+
+})(ChemDoodle.structures.d3, ChemDoodle.lib.mat3, ChemDoodle.lib.mat4, document);
+
+(function(d3, m3, m4, document, undefined) {
+	'use strict';
+	
+	d3.LabelShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.LabelShader.prototype = new d3._Shader();
 	_.initUniformLocations = function(gl) {
@@ -12627,64 +13543,63 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		gl.bindAttribLocation(this.gProgram, this.vertexTexCoordAttribute, 'a_vertex_texcoord');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
-		'attribute vec3 a_vertex_normal;',
-		'attribute vec2 a_vertex_texcoord;',
+		attribute vec3 a_vertex_position;
+		attribute vec3 a_vertex_normal;
+		attribute vec2 a_vertex_texcoord;
 
 		// matrices set by gl.setMatrixUniforms
-		'uniform mat4 u_model_view_matrix;',
-		'uniform mat4 u_projection_matrix;',
-		'uniform vec2 u_dimension;',
+		uniform mat4 u_model_view_matrix;
+		uniform mat4 u_projection_matrix;
+		uniform vec2 u_dimension;
 
 		// sent to the fragment shader
-		'varying vec2 v_texcoord;',
+		varying vec2 v_texcoord;
 
-		'void main() {',
+		void main() {
 
-			'gl_Position = u_model_view_matrix * vec4(a_vertex_position, 1.);',
+			gl_Position = u_model_view_matrix * vec4(a_vertex_position, 1.);
 
-			'vec4 depth_pos = vec4(gl_Position);',
+			vec4 depth_pos = vec4(gl_Position);
 
-			'depth_pos.z += a_vertex_normal.z;',
+			depth_pos.z += a_vertex_normal.z;
 
-			'gl_Position = u_projection_matrix * gl_Position;',
+			gl_Position = u_projection_matrix * gl_Position;
 
-			'depth_pos = u_projection_matrix * depth_pos;',
+			depth_pos = u_projection_matrix * depth_pos;
 
-			'gl_Position /= gl_Position.w;',
+			gl_Position /= gl_Position.w;
 
-			'gl_Position.xy += a_vertex_normal.xy / u_dimension * 2.;',
+			gl_Position.xy += a_vertex_normal.xy / u_dimension * 2.;
 
-			'gl_Position.z = depth_pos.z / depth_pos.w;',
+			gl_Position.z = depth_pos.z / depth_pos.w;
 
-			'v_texcoord = a_vertex_texcoord;',
+			v_texcoord = a_vertex_texcoord;
 
-		'}'].join('');
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		// set macro for depth mmap texture
-		gl.depthTextureExt ? '#define CWC_DEPTH_TEX\n' : '',
+		${gl.depthTextureExt ? '#define CWC_DEPTH_TEX' : ''}
 		
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
 		// texture for draw text nor shadow map
-		'uniform sampler2D u_image;',
+		uniform sampler2D u_image;
 					
 		// from the vertex shader
-		'varying vec2 v_texcoord;',
+		varying vec2 v_texcoord;
 
-		'void main(void) {',
-			'gl_FragColor = texture2D(u_image, v_texcoord);',
-		'}'
-		].join('');
+		void main(void) {
+			gl_FragColor = texture2D(u_image, v_texcoord);
+		}`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -12707,8 +13622,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.LightingShader = function() {
-	};
+	d3.LightingShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.LightingShader.prototype = new d3._Shader();
 	
@@ -12721,49 +13635,49 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.outlineSampleUniform = gl.getUniformLocation(this.gProgram, 'u_outline_sample');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
 		// sent to the fragment shader
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 
-		'void main() {',
-			'gl_Position = vec4(a_vertex_position, 1.);',
-        	'v_texcoord = a_vertex_position.xy * .5 + .5;',
-		'}'].join('');
+		void main() {
+			gl_Position = vec4(a_vertex_position, 1.);
+        	v_texcoord = a_vertex_position.xy * .5 + .5;
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
-	    'uniform sampler2D u_position_sample;',
-	    'uniform sampler2D u_color_sample;',
-		'uniform sampler2D u_ssao_sample;',
-		'uniform sampler2D u_outline_sample;',
+	    uniform sampler2D u_position_sample;
+	    uniform sampler2D u_color_sample;
+		uniform sampler2D u_ssao_sample;
+		uniform sampler2D u_outline_sample;
 	    
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 
-	    'void main() {',
-	    	'vec4 position = texture2D(u_position_sample, v_texcoord);',
-	    	'vec4 color = texture2D(u_color_sample, v_texcoord);',
-			'vec4 ao = texture2D(u_ssao_sample, v_texcoord);',
-			'float outline = texture2D(u_outline_sample, v_texcoord).r;',
+	    void main() {
+	    	vec4 position = texture2D(u_position_sample, v_texcoord);
+	    	vec4 color = texture2D(u_color_sample, v_texcoord);
+			vec4 ao = texture2D(u_ssao_sample, v_texcoord);
+			float outline = texture2D(u_outline_sample, v_texcoord).r;
 
 			// skip background color
-	    	'if(position.w == 0. && outline == 1.) {',
-				// 'gl_FragColor = vec4(0., 0., 0., 1.);',
-	    		'return;',
-	    	'}',
+	    	if(position.w == 0. && outline == 1.) {
+				// gl_FragColor = vec4(0., 0., 0., 1.);
+	    		return;
+	    	}
 
-			'gl_FragColor = vec4(color.rgb * ao.r * outline, 1.);',
-	    '}'].join('');
+			gl_FragColor = vec4(color.rgb * ao.r * outline, 1.);
+	    }`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -12773,8 +13687,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.NormalShader = function() {
-	};
+	d3.NormalShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.NormalShader.prototype = new d3._Shader();
 	_.initUniformLocations = function(gl) {
@@ -12783,43 +13696,43 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.normalMatrixUniform = gl.getUniformLocation(this.gProgram, 'u_normal_matrix');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
-		'attribute vec3 a_vertex_normal;',
+		attribute vec3 a_vertex_position;
+		attribute vec3 a_vertex_normal;
 
 		// matrices set by gl.setMatrixUniforms
-		'uniform mat4 u_model_view_matrix;',
-		'uniform mat4 u_projection_matrix;',
-		'uniform mat3 u_normal_matrix;',
+		uniform mat4 u_model_view_matrix;
+		uniform mat4 u_projection_matrix;
+		uniform mat3 u_normal_matrix;
 
 		// sent to the fragment shader
-		'varying vec3 v_normal;',
+		varying vec3 v_normal;
 
-		'void main() {',
+		void main() {
 
-			'v_normal = length(a_vertex_normal)==0. ? a_vertex_normal : u_normal_matrix * a_vertex_normal;',
+			v_normal = length(a_vertex_normal)==0. ? a_vertex_normal : u_normal_matrix * a_vertex_normal;
 			
-			'gl_Position = u_projection_matrix * u_model_view_matrix * vec4(a_vertex_position, 1.);',
+			gl_Position = u_projection_matrix * u_model_view_matrix * vec4(a_vertex_position, 1.);
 
-		'}'].join('');
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 					
-		'varying vec3 v_normal;',
+		varying vec3 v_normal;
 
-		'void main(void) {',
-			'vec3 normal = length(v_normal)==0. ? vec3(0., 0., 1.) : normalize(v_normal);',
-			'gl_FragColor = vec4(normal, 0.);',
-		'}'].join('');
+		void main(void) {
+			vec3 normal = length(v_normal)==0. ? vec3(0., 0., 1.) : normalize(v_normal);
+			gl_FragColor = vec4(normal, 0.);
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -12843,8 +13756,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.OutlineShader = function() {
-	};
+	d3.OutlineShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.OutlineShader.prototype = new d3._Shader();
 
@@ -12859,91 +13771,91 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.thicknessUniform = gl.getUniformLocation(this.gProgram, 'u_thickness');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 
-		'void main() {',
-			'gl_Position = vec4(a_vertex_position, 1.);',
-        	'v_texcoord = a_vertex_position.xy * .5 + .5;',
-		'}'].join('');
+		void main() {
+			gl_Position = vec4(a_vertex_position, 1.);
+        	v_texcoord = a_vertex_position.xy * .5 + .5;
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
-	    'uniform sampler2D u_normal_sample;',
-	    'uniform sampler2D u_depth_sample;',
+	    uniform sampler2D u_normal_sample;
+	    uniform sampler2D u_depth_sample;
 
-	    'uniform float u_normal_threshold;',
-	    'uniform float u_depth_threshold;',
+	    uniform float u_normal_threshold;
+	    uniform float u_depth_threshold;
 
-	    'uniform float u_thickness;',
+	    uniform float u_thickness;
 
-	    'uniform vec2 u_gbuffer_texture_size;',
+	    uniform vec2 u_gbuffer_texture_size;
 
 	    
-	    'varying vec2 v_texcoord;',
+	    varying vec2 v_texcoord;
 
-	    'void main() {',
-	    	'vec3 normal = texture2D(u_normal_sample, v_texcoord).xyz;',
-	    	'float depth = texture2D(u_depth_sample, v_texcoord).r;',
+	    void main() {
+	    	vec3 normal = texture2D(u_normal_sample, v_texcoord).xyz;
+	    	float depth = texture2D(u_depth_sample, v_texcoord).r;
 
 	    	// check background pixel
-	    	// 'if(depth == 1.) {',
-	    	// 	'return;',
-	    	// '}',
+	    	// if(depth == 1.) {
+	    	// 	return;
+	    	// }
 
-	    	'vec2 texelSize = u_thickness/u_gbuffer_texture_size * .5;',
-	    	'vec2 offsets[8];',
+	    	vec2 texelSize = u_thickness/u_gbuffer_texture_size * .5;
+	    	vec2 offsets[8];
 
-			'offsets[0] = vec2(-texelSize.x, -texelSize.y);',
-			'offsets[1] = vec2(-texelSize.x, 0);',
-			'offsets[2] = vec2(-texelSize.x, texelSize.y);',
+			offsets[0] = vec2(-texelSize.x, -texelSize.y);
+			offsets[1] = vec2(-texelSize.x, 0);
+			offsets[2] = vec2(-texelSize.x, texelSize.y);
 
-			'offsets[3] = vec2(0, -texelSize.y);',
-			'offsets[4] = vec2(0,  texelSize.y);',
+			offsets[3] = vec2(0, -texelSize.y);
+			offsets[4] = vec2(0,  texelSize.y);
 
-			'offsets[5] = vec2(texelSize.x, -texelSize.y);',
-			'offsets[6] = vec2(texelSize.x, 0);',
-			'offsets[7] = vec2(texelSize.x, texelSize.y);',
+			offsets[5] = vec2(texelSize.x, -texelSize.y);
+			offsets[6] = vec2(texelSize.x, 0);
+			offsets[7] = vec2(texelSize.x, texelSize.y);
 
-			'float edge = 0.;',
+			float edge = 0.;
 
-			'for (int i = 0; i < 8; i++) {',
-				'vec3 sampleNorm = texture2D(u_normal_sample, v_texcoord + offsets[i]).xyz;',
+			for (int i = 0; i < 8; i++) {
+				vec3 sampleNorm = texture2D(u_normal_sample, v_texcoord + offsets[i]).xyz;
 
-				'if(normal == vec3(.0, .0, .0)) {',
-					'if(sampleNorm != vec3(.0, .0, .0)) {',
-						'edge = 1.0;',
-						'break;',
-					'}',
-					'continue;',
-				'}',
+				if(normal == vec3(.0, .0, .0)) {
+					if(sampleNorm != vec3(.0, .0, .0)) {
+						edge = 1.0;
+						break;
+					}
+					continue;
+				}
 
-				'if (dot(sampleNorm, normal) < u_normal_threshold) {',
-					'edge = 1.0;',
-					'break;',
-				'}',
+				if (dot(sampleNorm, normal) < u_normal_threshold) {
+					edge = 1.0;
+					break;
+				}
 
-				'float sampleDepth = texture2D(u_depth_sample, v_texcoord + offsets[i]).r;',
-				'if (abs(sampleDepth - depth) > u_depth_threshold) {',
-					'edge = 1.0;',
-					'break;',
-				'}',
-			'}',
+				float sampleDepth = texture2D(u_depth_sample, v_texcoord + offsets[i]).r;
+				if (abs(sampleDepth - depth) > u_depth_threshold) {
+					edge = 1.0;
+					break;
+				}
+			}
 
-			'edge = 1. - edge;',
+			edge = 1. - edge;
 
-		    'gl_FragColor = vec4(edge, edge, edge, 1.);',
-	    '}'].join('');
+		    gl_FragColor = vec4(edge, edge, edge, 1.);
+	    }`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -12965,8 +13877,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.PhongShader = function() {
-	};
+	d3.PhongShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.PhongShader.prototype = new d3._Shader();
 	_.initUniformLocations = function(gl) {
@@ -13007,187 +13918,186 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.pointSizeUniform = gl.getUniformLocation(this.gProgram, 'u_point_size');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
-		'attribute vec3 a_vertex_normal;',
+		attribute vec3 a_vertex_position;
+		attribute vec3 a_vertex_normal;
 
 		// scene uniforms
-		'uniform vec3 u_light_diffuse_color;',
-		'uniform vec3 u_material_ambient_color;',
-		'uniform vec3 u_material_diffuse_color;',
+		uniform vec3 u_light_diffuse_color;
+		uniform vec3 u_material_ambient_color;
+		uniform vec3 u_material_diffuse_color;
 		// matrices set by gl.setMatrixUniforms
-		'uniform mat4 u_model_view_matrix;',
-		'uniform mat4 u_projection_matrix;',
-		'uniform mat3 u_normal_matrix;',
+		uniform mat4 u_model_view_matrix;
+		uniform mat4 u_projection_matrix;
+		uniform mat3 u_normal_matrix;
 
-		'uniform mat4 u_light_model_view_matrix;',
-		'uniform mat4 u_light_projection_matrix;',
+		uniform mat4 u_light_model_view_matrix;
+		uniform mat4 u_light_projection_matrix;
 
-		'uniform bool u_shadow;',
+		uniform bool u_shadow;
 
 		// sent to the fragment shader
-		'varying vec3 v_viewpos;',
-  		'varying vec4 v_shadcoord;',
-		'varying vec3 v_diffuse;',
-		'varying vec3 v_ambient;',
-		'varying vec3 v_normal;',
+		varying vec3 v_viewpos;
+  		varying vec4 v_shadcoord;
+		varying vec3 v_diffuse;
+		varying vec3 v_ambient;
+		varying vec3 v_normal;
 		
-		'uniform float u_point_size;',
+		uniform float u_point_size;
 
-		'void main() {',
+		void main() {
 
-			'v_normal = length(a_vertex_normal)==0. ? a_vertex_normal : u_normal_matrix * a_vertex_normal;',
-			'v_ambient = u_material_ambient_color;',
-			'v_diffuse = u_material_diffuse_color * u_light_diffuse_color;',
+			v_normal = length(a_vertex_normal)==0. ? a_vertex_normal : u_normal_matrix * a_vertex_normal;
+			v_ambient = u_material_ambient_color;
+			v_diffuse = u_material_diffuse_color * u_light_diffuse_color;
 
-			'if(u_shadow) {',
-				'v_shadcoord = u_light_projection_matrix * u_light_model_view_matrix * vec4(a_vertex_position, 1.);',
-				'v_shadcoord /= v_shadcoord.w;',
-			'}',
+			if(u_shadow) {
+				v_shadcoord = u_light_projection_matrix * u_light_model_view_matrix * vec4(a_vertex_position, 1.);
+				v_shadcoord /= v_shadcoord.w;
+			}
 
-			'vec4 viewPos = u_model_view_matrix * vec4(a_vertex_position, 1.);',
+			vec4 viewPos = u_model_view_matrix * vec4(a_vertex_position, 1.);
 
-			'v_viewpos = viewPos.xyz / viewPos.w;',
+			v_viewpos = viewPos.xyz / viewPos.w;
 			
-			'gl_Position = u_projection_matrix * viewPos;',
+			gl_Position = u_projection_matrix * viewPos;
 
 			// just to make sure the w is 1
-			'gl_Position /= gl_Position.w;',
-			'gl_PointSize = u_point_size;',
+			gl_Position /= gl_Position.w;
+			gl_PointSize = u_point_size;
 
-		'}'].join('');
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		// set macro for depth mmap texture
-		gl.depthTextureExt ? '#define CWC_DEPTH_TEX\n' : '',
+		${gl.depthTextureExt ? '#define CWC_DEPTH_TEX' : ''} 
 		
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 					
 		// scene uniforms
-		'uniform vec3 u_light_specular_color;',
-		'uniform vec3 u_light_direction;',
+		uniform vec3 u_light_specular_color;
+		uniform vec3 u_light_direction;
 
-		'uniform vec3 u_material_specular_color;',
-		'uniform float u_material_shininess;',
-		'uniform float u_material_alpha;',
+		uniform vec3 u_material_specular_color;
+		uniform float u_material_shininess;
+		uniform float u_material_alpha;
 
-		'uniform int u_fog_mode;',
-		'uniform vec3 u_fog_color;',
-		'uniform float u_fog_density;',
-		'uniform float u_fog_start;',
-		'uniform float u_fog_end;',
+		uniform int u_fog_mode;
+		uniform vec3 u_fog_color;
+		uniform float u_fog_density;
+		uniform float u_fog_start;
+		uniform float u_fog_end;
 
-		'uniform bool u_shadow;',
-		'uniform float u_shadow_intensity;',
+		uniform bool u_shadow;
+		uniform float u_shadow_intensity;
 
-		'uniform bool u_flat_color;',
+		uniform bool u_flat_color;
 		
-		'uniform float u_gamma_inverted;',
+		uniform float u_gamma_inverted;
 
 		// texture for shadow map
-		'uniform sampler2D u_shadow_depth_sample;',
+		uniform sampler2D u_shadow_depth_sample;
 
-		'uniform vec2 u_shadow_texture_size;',
+		uniform vec2 u_shadow_texture_size;
 					
 		// from the vertex shader
-		'varying vec3 v_viewpos;',
-  		'varying vec4 v_shadcoord;',
-		'varying vec3 v_diffuse;',
-		'varying vec3 v_ambient;',
-		'varying vec3 v_normal;',
+		varying vec3 v_viewpos;
+  		varying vec4 v_shadcoord;
+		varying vec3 v_diffuse;
+		varying vec3 v_ambient;
+		varying vec3 v_normal;
 
 
-		'\n#ifndef CWC_DEPTH_TEX\n',
-		'float unpack (vec4 colour) {',
-			'const vec4 bitShifts = vec4(1.,',
-				'1. / 255.,',
-				'1. / (255. * 255.),',
-				'1. / (255. * 255. * 255.));',
-			'return dot(colour, bitShifts);',
-		'}',
-		'\n#endif\n',
+		\n#ifndef CWC_DEPTH_TEX\n
+		float unpack (vec4 colour) {
+			const vec4 bitShifts = vec4(1.,
+				1. / 255.,
+				1. / (255. * 255.),
+				1. / (255. * 255. * 255.));
+			return dot(colour, bitShifts);
+		}
+		\n#endif\n
 
-		'float shadowMapDepth(vec4 shadowMapColor) {',
-			'float zShadowMap;',
-			'\n#ifdef CWC_DEPTH_TEX\n',
-			'zShadowMap = shadowMapColor.r;',
-			'\n#else\n',
-			'zShadowMap = unpack(shadowMapColor);',
-			'\n#endif\n',
-			'return zShadowMap;',
-		'}',
+		float shadowMapDepth(vec4 shadowMapColor) {
+			float zShadowMap;
+			\n#ifdef CWC_DEPTH_TEX\n
+			zShadowMap = shadowMapColor.r;
+			\n#else\n
+			zShadowMap = unpack(shadowMapColor);
+			\n#endif\n
+			return zShadowMap;
+		}
 
-		'void main(void) {',
-			'vec3 color = v_diffuse;',
-			'if(length(v_normal)!=0.){',
-				'vec3 normal = normalize(v_normal);',
-				'vec3 lightDir = normalize(-u_light_direction);',
-				'float nDotL = dot(normal, lightDir);',
+		void main(void) {
+			vec3 color = v_diffuse;
+			if(length(v_normal)!=0.){
+				vec3 normal = normalize(v_normal);
+				vec3 lightDir = normalize(-u_light_direction);
+				float nDotL = dot(normal, lightDir);
 
-    			'float shadow = 0.0;',
-    			'if(u_shadow) {',
-					'vec3 depthCoord = .5 + v_shadcoord.xyz / v_shadcoord.w * .5;',
+    			float shadow = 0.0;
+    			if(u_shadow) {
+					vec3 depthCoord = .5 + v_shadcoord.xyz / v_shadcoord.w * .5;
 
-				    'if(depthCoord.z <= 1. && depthCoord.z >= 0.) {',
-						'float bias = max(.05 * (1. - nDotL), .005);',
-						'vec2 texelSize = 1. / u_shadow_texture_size;',
-					    'for(int x = -1; x <= 1; ++x) {',
-					        'for(int y = -1; y <= 1; ++y)  {',
-								'vec4 shadowMapColor = texture2D(u_shadow_depth_sample, depthCoord.xy + vec2(x, y) * texelSize);',
-								'float zShadowMap = shadowMapDepth(shadowMapColor);',
-					            'shadow += zShadowMap + bias < depthCoord.z ? 1. : 0.;',
-					        '}',
-					    '}',
-					    'shadow /= 9.;',
-					    'shadow *= u_shadow_intensity;',
-					'}',
-    			'}',
+				    if(depthCoord.z <= 1. && depthCoord.z >= 0.) {
+						float bias = max(.05 * (1. - nDotL), .005);
+						vec2 texelSize = 1. / u_shadow_texture_size;
+					    for(int x = -1; x <= 1; ++x) {
+					        for(int y = -1; y <= 1; ++y)  {
+								vec4 shadowMapColor = texture2D(u_shadow_depth_sample, depthCoord.xy + vec2(x, y) * texelSize);
+								float zShadowMap = shadowMapDepth(shadowMapColor);
+					            shadow += zShadowMap + bias < depthCoord.z ? 1. : 0.;
+					        }
+					    }
+					    shadow /= 9.;
+					    shadow *= u_shadow_intensity;
+					}
+    			}
 
-    			'if(!u_flat_color) {',
-					'vec3 viewDir = normalize(-v_viewpos);',
-					'vec3 halfDir = normalize(lightDir + viewDir);',
-					'float nDotHV = max(dot(halfDir, normal), 0.);',
-					'vec3 specular = u_material_specular_color * u_light_specular_color;',
-					'color*=max(nDotL, 0.);',
-					'color+=specular * pow(nDotHV, u_material_shininess);',
-				'}',
+    			if(!u_flat_color) {
+					vec3 viewDir = normalize(-v_viewpos);
+					vec3 halfDir = normalize(lightDir + viewDir);
+					float nDotHV = max(dot(halfDir, normal), 0.);
+					vec3 specular = u_material_specular_color * u_light_specular_color;
+					color*=max(nDotL, 0.);
+					color+=specular * pow(nDotHV, u_material_shininess);
+				}
 
 				// set the color
-				'color = (1.-shadow)*color+v_ambient;',
-			'}',
+				color = (1.-shadow)*color+v_ambient;
+			}
 
-			'gl_FragColor = vec4(pow(color, vec3(u_gamma_inverted)), u_material_alpha);',
+			gl_FragColor = vec4(pow(color, vec3(u_gamma_inverted)), u_material_alpha);
 
-			'if(u_fog_mode != 0){',
-				'float fogCoord = 1.-clamp((u_fog_end - gl_FragCoord.z/gl_FragCoord.w) / (u_fog_end - u_fog_start), 0., 1.);',
-				'float fogFactor = 1.;',
+			if(u_fog_mode != 0){
+				float fogCoord = 1.-clamp((u_fog_end - gl_FragCoord.z/gl_FragCoord.w) / (u_fog_end - u_fog_start), 0., 1.);
+				float fogFactor = 1.;
 
 				// linear equation
-				'if(u_fog_mode == 1){',
-					'fogFactor = 1.-fogCoord;',
-				'}',
+				if(u_fog_mode == 1){
+					fogFactor = 1.-fogCoord;
+				}
 				// exp equation
-				'else if(u_fog_mode == 2) {',
-					'fogFactor = clamp(exp(-u_fog_density*fogCoord), 0., 1.);',
-				'}',
+				else if(u_fog_mode == 2) {
+					fogFactor = clamp(exp(-u_fog_density*fogCoord), 0., 1.);
+				}
 				// exp2 equation
-				'else if(u_fog_mode == 3) {',
-					'fogFactor = clamp(exp(-pow(u_fog_density*fogCoord, 2.)), 0., 1.);',
-				'}',
-				'gl_FragColor = mix(vec4(u_fog_color, 1.), gl_FragColor, fogFactor);',
+				else if(u_fog_mode == 3) {
+					fogFactor = clamp(exp(-pow(u_fog_density*fogCoord, 2.)), 0., 1.);
+				}
+				gl_FragColor = mix(vec4(u_fog_color, 1.), gl_FragColor, fogFactor);
 
 				// for debugging
-				// 'gl_FragColor = vec4(vec3(fogFactor), 1.);',
-			'}',
-		'}'
-		].join('');
+				// gl_FragColor = vec4(vec3(fogFactor), 1.);
+			}
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -13287,8 +14197,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.PickShader = function() {
-	};
+	d3.PickShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.PickShader.prototype = new d3._Shader();
 	_.initUniformLocations = function(gl) {
@@ -13297,41 +14206,40 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		this.materialDiffuseColorUniform = gl.getUniformLocation(this.gProgram, 'u_material_diffuse_color');
 	};
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
 		// matrices set by gl.setMatrixUniforms
-		'uniform mat4 u_model_view_matrix;',
-		'uniform mat4 u_projection_matrix;',
+		uniform mat4 u_model_view_matrix;
+		uniform mat4 u_projection_matrix;
 
-		'void main() {',
+		void main() {
 			
-			'gl_Position = u_projection_matrix * u_model_view_matrix * vec4(a_vertex_position, 1.);',
+			gl_Position = u_projection_matrix * u_model_view_matrix * vec4(a_vertex_position, 1.);
 
 			// just to make sure the w is 1
-			'gl_Position /= gl_Position.w;',
+			gl_Position /= gl_Position.w;
 
-		'}'].join('');
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		// set macro for depth mmap texture
-		gl.depthTextureExt ? '#define CWC_DEPTH_TEX\n' : '',
+		${gl.depthTextureExt ? '#define CWC_DEPTH_TEX' : ''}
 		
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
-		'uniform vec3 u_material_diffuse_color;',
+		uniform vec3 u_material_diffuse_color;
 					
-		'void main(void) {',
-			'gl_FragColor = vec4(u_material_diffuse_color, 1.);',
-		'}'
-		].join('');
+		void main(void) {
+			gl_FragColor = vec4(u_material_diffuse_color, 1.);
+		}`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -13344,45 +14252,44 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.PositionShader = function() {
-	};
+	d3.PositionShader = function() {};
 	let _super = d3._Shader.prototype;
 	let _ = d3.PositionShader.prototype = new d3._Shader();
 
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
 		// matrices set by gl.setMatrixUniforms
-		'uniform mat4 u_model_view_matrix;',
-		'uniform mat4 u_projection_matrix;',
+		uniform mat4 u_model_view_matrix;
+		uniform mat4 u_projection_matrix;
 
-		'varying vec4 v_position;',
+		varying vec4 v_position;
 
-		'void main() {',
-			'vec4 viewPos = u_model_view_matrix * vec4(a_vertex_position, 1.);',
+		void main() {
+			vec4 viewPos = u_model_view_matrix * vec4(a_vertex_position, 1.);
 
-			'gl_Position = u_projection_matrix * viewPos;',
+			gl_Position = u_projection_matrix * viewPos;
 
-			'v_position = viewPos / viewPos.w;',
+			v_position = viewPos / viewPos.w;
 
-		'}'].join('');
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
-		'varying vec4 v_position;',
+		varying vec4 v_position;
 
-		'void main(void) {',
-			'gl_FragColor = v_position;',
-		'}'].join('');
+		void main(void) {
+			gl_FragColor = v_position;
+		}`;
 		
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -13392,38 +14299,37 @@ ChemDoodle.RESIDUE = (function(undefined) {
 (function(d3, m3, m4, document, undefined) {
 	'use strict';
 
-	d3.QuadShader = function() {
-	};
+	d3.QuadShader = function() {};
 	let _ = d3.QuadShader.prototype = new d3._Shader();
 	_.loadDefaultVertexShader = function(gl) {
-		let sb = [
-		'precision mediump float;',
+		let sb = `
+		precision mediump float;
 		
 		// attributes set when rendering objects
-		'attribute vec3 a_vertex_position;',
+		attribute vec3 a_vertex_position;
 
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 
-		'void main() {',
-			'gl_Position = vec4(a_vertex_position, 1.);',
-        	'v_texcoord = a_vertex_position.xy * .5 + .5;',
-		'}'].join('');
+		void main() {
+			gl_Position = vec4(a_vertex_position, 1.);
+        	v_texcoord = a_vertex_position.xy * .5 + .5;
+		}`;
 
 		return this.getShaderFromStr(gl, gl.VERTEX_SHADER, sb);
 	};
 	_.loadDefaultFragmentShader = function(gl) {
-		let sb = [
+		let sb = `
 
 		// set float precision
-		'precision mediump float;',
+		precision mediump float;
 
-	    'uniform sampler2D u_image;',
+	    uniform sampler2D u_image;
 
-    	'varying vec2 v_texcoord;',
+    	varying vec2 v_texcoord;
 	    
-	    'void main() {',
-	        'gl_FragColor = texture2D(u_image, v_texcoord);',
-	    '}'].join('');
+	    void main() {
+	        gl_FragColor = texture2D(u_image, v_texcoord);
+	    }`;
 
 		return this.getShaderFromStr(gl, gl.FRAGMENT_SHADER, sb);
 	};
@@ -13476,8 +14382,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		return index;
 	};
 	
-	d3._Surface = function() {
-	};
+	d3._Surface = function() {};
 	let _ = d3._Surface.prototype = new d3._Mesh();
 	_.generate = function(xdif, ydif, zdif, step, range, xsteps, ysteps, zsteps){
 		// generate the function
@@ -13857,6 +14762,11 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		fxaa_searchThreshold:1.0 / 4.0,
 		fxaa_subpixCap:1.0,
 		fxaa_subpixTrim:0.0,
+		// default smaa antialising
+		smaa_useSMAA:true,
+		smaa_edgeThreshold:0.1,
+		smaa_contrastFactor:2.0,
+		smaa_searchSteps:16,
 
 		// default atom properties
 		atoms_display:true,
@@ -14064,8 +14974,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		return c.DEFAULT_STYLES.bondLength_2D / c.DEFAULT_STYLES.angstromsPerBondLength;
 	};
 
-	informatics.BondDeducer = function() {
-	};
+	informatics.BondDeducer = function() {};
 	let _ = informatics.BondDeducer.prototype;
 	_.margin = 1.1;
 	_.deduceCovalentBonds = function(molecule, customPointsPerAngstrom) {
@@ -14087,8 +14996,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle, ChemDoodle.ELEMENT, ChemDoodle.informatics, ChemDoodle.structures);
 (function(informatics, structures, undefined) {
 	'use strict';
-	informatics.HydrogenDeducer = function() {
-	};
+	informatics.HydrogenDeducer = function() {};
 	let _ = informatics.HydrogenDeducer.prototype;
 	_.removeHydrogens = function(molecule, removeStereo) {
 		let atoms = [];
@@ -14126,8 +15034,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle.informatics, ChemDoodle.structures);
 (function(informatics, structures, undefined) {
 	'use strict';
-	informatics.Splitter = function() {
-	};
+	informatics.Splitter = function() {};
 	let _ = informatics.Splitter.prototype;
 	_.split = function(molecule) {
 		let mols = [];
@@ -14170,8 +15077,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle.informatics, ChemDoodle.structures);
 (function(informatics, io, structures, undefined) {
 	'use strict';
-	informatics.StructureBuilder = function() {
-	};
+	informatics.StructureBuilder = function() {};
 	let _ = informatics.StructureBuilder.prototype;
 	_.copy = function(molecule) {
 		let json = new io.JSONInterpreter();
@@ -14181,8 +15087,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle.informatics, ChemDoodle.io, ChemDoodle.structures);
 (function(informatics, undefined) {
 	'use strict';
-	informatics._Counter = function() {
-	};
+	informatics._Counter = function() {};
 	let _ = informatics._Counter.prototype;
 	_.value = 0;
 	_.molecule = undefined;
@@ -14240,8 +15145,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(informatics, undefined) {
 	'use strict';
-	informatics._RingFinder = function() {
-	};
+	informatics._RingFinder = function() {};
 	let _ = informatics._RingFinder.prototype;
 	_.atoms = undefined;
 	_.bonds = undefined;
@@ -14519,8 +15423,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle.informatics);
 (function(io, undefined) {
 	'use strict';
-	io._Interpreter = function() {
-	};
+	io._Interpreter = function() {};
 	let _ = io._Interpreter.prototype;
 	_.fit = function(data, length, leftAlign) {
 		let size = data.length;
@@ -14604,8 +15507,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		return [ displacement, x, y, z ];
 	};
 
-	io.CIFInterpreter = function() {
-	};
+	io.CIFInterpreter = function() {};
 	io.CIFInterpreter.generateABC2XYZ = function(a, b, c, alpha, beta, gamma) {
 		let d = (m.cos(alpha) - m.cos(gamma) * m.cos(beta)) / m.sin(gamma);
 		return [ a, 0, 0, 0, b * m.cos(gamma), b * m.sin(gamma), 0, 0, c * m.cos(beta), c * d, c * m.sqrt(1 - m.pow(m.cos(beta), 2) - d * d), 0, 0, 0, 0, 1 ];
@@ -14877,8 +15779,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle, ChemDoodle.io, ChemDoodle.structures, ChemDoodle.structures.d3, Math, ChemDoodle.lib.mat4, ChemDoodle.lib.vec3);
 (function(c, io, structures, undefined) {
 	'use strict';
-	io.CMLInterpreter = function() {
-	};
+	io.CMLInterpreter = function() {};
 	let _ = io.CMLInterpreter.prototype = new io._Interpreter();
 	_.read = function(content) {
 		let molecules = [];
@@ -15028,8 +15929,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(c, ELEMENT, io, structures, undefined) {
 	'use strict';
-	io.MOLInterpreter = function() {
-	};
+	io.MOLInterpreter = function() {};
 	let _ = io.MOLInterpreter.prototype = new io._Interpreter();
 	_.version = 2;
 	_.read = function(content, multiplier) {
@@ -15462,8 +16362,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		}
 	}
 	
-	io.PDBInterpreter = function() {
-	};
+	io.PDBInterpreter = function() {};
 	let _ = io.PDBInterpreter.prototype = new io._Interpreter();
 	_.calculateRibbonDistances = false;
 	_.deduceResidueBonds = false;
@@ -15743,8 +16642,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 		's' : 9
 	};
 
-	io.JCAMPInterpreter = function() {
-	};
+	io.JCAMPInterpreter = function() {};
 	let _ = io.JCAMPInterpreter.prototype = new io._Interpreter();
 	_.convertHZ2PPM = false;
 	_.read = function(content) {
@@ -16083,8 +16981,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle, ChemDoodle.io, ChemDoodle.structures);
 (function(c, io, structures, d2, d3, JSON, undefined) {
 	'use strict';
-	io.JSONInterpreter = function() {
-	};
+	io.JSONInterpreter = function() {};
 	let _ = io.JSONInterpreter.prototype;
 	_.contentTo = function(mols, shapes) {
 		if(!mols){mols = [];}
@@ -16783,8 +17680,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 })(ChemDoodle, ChemDoodle.io, ChemDoodle.structures, ChemDoodle.structures.d2, ChemDoodle.structures.d3, JSON);
 (function(c, io, structures, undefined) {
 	'use strict';
-	io.RXNInterpreter = function() {
-	};
+	io.RXNInterpreter = function() {};
 	let _ = io.RXNInterpreter.prototype = new io._Interpreter();
 	_.read = function(content, multiplier) {
 		if (!multiplier) {
@@ -16887,8 +17783,7 @@ ChemDoodle.RESIDUE = (function(undefined) {
 
 (function(c, ELEMENT, SYMBOLS, io, structures, undefined) {
 	'use strict';
-	io.XYZInterpreter = function() {
-	};
+	io.XYZInterpreter = function() {};
 	let _ = io.XYZInterpreter.prototype = new io._Interpreter();
 	_.deduceCovalentBonds = true;
 	_.read = function(content) {
@@ -16991,7 +17886,13 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 (function(c, featureDetection, math, monitor, structures, m, document, window, userAgent, undefined) {
 	'use strict';
-	c._Canvas = function() {
+	c._Canvas = function(id, width, height) {
+		this.id = id;
+		this.width = width;
+		this.height = height;
+		if(id){
+			this.create();
+		}
 	};
 	let _ = c._Canvas.prototype;
 	_.molecules = undefined;
@@ -17034,6 +17935,14 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 				this.innerRepaint(ctx);
 			} else {
 				if (this.molecules.length !== 0 || this.shapes.length !== 0) {
+					// setup pushers
+					for(let s of this.shapes){
+						if(s instanceof structures.d2.Pusher){
+							structures.d2.Pusher.setupPushers(this.shapes, this.molecules);
+							break;
+						}
+					}
+				
 					ctx.save();
 					ctx.translate(this.width / 2, this.height / 2);
 					ctx.rotate(this.styles.rotateAngle);
@@ -17066,13 +17975,14 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 		}
 	};
 	_.resize = function(w, h) {
-		let cap = q('#' + this.id);
-		cap.attr({
-			width : w,
-			height : h
-		});
-		cap.css('width', w);
-		cap.css('height', h);
+		let element = document.getElementById(this.id);
+		if (element) {
+			element.setAttribute("width", w);
+			element.setAttribute("height", h);
+			element.style.width = w + 'px';
+			element.style.height = h + 'px';
+		}
+	
 		this.width = w;
 		this.height = h;
 		if (c._Canvas3D && this instanceof c._Canvas3D) {
@@ -17263,34 +18173,27 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 		}
 		return bounds;
 	};
-	_.create = function(id, width, height) {
-		this.id = id;
-		this.width = width;
-		this.height = height;
+	_.create = function() {
 		this.molecules = [];
 		this.shapes = [];
-		if (document.getElementById(id)) {
-			let canvas = document.getElementById(id);
-			if (!width) {
+		if (document.getElementById(this.id)) {
+			let canvas = document.getElementById(this.id);
+			if (!this.width) {
 				this.width = parseInt(canvas.getAttribute('width'));
 			} else {
-				canvas.setAttribute('width', width);
+				canvas.setAttribute('width', this.width);
 			}
-			if (!height) {
+			if (!this.height) {
 				this.height = parseInt(canvas.getAttribute('height'));
 			} else {
-				canvas.setAttribute('height', height);
+				canvas.setAttribute('height', this.height);
 			}
 			// If the canvas is pre-created, make sure that the class attribute is specified.
 			canvas.setAttribute('class', 'ChemDoodleWebComponent');
-		} else if (!c.featureDetection.supports_canvas_text() && userAgent.indexOf("MSIE") != -1) {
-			// Install Google Chrome Frame
-			document.writeln('<div style="border: 1px solid black;" width="' + width + '" height="' + height + '">Please install <a href="http://code.google.com/chrome/chromeframe/">Google Chrome Frame</a>, then restart Internet Explorer.</div>');
-			return;
 		} else {
-			document.writeln('<canvas class="ChemDoodleWebComponent" id="' + id + '" width="' + width + '" height="' + height + '" alt="ChemDoodle Web Component">This browser does not support HTML5/Canvas.</canvas>');
+			document.writeln(`<canvas class="ChemDoodleWebComponent" id="${this.id}" width="${this.width}" height="${this.height}" alt="ChemDoodle Web Component">This browser does not support HTML5/Canvas.</canvas>`);
 		}
-		let element = document.getElementById(id);
+		let element = document.getElementById(this.id);
 		element.style.width = this.width+'px';
 		element.style.height = this.height+'px';
 		this.pixelRatio = window.devicePixelRatio ? window.devicePixelRatio : 1;
@@ -17578,9 +18481,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, animations, undefined) {
 	'use strict';
 	c._AnimatorCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 	};
 	let _ = c._AnimatorCanvas.prototype = new c._Canvas();
 	_.timeout = 33;
@@ -17615,9 +18516,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, document, undefined) {
 	'use strict';
 	c.FileCanvas = function(id, width, height, action) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 		let form = '<br><form name="FileForm" enctype="multipart/form-data" method="POST" action="' + action + '" target="HiddenFileFrame"><input type="file" name="f" /><input type="submit" name="submitbutton" value="Show File" /></form><iframe id="HFF-' + id + '" name="HiddenFileFrame" height="0" width="0" style="display:none;" onLoad="GetMolFromFrame(\'HFF-' + id + '\', ' + id + ')"></iframe>';
 		document.writeln(form);
 		this.emptyMessage = 'Click below to load file';
@@ -17630,9 +18529,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.HyperlinkCanvas = function(id, width, height, urlOrFunction, color, size) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 		this.urlOrFunction = urlOrFunction;
 		this.color = color ? color : 'blue';
 		this.size = size ? size : 2;
@@ -17682,28 +18579,21 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, iChemLabs, document, undefined) {
 	'use strict';
 	c.MolGrabberCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
-		let sb = [];
-		sb.push('<br><input type="text" id="');
-		sb.push(id);
-		sb.push('_query" size="32" value="" />');
-		sb.push(this.getInputFields());
+		c._Canvas.call(this, id, width, height);
 
 		// Don't use document.writeln here, it breaks the whole page after
 		// document is closed.
 		let canvas = document.getElementById(id);
-		canvas.insertAdjacentHTML('afterend', sb.join(''));
+		canvas.insertAdjacentHTML('afterend', `<br><input type="text" id="${id}_query" size="32" value="" />`+this.getInputFields());
 
 		let self = this;
 		document.getElementById(id + '_submit').addEventListener('click', function() {
-				self.search();
+			self.search();
 		});
 		document.getElementById(id + '_query').addEventListener('keypress', function(e) {
-				if (e.key === 'Enter' || e.keyCode === 13) {
-					self.search();
-				}
+			if (e.key === 'Enter' || e.keyCode === 13) {
+				self.search();
+			}
 		});
 		this.emptyMessage = 'Enter search term below';
 		this.repaint();
@@ -17714,20 +18604,17 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 		this.search();
 	};
 	_.getInputFields = function(){
-		let sb = [];
-		sb.push('<br><nobr>');
-		sb.push('<select id="');
-		sb.push(this.id);
-		sb.push('_select">');
-		sb.push('<option value="chemexper">ChemExper');
-		sb.push('<option value="chemspider">ChemSpider');
-		sb.push('<option value="pubchem" selected>PubChem');
-		sb.push('</select>');
-		sb.push('<button type="button" id="');
-		sb.push(this.id);
-		sb.push('_submit">Show Molecule</button>');
-		sb.push('</nobr>');
-		return sb.join('');
+		return `
+			<br>
+			<nobr>
+				<select id="${this.id}_select" style="user-select:none;">
+					<option value="chemexper">ChemExper
+					<option value="chemspider">ChemSpider
+					<option value="pubchem" selected>PubChem
+				</select>
+				<button type="button" id="${this.id}_submit" class="reset-all-button">Show Molecule</button>
+			</nobr>
+		`;
 	};
 	_.search = function() {
 		this.emptyMessage = 'Searching...';
@@ -17751,9 +18638,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 	let zAxis = [ 0, 0, 1 ];
 
 	c.RotatorCanvas = function(id, width, height, rotate3D) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._AnimatorCanvas.call(this, id, width, height);
 		this.rotate3D = rotate3D;
 	};
 	let _ = c.RotatorCanvas.prototype = new c._AnimatorCanvas();
@@ -17819,9 +18704,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, animations, math, undefined) {
 	'use strict';
 	c.SlideshowCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._AnimatorCanvas.call(this, id, width, height);
 	};
 	let _ = c.SlideshowCanvas.prototype = new c._AnimatorCanvas();
 	_.frames = [];
@@ -17896,9 +18779,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, monitor, structures, m, m4, undefined) {
 	'use strict';
 	c.TransformCanvas = function(id, width, height, rotate3D) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 		this.rotate3D = rotate3D;
 	};
 	let _ = c.TransformCanvas.prototype = new c._Canvas();
@@ -18048,9 +18929,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.ViewerCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 	};
 	c.ViewerCanvas.prototype = new c._Canvas();
 
@@ -18059,9 +18938,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, document, undefined) {
 	'use strict';
 	c._SpectrumCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 	};
 	let _ = c._SpectrumCanvas.prototype = new c._Canvas();
 	_.spectrum = undefined;
@@ -18095,9 +18972,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.ObserverCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._SpectrumCanvas.call(this, id, width, height);
 	};
 	c.ObserverCanvas.prototype = new c._SpectrumCanvas();
 
@@ -18106,9 +18981,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.OverlayCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._SpectrumCanvas.call(this, id, width, height);
 	};
 	let _ = c.OverlayCanvas.prototype = new c._SpectrumCanvas();
 	_.overlaySpectra = [];
@@ -18139,9 +19012,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, monitor, m, undefined) {
 	'use strict';
 	c.PerspectiveCanvas = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._SpectrumCanvas.call(this, id, width, height);
 	};
 	let _ = c.PerspectiveCanvas.prototype = new c._SpectrumCanvas();
 	_.dragRange = undefined;
@@ -18236,9 +19107,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, extensions, m, undefined) {
 	'use strict';
 	c.SeekerCanvas = function(id, width, height, seekType) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._SpectrumCanvas.call(this, id, width, height);
 		this.seekType = seekType;
 	};
 	let _ = c.SeekerCanvas.prototype = new c._SpectrumCanvas();
@@ -18318,9 +19187,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, extensions, math, structures, d3, RESIDUE, m, document, m4, m3, v3, window, undefined) {
 	'use strict';
 	c._Canvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas.call(this, id, width, height);
 	};
 	c._Canvas3D.PRESERVE_DRAWING_BUFFER = false;
 	let _ = c._Canvas3D.prototype = new c._Canvas();
@@ -18666,7 +19533,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 		this.gl.flush();
 	};
 	_.deferredRender = function() {
-		// get backdground color
+		// get background color
 		let bgColor = this.gl.getParameter(this.gl.COLOR_CLEAR_VALUE);
 		// set background to black
 		this.gl.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -18743,33 +19610,140 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 		this.gl.flush();
 
-		// final render
-		this.fxaaFramebuffer.bind(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-		// setup viewport
-		this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+		// final render (anti-aliasing)
+		if (this.styles.smaa_useSMAA && this.smaaAreaTexture && this.smaaSearchTexture) { // Use FXAA (or bypass) if the two reference textures are not loaded (usually ~3 frames)
+			// Use SMAA for anti-aliasing
+			// Implementation of the original SMAA procedure by iryoku (MIT license) and the GLSL reference (MIT license) by dmnsgn
+			// See reference source and licenses in the links below:
+			// https://www.iryoku.com/smaa/
+			// https://github.com/dmnsgn/glsl-smaa
 
-		this.gl.bindTexture(this.gl.TEXTURE_2D, this.imageTexture.texture);
+			// Set GL state - black clear color and full-replace blendFunc
+			this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+			this.gl.blendFunc(this.gl.ONE, this.gl.ZERO);
 
-		this.fxaaShader.useShaderProgram(this.gl);
+			// Edges Render Pass - Edge detection, including data of edge direction (horizontal / vertical)
+			this.smaaEdgesFramebuffer.bind(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			
+			this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+			this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.imageTexture.texture);
+			
+			this.smaaEdgesShader.useShaderProgram(this.gl);
+			
+			this.smaaEdgesShader.setBuffersize(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.smaaEdgesShader.setEdgeThreshold(this.gl, this.styles.smaa_edgeThreshold);
+			this.smaaEdgesShader.setContrastFactor(this.gl, this.styles.smaa_contrastFactor);
+			this.smaaEdgesShader.setBackgroundColor(this.gl, bgColor[0], bgColor[1], bgColor[2]); // used for edge detection of geo vs background
+			
+			this.smaaEdgesShader.enableAttribsArray(this.gl);
+			
+			this.gl.quadBuffer.bindBuffers(this.gl);
+			
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.gl.quadBuffer.vertexPositionBuffer.numItems);
+			
+			this.smaaEdgesShader.disableAttribsArray(this.gl);
+			
+			
+			// Weights Render Pass - Determines the amount (weight) to apply anti-aliasing per pixel, including directional information (in 4 directions)
+			this.smaaWeightsFramebuffer.bind(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+			this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
 
-		this.fxaaShader.setBuffersize(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-		this.fxaaShader.setAntialias(this.gl, this.styles.antialias_3D);
+			this.smaaWeightsShader.useShaderProgram(this.gl);
 
-		this.fxaaShader.setEdgeThreshold(this.gl, this.styles.fxaa_edgeThreshold);
-		this.fxaaShader.setEdgeThresholdMin(this.gl, this.styles.fxaa_edgeThresholdMin);
-		this.fxaaShader.setSearchSteps(this.gl, this.styles.fxaa_searchSteps);
-		this.fxaaShader.setSearchThreshold(this.gl, this.styles.fxaa_searchThreshold);
-		this.fxaaShader.setSubpixCap(this.gl, this.styles.fxaa_subpixCap);
-		this.fxaaShader.setSubpixTrim(this.gl, this.styles.fxaa_subpixTrim);
+			this.smaaWeightsShader.setBuffersize(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.smaaWeightsShader.setSearchSteps(this.gl, this.styles.smaa_searchSteps);
 
-		this.fxaaShader.enableAttribsArray(this.gl);
+				// Set texture samplers of the output of last render pass, the reference area image texture, and the reference search image texture
+			this.gl.uniform1i(this.smaaWeightsShader.edgesSamplerUniform, 0);
+			this.gl.uniform1i(this.smaaWeightsShader.areaSamplerUniform, 1);
+			this.gl.uniform1i(this.smaaWeightsShader.searchSamplerUniform, 2);
 
-		this.gl.quadBuffer.bindBuffers(this.gl);
+			this.gl.activeTexture(this.gl.TEXTURE0);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaEdgesTexture.texture);
 
-		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.gl.quadBuffer.vertexPositionBuffer.numItems);
+			this.gl.activeTexture(this.gl.TEXTURE1);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaAreaTexture);
 
-		this.fxaaShader.disableAttribsArray(this.gl);
+			this.gl.activeTexture(this.gl.TEXTURE2);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaSearchTexture);
+
+			this.gl.activeTexture(this.gl.TEXTURE0);
+
+			this.smaaWeightsShader.enableAttribsArray(this.gl);
+	
+			this.gl.quadBuffer.bindBuffers(this.gl);
+	
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.gl.quadBuffer.vertexPositionBuffer.numItems);
+	
+			this.smaaWeightsShader.disableAttribsArray(this.gl);
+
+
+			// Blend Render Pass - Compares original image and weights texture to determine where and how much to apply anti-aliasing
+			this.aaFramebuffer.bind(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+			this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+
+			this.smaaBlendShader.useShaderProgram(this.gl);
+
+			this.smaaBlendShader.setBuffersize(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.smaaBlendShader.setAntialias(this.gl, this.styles.antialias_3D); // do the AA bypass check in this last render
+
+			this.gl.uniform1i(this.smaaBlendShader.weightsSamplerUniform, 0);
+			this.gl.uniform1i(this.smaaBlendShader.imageSamplerUniform, 1);
+
+			this.gl.activeTexture(this.gl.TEXTURE0);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaWeightsTexture.texture);
+
+			this.gl.activeTexture(this.gl.TEXTURE1);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.imageTexture.texture);
+
+			this.gl.activeTexture(this.gl.TEXTURE0);
+
+			this.smaaBlendShader.enableAttribsArray(this.gl);
+	
+			this.gl.quadBuffer.bindBuffers(this.gl);
+	
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.gl.quadBuffer.vertexPositionBuffer.numItems);
+	
+			this.smaaBlendShader.disableAttribsArray(this.gl);
+
+			// return to previous GL state
+			this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
+			this.gl.blendFuncSeparate(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA, this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+
+		} else {
+			// Use FXAA for anti-aliasing
+
+			this.aaFramebuffer.bind(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+			// setup viewport
+			this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+	
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.imageTexture.texture);
+
+			this.fxaaShader.useShaderProgram(this.gl);
+	
+			this.fxaaShader.setBuffersize(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+			this.fxaaShader.setAntialias(this.gl, this.styles.antialias_3D);
+	
+			this.fxaaShader.setEdgeThreshold(this.gl, this.styles.fxaa_edgeThreshold);
+			this.fxaaShader.setEdgeThresholdMin(this.gl, this.styles.fxaa_edgeThresholdMin);
+			this.fxaaShader.setSearchSteps(this.gl, this.styles.fxaa_searchSteps);
+			this.fxaaShader.setSearchThreshold(this.gl, this.styles.fxaa_searchThreshold);
+			this.fxaaShader.setSubpixCap(this.gl, this.styles.fxaa_subpixCap);
+			this.fxaaShader.setSubpixTrim(this.gl, this.styles.fxaa_subpixTrim);
+	
+			this.fxaaShader.enableAttribsArray(this.gl);
+	
+			this.gl.quadBuffer.bindBuffers(this.gl);
+	
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.gl.quadBuffer.vertexPositionBuffer.numItems);
+	
+			this.fxaaShader.disableAttribsArray(this.gl);
+		}
 
 		this.gl.flush();
 
@@ -18788,7 +19762,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 		// setup viewport
 		this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
 
-		this.gl.bindTexture(this.gl.TEXTURE_2D, this.fxaaTexture.texture);
+		this.gl.bindTexture(this.gl.TEXTURE_2D, this.aaTexture.texture);
 
 		this.quadShader.useShaderProgram(this.gl);
 
@@ -19009,12 +19983,35 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 				this.outlineTexture = new d3.Texture();
 				this.outlineTexture.init(this.gl, this.gl.UNSIGNED_BYTE, this.gl.RGBA);
 
-				this.fxaaTexture = new d3.Texture();
-				this.fxaaTexture.init(this.gl, this.gl.FLOAT, this.gl.RGBA);
+				// anti-alias (FXAA and SMAA)
+				this.aaTexture = new d3.Texture(); // for both FXAA and SMAA
+				this.aaTexture.init(this.gl, this.gl.UNSIGNED_BYTE, this.gl.RGBA); // for both FXAA and SMAA
+				this.gl.bindTexture(this.gl.TEXTURE_2D, this.aaTexture.texture);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+
+				this.smaaEdgesTexture = new d3.Texture();
+				this.smaaEdgesTexture.init(this.gl, this.gl.UNSIGNED_BYTE, this.gl.RGBA);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaEdgesTexture.texture);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+
+				this.smaaWeightsTexture = new d3.Texture();
+				this.smaaWeightsTexture.init(this.gl, this.gl.UNSIGNED_BYTE, this.gl.RGBA);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaWeightsTexture.texture);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, null);
 
 				// temp texture
 				this.imageTexture = new d3.Texture();
-				this.imageTexture.init(this.gl, this.gl.FLOAT, this.gl.RGBA);
+				this.imageTexture.init(this.gl, this.gl.UNSIGNED_BYTE, this.gl.RGBA);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, this.imageTexture.texture);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, null);
 
 				// framebuffer
 				this.colorFramebuffer = new d3.Framebuffer();
@@ -19040,9 +20037,18 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 				this.outlineFramebuffer.init(this.gl);
 				this.outlineFramebuffer.setColorTexture(this.gl, this.outlineTexture.texture);
 
-				this.fxaaFramebuffer = new d3.Framebuffer();
-				this.fxaaFramebuffer.init(this.gl);
-				this.fxaaFramebuffer.setColorTexture(this.gl, this.fxaaTexture.texture);
+				// for both FXAA and SMAA
+				this.aaFramebuffer = new d3.Framebuffer();
+				this.aaFramebuffer.init(this.gl);
+				this.aaFramebuffer.setColorTexture(this.gl, this.aaTexture.texture);
+
+				this.smaaEdgesFramebuffer = new d3.Framebuffer();
+				this.smaaEdgesFramebuffer.init(this.gl);
+				this.smaaEdgesFramebuffer.setColorTexture(this.gl, this.smaaEdgesTexture.texture);
+
+				this.smaaWeightsFramebuffer = new d3.Framebuffer();
+				this.smaaWeightsFramebuffer.init(this.gl);
+				this.smaaWeightsFramebuffer.setColorTexture(this.gl, this.smaaWeightsTexture.texture);
 
 				this.quadFramebuffer = new d3.Framebuffer();
 				this.quadFramebuffer.init(this.gl);
@@ -19050,7 +20056,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 				this.finalFramebuffer = new d3.Framebuffer();
 				this.finalFramebuffer.init(this.gl);
-				this.finalFramebuffer.setColorTexture(this.gl, this.fxaaTexture.texture);
+				this.finalFramebuffer.setColorTexture(this.gl, this.aaTexture.texture);
 				this.finalFramebuffer.setDepthTexture(this.gl, this.depthTexture.texture);
 
 				this.normalShader = new d3.NormalShader();
@@ -19075,6 +20081,15 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 				this.fxaaShader = new d3.FXAAShader();
 				this.fxaaShader.init(this.gl);
+
+				this.smaaEdgesShader = new d3.SMAAEdgesShader();
+				this.smaaEdgesShader.init(this.gl);
+
+				this.smaaWeightsShader = new d3.SMAAWeightsShader();
+				this.smaaWeightsShader.init(this.gl);
+
+				this.smaaBlendShader = new d3.SMAABlendShader();
+				this.smaaBlendShader.init(this.gl);
 
 				this.quadShader = new d3.QuadShader();
 				this.quadShader.init(this.gl);
@@ -19193,7 +20208,40 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 				this.outlineTexture.setParameter(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
 
-				this.fxaaTexture.setParameter(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+				this.aaTexture.setParameter(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+
+				this.smaaEdgesTexture.setParameter(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+
+				this.smaaWeightsTexture.setParameter(this.gl, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+
+				// load SMAA reference images (search and area) to textures
+				const searchImage = new Image();
+				searchImage.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAACm53kpAAAAeElEQVRYR+2XSwqAMAxEJ168ePEqwRSKhIIiuHjJqiU0gWE+1CQdApcVAMUAuARaMGCX1MIL/Ow13++9lW2s3mW9MWvsnWc/2fvGygwPAN4E8QzAA4CXAB6AHjG4JTHYI1ey3pcx6FHnEfhLDOIBKAmUBK6/ANUDTlROXAHd9EC1AAAAAElFTkSuQmCC";
+				searchImage.onload = () => {
+					this.smaaSearchTexture = this.gl.createTexture();
+					this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaSearchTexture);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST); // MUST be nearest, do not change
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+					this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, searchImage);
+					this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+					this.repaint();
+				}
+				
+				const areaImage = new Image();
+				areaImage.src = "data:image/png;base64,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";
+				areaImage.onload = () => {
+					this.smaaAreaTexture = this.gl.createTexture();
+					this.gl.bindTexture(this.gl.TEXTURE_2D, this.smaaAreaTexture);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR); // MUST be linear, do not change
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+					this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+					this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, areaImage);
+					this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+					this.repaint();
+				}
 
 				// set SSAO parameter
 				this.ssao.initSampleKernel(this.styles.ssao_kernel_samples);
@@ -19383,36 +20431,31 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, iChemLabs, document, undefined) {
 	'use strict';
 	c.MolGrabberCanvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
-		let sb = [];
-		sb.push('<br><input type="text" id="');
-		sb.push(id);
-		sb.push('_query" size="32" value="" />');
-		sb.push('<br><nobr>');
-		sb.push('<select id="');
-		sb.push(id);
-		sb.push('_select">');
-		// sb.push('<option value="chemexper">ChemExper');
-		// sb.push('<option value="chemspider">ChemSpider');
-		sb.push('<option value="pubchem" selected>PubChem');
-		sb.push('</select>');
-		sb.push('<button type="button" id="');
-		sb.push(id);
-		sb.push('_submit">Show Molecule</button>');
-		sb.push('</nobr>');
+		c._Canvas3D.call(this, id, width, height);
+		let sb = `
+			<br>
+			<input type="text" id="${id}_query" size="32" value="" />
+			<br>
+			<nobr>
+				<select id="${id}_select" style="user-select:none;">
+					<!--<option value="chemexper">ChemExper-->
+					<!--<option value="chemspider">ChemSpider-->
+					<option value="pubchem" selected>PubChem
+				</select>
+				<button type="button" id="${id}_submit" class="reset-all-button">Show Molecule</button>
+			</nobr>
+		`;
 		let canvas = document.getElementById(id);
-		canvas.insertAdjacentHTML('afterend', sb.join(''));
+		canvas.insertAdjacentHTML('afterend', sb);
 		
 		let self = this;
 		document.getElementById(id + '_submit').addEventListener('click', function() {
-				self.search();
+			self.search();
 		});
 		document.getElementById(id + '_query').addEventListener('keypress', function(e) {
-				if (e.key === 'Enter' || e.keyCode === 13) {
-					self.search();
-				}
+			if (e.key === 'Enter' || e.keyCode === 13) {
+				self.search();
+			}
 		});
 	};
 	let _ = c.MolGrabberCanvas3D.prototype = new c._Canvas3D();
@@ -19434,9 +20477,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, structures, undefined) {
 	'use strict';
 	c.MovieCanvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas3D.call(this, id, width, height);
 		this.frames = [];
 	};
 	c.MovieCanvas3D.PLAY_ONCE = 0;
@@ -19515,9 +20556,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 	let zAxis = [ 0, 0, 1 ];
 
 	c.RotatorCanvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas3D.call(this, id, width, height);
 	};
 	let _ = c.RotatorCanvas3D.prototype = new c._Canvas3D();
 	_.timeout = 33;
@@ -19550,9 +20589,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.TransformCanvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas3D.call(this, id, width, height);
 	};
 	c.TransformCanvas3D.prototype = new c._Canvas3D();
 
@@ -19560,9 +20597,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 (function(c, undefined) {
 	'use strict';
 	c.ViewerCanvas3D = function(id, width, height) {
-		if (id) {
-			this.create(id, width, height);
-		}
+		c._Canvas3D.call(this, id, width, height);
 	};
 	let _ = c.ViewerCanvas3D.prototype = new c._Canvas3D();
 	_.mousedown = undefined;
@@ -19584,9 +20619,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 
 	c.PeriodicTableCanvas = function(id, cellDimension) {
 		this.padding = 5;
-		if (id) {
-			this.create(id, cellDimension * 18 + this.padding * 2, cellDimension * 10 + this.padding * 2);
-		}
+		c._Canvas.call(this, id, cellDimension * 18 + this.padding * 2, cellDimension * 10 + this.padding * 2);
 		this.cellDimension = cellDimension ? cellDimension : 20;
 		this.setupTable();
 		this.repaint();
@@ -19771,10 +20804,7 @@ ChemDoodle.monitor = (function(featureDetection, document, undefined) {
 	iChemLabs.INFO = {
 		userAgent : navigator.userAgent,
 		platform : navigator.platform,
-		v_cwc : c.getVersion(),
-		// jQuery UI is not installed at this point, as it is linked after ChemDoodle.js, so this variable is set at that time (Sketcher-Package.js)
-		v_jQuery : 'N/A',
-		v_jQuery_ui : 'N/A'
+		v_cwc : c.getVersion()
 	};
 
 	let JSON_INTERPRETER = new io.JSONInterpreter();

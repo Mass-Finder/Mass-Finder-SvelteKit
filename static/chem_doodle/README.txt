@@ -34,10 +34,7 @@ Downloaded zip file contents:
 - install                   ==> folder containing the resources to use ChemDoodle Web Components
   - ChemDoodleWeb.css       ==> Basic CSS file for the library
   - ChemDoodleWeb.js        ==> ChemDoodle Web Components library Javascript (packed)
-  - uis                     ==> folder containing the SketcherCanvas and EditorCanvas3D plugin
-    - images                        ==> folder containing the corresponding images for the jQuery UI CSS
-    - jquery-ui-1.9.2.custom.css    ==> jQuery UI CSS
-    - ChemDoodleWeb-uis.js          ==> UIs plugin Javascript (packed)
+  - ChemDoodleWeb-uis.js    ==> UIs plugin Javascript (packed)
 
 - samples                   ==> folder containing full sample HTML pages of example components, open them in your browser to view them, view the source to see how they work. View the tutorial on the website for in depth instructions.
   - periodicTable.html                         ==> A PeriodicTableCanvas component.
@@ -54,7 +51,7 @@ Downloaded zip file contents:
 
 - src                                   ==> folder containing the unpacked Javascript source
   - ChemDoodleWeb-unpacked.js           ==> ChemDoodle Web Components library Javascript (unpacked)
-  - ChemDoodleWeb-uis-unpacked.js       ==> SketcherCanvas and EditorCanvas3D plugin library Javascript (unpacked)
+  - ChemDoodleWeb-uis-unpacked.js       ==> ChemDoodle Web Components UIs plugin library Javascript (unpacked)
   
 - tests                       ==> folder containing the qUnit testing suite
   - ChemDoodleWeb-tests.js    ==> ChemDoodle Web Components testing suite, requires qUnit (http://docs.jquery.com/Qunit)

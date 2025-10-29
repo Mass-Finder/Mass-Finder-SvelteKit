@@ -568,9 +568,11 @@ export class StmHelper {
 
     /**
      * Non-overlapping combinations 생성 (Backtracking)
+     * maxSize: 최대 조합 크기 제한 (성능 최적화)
      */
     private static generateNonOverlappingCombinations(
-        pairs: Array<[number, number]>
+        pairs: Array<[number, number]>,
+        maxSize: number = 5  // 기본값: 최대 5개 페어까지
     ): Array<Array<[number, number]>> {
         const results: Array<Array<[number, number]>> = [[]]; // 빈 조합 (0개 적용)
 
@@ -582,7 +584,15 @@ export class StmHelper {
             // currentCombo를 결과에 추가 (1개 이상인 경우)
             if (currentCombo.length > 0) {
                 results.push([...currentCombo]);
-                console.log(`[Combination Debug] Added combination of size ${currentCombo.length}:`, currentCombo);
+                // 너무 많은 로그 방지 - 처음 50개만 출력
+                if (results.length <= 50) {
+                    console.log(`[Combination Debug] Added combination of size ${currentCombo.length}:`, currentCombo);
+                }
+            }
+
+            // 최대 크기 제한 체크 - 성능 최적화
+            if (currentCombo.length >= maxSize) {
+                return; // 더 이상 깊이 들어가지 않음
             }
 
             // 다음 페어 선택
@@ -615,6 +625,7 @@ export class StmHelper {
             const count = summary.get(combo.length) || 0;
             summary.set(combo.length, count + 1);
         });
+        console.log(`[Combination Debug] Max size limit: ${maxSize}`);
         console.log('[Combination Debug] Summary by combination size:');
         summary.forEach((count, size) => {
             console.log(`  - Size ${size}: ${count} combinations`);

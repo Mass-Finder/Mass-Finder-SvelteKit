@@ -24,6 +24,7 @@
       sketcher.styles.atoms_useJMOLColors = true;
       sketcher.styles.bonds_clearOverlaps_2D = true;
       sketcher.styles.shapes_color = 'c10000';
+      sketcher.atomPalette = ['C', 'N', '0', 'R'];
       sketcher.repaint();
   
       // 저장된 데이터 불러오기

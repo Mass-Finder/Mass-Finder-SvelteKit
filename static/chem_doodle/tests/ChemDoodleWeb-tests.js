@@ -1,9 +1,9 @@
 //
-// ChemDoodle Web Components 10.0.0
+// ChemDoodle Web Components 11.0.0
 //
 // https://web.chemdoodle.com
 //
-// Copyright 2009-2024 iChemLabs, LLC.  All rights reserved.
+// Copyright 2009-2025 iChemLabs, LLC.  All rights reserved.
 //
 // The ChemDoodle Web Components library is licensed under version 3
 // of the GNU GENERAL PUBLIC LICENSE.
@@ -84,6 +84,14 @@ document.getElementById('test').style.display = 'none';
 document.getElementById('test_buttons_bond_hidden').style.display = 'none';
 document.getElementById('test_floating_toolbar').style.display = 'none';
 document.getElementById('test_buttons_lasso_dd_hidden').parentElement.style.display = 'none';
+
+
+// add closeEnough function for number equivalence
+closeEnough = function(actual, expected, maxDifference, message) {
+  var diff = Math.abs(actual - expected);
+  QUnit.ok(diff <= maxDifference, message || 
+    ("Expected " + actual + " to be within " + maxDifference + " of " + expected + " (diff: " + diff + ")"));
+};
 module('imageDepot');
 
 test('Check imageDepot class exists', function() {
@@ -95,6 +103,19 @@ test('Check that getURI prepends properly', function() {
 	expect(1);
 	let s = 'data:image/svg+xml;base64,' + ChemDoodle.uis.gui.imageDepot.CLEAR;
 	equal(s, ChemDoodle.uis.gui.imageDepot.getURI(ChemDoodle.uis.gui.imageDepot.CLEAR), 'getURI prepended properly.');
+});
+module('Math Utilities');
+
+test('Check components package exists', function() {
+	expect(1);
+	ok(ChemDoodle.components, 'ChemDoodle.components class exists');
+});
+
+test('Check angleBetweenLargest function with no angles is set correctly', function(){
+	expect(2);
+	let check = ChemDoodle.math.angleBetweenLargest([]);
+    ok(check.angle!==undefined, 'Check angle');
+    ok(check.largest, 'Check largest');
 });
 module('ChangeBondAction');
 
@@ -283,925 +304,421 @@ test('Check change triple bond increment to single bond', function() {
     equal(3, b.bondOrder);
     equal(ChemDoodle.structures.Bond.STEREO_NONE, b.stereo);
 });
-module('Canvas');
+module('CompoundAction');
 
-test('Check Canvas class exists', function(){
+test('Check CompoundAction class exists', function() {
 	expect(1);
-    ok(ChemDoodle._Canvas, 'ChemDoodle._Canvas class exists');
+	ok(ChemDoodle.uis.actions.CompoundAction, 'ChemDoodle.uis.actions.CompoundAction class exists');
 });
 
-test('Check loadMolecule', function(){
-	expect(2);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	equal(0, c.molecules.length, 'Array molecules is Empty');
-	let m = new ChemDoodle.structures.Molecule();
-	c.loadMolecule(m);
-	equal(1, c.molecules.length, 'Array molecules contains loaded molecule');
-});
-
-test('Check getMolecule', function(){
-	expect(2);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	c.loadMolecule(m);
-	equal(1, c.molecules.length, 'Array molecules contains loaded molecule');
-	ok(m===c.getMolecule(), 'Molecule object is identical');
-});
-
-test('Check addMolecule', function(){
-	expect(3);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m);
-	let m2 = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m2);
-	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
-	ok(m===c.getMolecules()[0], 'First molecule object is identical');
-	ok(m2===c.getMolecules()[1], 'Second molecule object is identical');
-});
-
-test('Check addShape', function(){
-	expect(3);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.shapes = [];
-	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));
-	c.addShape(s);
-	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
-	c.addShape(s2);
-	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
-	ok(s===c.getShapes()[0], 'First line is identical');
-	ok(s2===c.getShapes()[1], 'Second line is identical');
-});
-
-test('Check removeMolecule', function(){
-	expect(6);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m);
-	let m2 = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m2);
-	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
-	c.removeMolecule(m2);
-	equal(1, c.molecules.length, 'Array molecules contains one less molecule');
-	ok(m===c.getMolecules()[0], 'First molecule object is identical');
-	
-	c.clear();
-	c.addMolecule(m);
-	c.addMolecule(m2);
-	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
-	c.removeMolecule(m);
-	equal(1, c.molecules.length, 'Array molecules contains one less molecule');
-	ok(m2===c.getMolecules()[0], 'Second molecule object is identical');
-});
-
-test('Check removeShape', function(){
-	expect(6);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.shapes = [];
-	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));;
-	c.addShape(s);
-	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
-	c.addShape(s2);
-	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
-	c.removeShape(s2);
-	equal(1, c.shapes.length, 'Array shapes contains one less line');
-	ok(s===c.getShapes()[0], 'First shape object is identical');
-	
-	c.clear();
-	c.addShape(s);
-	c.addShape(s2);
-	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
-	c.removeShape(s);
-	equal(1, c.shapes.length, 'Array shapes contains one less line');
-	ok(s2===c.getShapes()[0], 'Second shape object is identical');
-});
-
-test('Check getMolecule if empty', function(){
+test('Check CompoundAction class extends Action', function(){
 	expect(1);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.molecules = [];
-	c.styles = new ChemDoodle.structures.Styles();
-	equal(undefined, c.getMolecule(), 'undefined returned');
+    ok(new ChemDoodle.uis.actions.CompoundAction() instanceof ChemDoodle.uis.actions._Action, 'ChemDoodle.uis.actions.CompoundAction class extends Action');
 });
 
-test('Check getMolecules', function(){
-	expect(3);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m);
-	let m2 = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m2);
-	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	equal(m2, c.getMolecules()[1], 'Check second molecule');
-});
-
-test('Check loadContent', function(){
+test('Check change single bond to double bond and then to triple bond', function() {
 	expect(6);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	let m = new ChemDoodle.structures.Molecule();
-	let m2 = new ChemDoodle.structures.Molecule();
-	let mols = [m, m2];
-	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));;
-	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
-	let shapes = [s, s2];
-	c.loadContent(mols, shapes);
-	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
-	ok(m===c.getMolecules()[0], 'First molecule object is identical');
-	ok(m2===c.getMolecules()[1], 'Second molecule object is identical');
-	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
-	ok(s===c.getShapes()[0], 'First line is identical');
-	ok(s2===c.getShapes()[1], 'Second line is identical');
+    let a1 = new ChemDoodle.structures.Atom();
+    let a2 = new ChemDoodle.structures.Atom();
+    let b = new ChemDoodle.structures.Bond(a1, a2);
+    equal(1, b.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b.stereo);
+	let ac1 = new ChemDoodle.uis.actions.ChangeBondAction(b, 2, ChemDoodle.structures.Bond.STEREO_NONE);
+	let ac2 = new ChemDoodle.uis.actions.ChangeBondAction(b, 3, ChemDoodle.structures.Bond.STEREO_NONE);
+	let ca = new ChemDoodle.uis.actions.CompoundAction();
+	ca.actions.push(ac1, ac2);
+	ca.forward();
+    equal(3, b.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b.stereo);
+    ca.reverse();
+    equal(1, b.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b.stereo);
 });
 
-test('Check clear', function(){
+test('Check change two bonds, one to double bond and one to triple bond', function() {
+	expect(12);
+    let a1 = new ChemDoodle.structures.Atom();
+    let a2 = new ChemDoodle.structures.Atom();
+    let b1 = new ChemDoodle.structures.Bond(a1, a2);
+    let a3 = new ChemDoodle.structures.Atom();
+    let a4 = new ChemDoodle.structures.Atom();
+    let b2 = new ChemDoodle.structures.Bond(a3, a4);
+    equal(1, b1.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b1.stereo);
+    equal(1, b2.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b2.stereo);
+	let ac1 = new ChemDoodle.uis.actions.ChangeBondAction(b1, 2, ChemDoodle.structures.Bond.STEREO_NONE);
+	let ac2 = new ChemDoodle.uis.actions.ChangeBondAction(b2, 3, ChemDoodle.structures.Bond.STEREO_NONE);
+	let ca = new ChemDoodle.uis.actions.CompoundAction();
+	ca.actions.push(ac1, ac2);
+	ca.forward();
+    equal(2, b1.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b1.stereo);
+    equal(3, b2.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b2.stereo);
+    ca.reverse();
+    equal(1, b1.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b1.stereo);
+    equal(1, b2.bondOrder);
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, b2.stereo);
+});
+module('Math Utilities');
+
+test('Check math package exists', function() {
+	expect(1);
+	ok(ChemDoodle.math, 'ChemDoodle.math class exists');
+});
+
+test('Check angleBetweenLargest function with no angles is set correctly', function(){
+	expect(2);
+	let check = ChemDoodle.math.angleBetweenLargest([]);
+    ok(check.angle!==undefined, 'Check angle');
+    ok(check.largest, 'Check largest');
+});
+
+test('Check angleBetweenLargest function with 1 angle is set correctly', function(){
+	expect(2);
+	let check = ChemDoodle.math.angleBetweenLargest([Math.PI]);
+    ok(check.angle, 'Check angle');
+    ok(check.largest, 'Check largest');
+});
+
+test('Check angleBetweenLargest angle function', function(){
+	expect(1);
+    equal(0, ChemDoodle.math.angleBetweenLargest([5*Math.PI/6, 7*Math.PI/6]).angle%(Math.PI*2), 'Check [150, 210]');
+});
+
+test('Check angleBetweenLargest largest function', function(){
+	expect(1);
+    ok(Math.abs(5*Math.PI/3-ChemDoodle.math.angleBetweenLargest([5*Math.PI/6, 7*Math.PI/6]).largest)<.0001, 'Check [150, 210]');
+});
+
+test('Check isBetween function', function(){
 	expect(5);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.molecules = [];
-	c.shapes = [];
-	c.styles = new ChemDoodle.structures.Styles();
-	let m = new ChemDoodle.structures.Molecule();
-	c.addMolecule(m);
-	let s = new ChemDoodle.structures.d2.Line();
-	c.addShape(s);
-	c.styles.scale = .5;
-	equal(1, c.molecules.length, 'Check molecules length 1');
-	equal(1, c.shapes.length, 'Check shapes length 1');
-	c.clear();
-	equal(0, c.molecules.length, 'Check molecules empty');
-	equal(0, c.shapes.length, 'Check shapes empty');
-	equal(1, c.styles.scale, 'Check scale is reset');
+    ok(!ChemDoodle.math.isBetween(-1, 0, 5), 'Check -1 between 0-5');
+    ok(!ChemDoodle.math.isBetween(6, 0, 5), 'Check 6 between 0-5');
+    ok(ChemDoodle.math.isBetween(2, 0, 5), 'Check 2 between 0-5');
+    ok(ChemDoodle.math.isBetween(0, 0, 5), 'Check 0 between 0-5');
+    ok(ChemDoodle.math.isBetween(5, 0, 5), 'Check 5 between 0-5');
 });
 
-test('Check bondExists', function(){
+test('Check isBetween function with reversed parameters', function(){
 	expect(5);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
-	c.addMolecule(m);
-	equal(1, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	ok(c.bondExists(m.atoms[0], m.atoms[1]), 'Check first bond exists');
-	ok(c.bondExists(m.atoms[1], m.atoms[2]), 'Check second bond exists');
-	ok(!c.bondExists(m.atoms[0], m.atoms[2]), 'Make sure false for bond between end atoms');
+    ok(!ChemDoodle.math.isBetween(-1, 5, 0), 'Check -1 between 0-5');
+    ok(!ChemDoodle.math.isBetween(6, 5, 0), 'Check 6 between 0-5');
+    ok(ChemDoodle.math.isBetween(2, 5, 0), 'Check 2 between 0-5');
+    ok(ChemDoodle.math.isBetween(0, 5, 0), 'Check 0 between 0-5');
+    ok(ChemDoodle.math.isBetween(5, 5, 0), 'Check 5 between 0-5');
 });
 
-test('Check getBond', function(){
-	expect(5);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
-	c.addMolecule(m);
-	equal(1, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	equal(m.bonds[0], c.getBond(m.atoms[0], m.atoms[1]), 'Get first bond');
-	equal(m.bonds[1], c.getBond(m.atoms[1], m.atoms[2]), 'Get second bond');
-	equal(undefined, c.getBond(m.atoms[0], m.atoms[2]), 'Make sure undefined is returned for getBond between two end atoms');
-});
-
-test('Check getAllAtoms', function(){
-	expect(10);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
-	let m2 = new ChemDoodle.structures.Molecule();
-	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
-	c.addMolecule(m);
-	c.addMolecule(m2);
-	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	equal(m2, c.getMolecules()[1], 'Check second molecule');
-	equal(6, c.getAllAtoms().length, 'Check allAtoms length');
-	equal(m.atoms[0], c.getAllAtoms()[0], 'Check atom 0');
-	equal(m.atoms[1], c.getAllAtoms()[1], 'Check atom 1');
-	equal(m.atoms[2], c.getAllAtoms()[2], 'Check atom 2');
-	equal(m2.atoms[0], c.getAllAtoms()[3], 'Check atom 3');
-	equal(m2.atoms[1], c.getAllAtoms()[4], 'Check atom 4');
-	equal(m2.atoms[2], c.getAllAtoms()[5], 'Check atom 5');
-});
-
-test('Check getAllBonds', function(){
-	expect(8);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
-	let m2 = new ChemDoodle.structures.Molecule();
-	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
-	c.addMolecule(m);
-	c.addMolecule(m2);
-	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	equal(m2, c.getMolecules()[1], 'Check second molecule');
-	equal(4, c.getAllBonds().length, 'Check allBonds length');
-	equal(m.bonds[0], c.getAllBonds()[0], 'Check bond 0');
-	equal(m.bonds[1], c.getAllBonds()[1], 'Check bond 1');
-	equal(m2.bonds[0], c.getAllBonds()[2], 'Check bond 2');
-	equal(m2.bonds[1], c.getAllBonds()[3], 'Check bond 3');
-});
-
-test('Check getMoleculeByAtom', function(){
-	expect(9);
-	let c = new ChemDoodle._Canvas();
-	c.test = true;
-	c.styles = new ChemDoodle.structures.Styles();
-	c.molecules = [];
-	let m = new ChemDoodle.structures.Molecule();
-	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
-	let m2 = new ChemDoodle.structures.Molecule();
-	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
-	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
-	c.addMolecule(m);
-	c.addMolecule(m2);
-	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
-	equal(m, c.getMolecules()[0], 'Check first molecule');
-	equal(m2, c.getMolecules()[1], 'Check second molecule');
-	let returned = c.getMoleculeByAtom(m.atoms[0]);
-	equal(m, c.getMoleculeByAtom(m.atoms[0]), 'Check atom 0');
-	equal(m, c.getMoleculeByAtom(m.atoms[1]), 'Check atom 1');
-	equal(m, c.getMoleculeByAtom(m.atoms[2]), 'Check atom 2');
-	equal(m2, c.getMoleculeByAtom(m2.atoms[0]), 'Check atom 3');
-	equal(m2, c.getMoleculeByAtom(m2.atoms[1]), 'Check atom 4');
-	equal(m2, c.getMoleculeByAtom(m2.atoms[2]), 'Check atom 5');
-});
-module('TransformCanvas');
-
-test('Check TransformCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.TransformCanvas, 'ChemDoodle.TransformCanvas class exists');
-});
-
-test('Check TransformCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle.TransformCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.TransformCanvas class extends _Canvas');
-});
-module('PerspectiveCanvas');
-
-test('Check PerspectiveCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.PerspectiveCanvas, 'ChemDoodle.PerspectiveCanvas class exists');
-});
-
-test('Check PerspectiveCanvas class extends _SpectrumCanvas', function(){
-	expect(1);
-    ok(new ChemDoodle.PerspectiveCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.PerspectiveCanvas class extends _SpectrumCanvas');
-});
-module('SeekerCanvas');
-
-test('Check SeekerCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.SeekerCanvas, 'ChemDoodle.SeekerCanvas class exists');
-});
-
-test('Check SeekerCanvas class extends _SpectrumCanvas', function(){
-	expect(1);
-    ok(new ChemDoodle.SeekerCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.SeekerCanvas class extends _SpectrumCanvas');
-});
-module('OverlayCanvas');
-
-test('Check OverlayCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.OverlayCanvas, 'ChemDoodle.OverlayCanvas class exists');
-});
-
-test('Check OverlayCanvas class extends _SpectrumCanvas', function(){
-	expect(1);
-    ok(new ChemDoodle.OverlayCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.OverlayCanvas class extends _SpectrumCanvas');
-});
-module('ObserverCanvas');
-
-test('Check ObserverCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.ObserverCanvas, 'ChemDoodle.ObserverCanvas class exists');
-});
-
-test('Check ObserverCanvas class extends _SpectrumCanvas', function(){
-	expect(1);
-    ok(new ChemDoodle.ObserverCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.ObserverCanvas class extends _SpectrumCanvas');
-});
-module('SpectrumCanvas');
-
-test('Check SpectrumCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle._SpectrumCanvas, 'ChemDoodle._SpectrumCanvas class exists');
-});
-
-test('Check SpectrumCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle._SpectrumCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle._SpectrumCanvas class extends _Canvas');
-});
-module('SlideshowCanvas');
-
-test('Check SlideshowCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.SlideshowCanvas, 'ChemDoodle.SlideshowCanvas class exists');
-});
-
-test('Check SlideshowCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle.SlideshowCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.SlideshowCanvas class extends _Canvas');
-});
-module('ViewerCanvas');
-
-test('Check ViewerCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.ViewerCanvas, 'ChemDoodle.ViewerCanvas class exists');
-});
-
-test('Check ViewerCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle.ViewerCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.ViewerCanvas class extends _Canvas');
-});
-module('MolGrabberCanvas');
-
-test('Check MolGrabberCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.MolGrabberCanvas, 'ChemDoodle.MolGrabberCanvas class exists');
-});
-
-test('Check MolGrabberCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(ChemDoodle.MolGrabberCanvas.prototype instanceof ChemDoodle._Canvas, 'ChemDoodle.MolGrabberCanvas class extends _Canvas');
-});
-module('RotatorCanvas');
-
-test('Check RotatorCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.RotatorCanvas, 'ChemDoodle.RotatorCanvas class exists');
-});
-
-test('Check RotatorCanvas class extends _AnimatorCanvas', function(){
-	expect(1);
-    ok(new ChemDoodle.RotatorCanvas() instanceof ChemDoodle._AnimatorCanvas, 'ChemDoodle.RotatorCanvas class extends _AnimatorCanvas');
-});
-module('Canvas3D');
-
-test('Check Canvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle._Canvas3D, 'ChemDoodle._Canvas3D class exists');
-});
-
-test('Check Canvas3D class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle._Canvas3D() instanceof ChemDoodle._Canvas, 'ChemDoodle._Canvas3D class extends _Canvas');
-});
-module('RotatorCanvas3D');
-
-test('Check RotatorCanvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle.RotatorCanvas3D, 'ChemDoodle.RotatorCanvas3D class exists');
-});
-
-test('Check RotatorCanvas3D class extends _Canvas3D', function(){
-	expect(1);
-    ok(new ChemDoodle.RotatorCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.RotatorCanvas3D class extends _Canvas3D');
-});
-module('MovieCanvas3D');
-
-test('Check MovieCanvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle.MovieCanvas3D, 'ChemDoodle.MovieCanvas3D class exists');
-});
-
-test('Check MovieCanvas3D class extends _Canvas3D', function(){
-	expect(1);
-    ok(new ChemDoodle.MovieCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.MovieCanvas3D class extends _Canvas3D');
-});
-module('TransformCanvas3D');
-
-test('Check TransformCanvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle.TransformCanvas3D, 'ChemDoodle.TransformCanvas3D class exists');
-});
-
-test('Check TransformCanvas3D class extends _Canvas3D', function(){
-	expect(1);
-    ok(new ChemDoodle.TransformCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.TransformCanvas3D class extends _Canvas3D');
-});
-module('ViewerCanvas3D');
-
-test('Check ViewerCanvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle.ViewerCanvas3D, 'ChemDoodle.ViewerCanvas3D class exists');
-});
-
-test('Check ViewerCanvas3D class extends _Canvas3D', function(){
-	expect(1);
-    ok(new ChemDoodle.ViewerCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.ViewerCanvas3D class extends _Canvas3D');
-});
-module('MolGrabberCanvas3D');
-
-test('Check MolGrabberCanvas3D class exists', function(){
-	expect(1);
-    ok(ChemDoodle.MolGrabberCanvas3D, 'ChemDoodle.MolGrabberCanvas3D class exists');
-});
-
-test('Check MolGrabberCanvas3D class extends _Canvas3D', function(){
-	expect(1);
-    ok(ChemDoodle.MolGrabberCanvas3D.prototype instanceof ChemDoodle._Canvas3D, 'ChemDoodle.MolGrabberCanvas3D class extends _Canvas3D');
-});
-module('HyperlinkCanvas');
-
-test('Check HyperlinkCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.HyperlinkCanvas, 'ChemDoodle.HyperlinkCanvas class exists');
-});
-
-test('Check HyperlinkCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle.HyperlinkCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.HyperlinkCanvas class extends _Canvas');
-});
-module('AnimatorCanvas');
-
-test('Check AnimatorCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle._AnimatorCanvas, 'ChemDoodle.AnimatorCanvas class exists');
-});
-
-test('Check AnimatorCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(new ChemDoodle._AnimatorCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.AnimatorCanvas class extends _Canvas');
-});
-module('PeriodicTableCanvas');
-
-test('Check PeriodicTableCanvas class exists', function(){
-	expect(1);
-    ok(ChemDoodle.PeriodicTableCanvas, 'ChemDoodle.PeriodicTableCanvas class exists');
-});
-
-test('Check PeriodicTableCanvas class extends _Canvas', function(){
-	expect(1);
-    ok(ChemDoodle.PeriodicTableCanvas.prototype instanceof ChemDoodle._Canvas, 'ChemDoodle.PeriodicTableCanvas class extends _Canvas');
-});
-module('ElementalData');
-
-test('Check ELEMENT array exists', function() {
-	expect(1);
-	ok(ChemDoodle.ELEMENT, 'ChemDoodle.ELEMENT array exists');
-});
-
-test('Check SYMBOLS array exists', function() {
-	expect(1);
-	ok(ChemDoodle.SYMBOLS, 'ChemDoodle.SYMBOLS array exists');
-});
-
-test('Check there are 118 element symbols', function(){
-	expect(1);
-    equal(118, ChemDoodle.SYMBOLS.length, 'Check SYMBOLS length');
-});
-
-test('Check each symbol is in the ChemDoodle.ELEMENT array', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]], 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has a covalent radius', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].covalentRadius!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has a van der Waals radius', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].vdWRadius!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has a JMol color', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].jmolColor, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has a PyMOL color', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].pymolColor, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element is present in the SYMBOLS array', function(){
-	expect(118);
-	for(let e in ChemDoodle.ELEMENT){
-		ok(ChemDoodle.SYMBOLS.indexOf(e)!==-1, 'Check STMBOLS for ELEMENT value: '+e);
-	}
-});
-
-test('Check each element has a symbol and it is the same as its hash', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		equal(ChemDoodle.SYMBOLS[i], ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].symbol, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has a name', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].name, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has an atomic number', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].atomicNumber, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has an valency', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].valency!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-
-test('Check each element has an mass', function(){
-	expect(118);
-	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
-		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].mass!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
-	}
-});
-module('ResidueData');
-
-test('Check RESIDUE array exists', function() {
-	expect(1);
-	ok(ChemDoodle.ELEMENT, 'ChemDoodle.RESIDUE array exists');
-});
-
-test('Check there are 29 residues', function(){
-	expect(1);
-	let count = 0;
-	for(name in ChemDoodle.RESIDUE){
-		count++;
-	}
-    equal(29, count, 'Check RESIDUE length');
-});
-
-test('Check wildcard exists', function(){
-	expect(1);
-	ok(ChemDoodle.RESIDUE['*'], 'Wildcard found');
-});
-
-test('Check each residue has a symbol', function(){
-	expect(29);
-	for(name in ChemDoodle.RESIDUE){
-		ok(ChemDoodle.RESIDUE[name].symbol, 'Check '+name);
-	}
-});
-
-test('Check each amino acid has a polarity', function(){
-	expect(22);
-	for(name in ChemDoodle.RESIDUE){
-		if(name.length===3){
-			ok(ChemDoodle.RESIDUE[name].polar!==undefined, 'Check '+name);
-		}
-	}
-});
-
-test('Check each residue has an amino color', function(){
-	expect(29);
-	for(name in ChemDoodle.RESIDUE){
-		ok(ChemDoodle.RESIDUE[name].aminoColor, 'Check '+name);
-	}
-});
-
-test('Check each residue has a shapely color', function(){
-	expect(29);
-	for(name in ChemDoodle.RESIDUE){
-		ok(ChemDoodle.RESIDUE[name].shapelyColor, 'Check '+name);
-	}
-});
-module('ChemDoodle');
-
-test('Check global ChemDoodle variable initialized', function(){
-	expect(1);
-	ok(ChemDoodle, 'ChemDoodle is initialized');
-});
-
-test('Check structures package initialized', function(){
-	expect(1);
-	ok(ChemDoodle.structures, 'ChemDoodle.structures is initialized');
-});
-
-test('Check iChemLabs package initialized', function(){
-	expect(1);
-	ok(ChemDoodle.iChemLabs, 'ChemDoodle.iChemLabs is initialized');
-});
-
-test('Check informatics package initialized', function(){
-	expect(1);
-	ok(ChemDoodle.informatics, 'ChemDoodle.informatics is initialized');
-});
-
-test('Check io package initialized', function(){
-	expect(1);
-	ok(ChemDoodle.io, 'ChemDoodle.io is initialized');
-});
-
-test('Check version number', function(){
-	expect(6);
-	ok(ChemDoodle.getVersion, 'ChemDoodle.getVersion is initialized');
-    equal(-1, ChemDoodle.getVersion().indexOf('VERSION'), 'Check version is set');
-    let nums = ChemDoodle.getVersion().split('.');
-    ok(nums.length===3, 'Check version is a correct 3 numbered string');
-    for(let i = 0; i<nums.length; i++){
-    	ok(!isNaN(nums[i]), 'Check that each component is a number');
-    }
-});
-module('SVG');
-
-test('Check SVG package exists', function() {
-	if(!ChemDoodle.io.svg){
-		return expect(0);
-	}
-	expect(1);
-	ok(ChemDoodle.io.svg, 'ChemDoodle.io.svg package exists');
-});
-module('PNG');
-
-test('Check PNG package exists', function() {
-	expect(1);
-	ok(ChemDoodle.io.png, 'ChemDoodle.io.png package exists');
-});
-module('PDBInterpreter');
-
-test('Check PDBInterpreter class exists', function() {
-	expect(1);
-	ok(ChemDoodle.io.PDBInterpreter, 'ChemDoodle.io.PDBInterpreter class exists');
-});
-
-test('Check PDBInterpreter class extends Interpreter', function(){
-	expect(1);
-    ok(new ChemDoodle.io.PDBInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.PDBInterpreter class extends Interpreter');
-});
-
-test('Check readPDB shortcut exists', function() {
-	expect(1);
-	ok(ChemDoodle.readPDB, 'readPDB shortcut exists');
-});
-
-test('Check simple read', function(){
-	let pdb = new ChemDoodle.io.PDBInterpreter();
-	pdb.deduceResidueBonds = true;
-	let mol = pdb.read(oneBNA);
-	expect(2);
-	equal(566, mol.atoms.length, 'Check 566 atoms');
-	equal(544, mol.bonds.length, 'Check 544 bonds');
-});
-
-test('Check simple read ignoring residue bonds', function(){
-	let pdb = new ChemDoodle.io.PDBInterpreter();
-	let mol = pdb.read(oneBNA);
-	expect(2);
-	equal(566, mol.atoms.length, 'Check 566 atoms');
-	equal(0, mol.bonds.length, 'Check 0 bonds');
-});
-
-test('Check correctly reads ZN from hetatm record', function(){
-	let mol = ChemDoodle.readPDB(testPDBZN);
+test('Check getRGB function with HEX value', function(){
 	expect(3);
-	equal(1, mol.atoms.length, 'Check 1 atom');
-	equal(0, mol.bonds.length, 'Check 0 bonds');
-	equal('Zn', mol.atoms[0].label, 'Check Zn label is correct');
+	let rgb = ChemDoodle.math.getRGB('#CE84C6', 1);
+	equal(206/255, rgb[0], 'Check r is correct');
+	equal(132/255, rgb[1], 'Check g is correct');
+	equal(198/255, rgb[2], 'Check b is correct');
 });
 
-test('Check atom elements read correctly from name if not at end of record', function(){
-	let mol = ChemDoodle.readPDB(pdb_walp);
+test('Check getRGB function with HEX value shortcut', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('#cde', 1);
+	equal(204/255, rgb[0], 'Check r is correct');
+	equal(221/255, rgb[1], 'Check g is correct');
+	equal(238/255, rgb[2], 'Check b is correct');
+});
+
+test('Check getRGB function with RGB value', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('rgb(107,202,63)', 1);
+	equal(107/255, rgb[0], 'Check r is correct');
+	equal(202/255, rgb[1], 'Check g is correct');
+	equal(63/255, rgb[2], 'Check b is correct');
+});
+
+test('Check getRGB function with RGB value with spaces', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('rgb( 107, 202, 63 )', 1);
+	equal(107/255, rgb[0], 'Check r is correct');
+	equal(202/255, rgb[1], 'Check g is correct');
+	equal(63/255, rgb[2], 'Check b is correct');
+});
+
+test('Check getRGB function with RGBA value', function(){
+	expect(4);
+	let rgb = ChemDoodle.math.getRGB('rgba(107,202,63,12)', 1);
+	equal(107/255, rgb[0], 'Check r is correct');
+	equal(202/255, rgb[1], 'Check g is correct');
+	equal(63/255, rgb[2], 'Check b is correct');
+	equal(12/255, rgb[3], 'Check a is correct');
+});
+
+test('Check getRGB function with RGBA value with spaces', function(){
+	expect(4);
+	let rgb = ChemDoodle.math.getRGB('rgba( 107, 202, 63, 12 )', 1);
+	equal(107/255, rgb[0], 'Check r is correct');
+	equal(202/255, rgb[1], 'Check g is correct');
+	equal(63/255, rgb[2], 'Check b is correct');
+	equal(12/255, rgb[3], 'Check a is correct');
+});
+
+test('Check getRGB function with named color', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('goldenrod', 1);
+	equal(218/255, rgb[0], 'Check r is correct');
+	equal(165/255, rgb[1], 'Check g is correct');
+	equal(32/255, rgb[2], 'Check b is correct');
+});
+
+test('Check getRGB function with named color with caps', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('goLDeNrOD', 1);
+	equal(218/255, rgb[0], 'Check r is correct');
+	equal(165/255, rgb[1], 'Check g is correct');
+	equal(32/255, rgb[2], 'Check b is correct');
+});
+
+test('Check getRGB function with unknown color returns black', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.getRGB('unknown', 1);
+	equal(0, rgb[0], 'Check r is correct');
+	equal(0, rgb[1], 'Check g is correct');
+	equal(0, rgb[2], 'Check b is correct');
+});
+
+test('Check distanceFromPointToLineInclusive function', function(){
 	expect(1);
-	let count = 0;
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		if(mol.atoms[i].label!=='C'){
-			count++;
-		}
-	}
-	equal(240, count);
+	equal(2.0000000000000004, ChemDoodle.math.distanceFromPointToLineInclusive(new ChemDoodle.structures.Point(1,2), new ChemDoodle.structures.Point(0,0), new ChemDoodle.structures.Point(2,0)), 'Check distance from axis is correct');
 });
 
-test('Check HD converted to H', function(){
-	let mol = ChemDoodle.readPDB(pdb_walp);
-	expect(367);
-	let count = 0;
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		ok(mol.atoms[i].label!=='HD'&&mol.atoms[i].label!=='D');
-	}
+test('Check calculateDistanceInterior function', function(){
+	expect(4);
+	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:5, y:15}, {x:0, y:0, w:10, h:10}), 'Check distance south is correct');
+	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:5, y:-5}, {x:0, y:0, w:10, h:10}), 'Check distance north is correct');
+	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:15, y:5}, {x:0, y:0, w:10, h:10}), 'Check distance east is correct');
+	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:-5, y:5}, {x:0, y:0, w:10, h:10}), 'Check distance west is correct');
 });
 
-test('Check small molecule pdb file read', function(){
-	let pdb = new ChemDoodle.io.PDBInterpreter();
-	pdb.deduceResidueBonds = true;
-	let mol = pdb.read(pdb_small_molecule_caffeine);
+test('Check calculateDistanceInterior function returns 0 if line isn\'t contained', function(){
+	expect(1);
+	equal(0, ChemDoodle.math.calculateDistanceInterior({x:50, y:50}, {x:50, y:150}, {x:0, y:0, w:10, h:10}), 'Check 0 is returned');
+});
+
+test('Check intersectLines function', function(){
 	expect(2);
-	equal(24, mol.atoms.length);
-	equal(25, mol.bonds.length);
+	let p = ChemDoodle.math.intersectLines(93, 390, 199, 72, 25, 136, 311, 427);
+	ok(Math.abs(p.x-139)<.01, 'Check intersection x is correct');
+	ok(Math.abs(p.y-252)<.01, 'Check intersection y is correct');
 });
 
-test('Check water counts on 1BNA', function(){
-	let mol = ChemDoodle.readPDB(oneBNA);
-	expect(82);
-	let waterCount = 0;
-	let hetatomCount = 0;
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		let a = mol.atoms[i];
-		if(a.isWater){
-			waterCount++;
-			equal('O', a.label, 'Water atom label is oxygen');
-		}
-		if(a.hetatm){
-			hetatomCount++;
-		}
-	}
-	equal(80, waterCount, 'Found all water oxygens');
-	equal(80, hetatomCount, 'Found all hetatms');
+test('Check hsl2rgb', function(){
+	expect(3);
+	let rgb = ChemDoodle.math.hsl2rgb(.5, .5, .5);
+	equal(63.75, rgb[0], 'Check r is correct');
+	ok(Math.abs(191.25-rgb[1])<.001, 'Check g is correct');
+	ok(Math.abs(191.25-rgb[2])<.001, 'Check b is correct');
 });
 
-test('Check distances on 1BNA', function(){
-	let pdb = new ChemDoodle.io.PDBInterpreter();
-	pdb.calculateRibbonDistances = true;
-	let mol = pdb.read(oneBNA);
-	expect(972);
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		let a = mol.atoms[i];
-		if(!a.hetatm){
-			ok(a.closestDistance!==undefined, 'Check closestDistance parameter is defined');
-			equal(0, a.closestDistance, 'Check closestDistance parameter is 0 because there are no HETATM other than water');
-		}
-	}
-});
-
-test('Check distances on 20EY', function(){
-	let pdb = new ChemDoodle.io.PDBInterpreter();
-	pdb.calculateRibbonDistances = true;
-	let mol = pdb.read(pdb_20EY);
-	expect(1588);
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		let a = mol.atoms[i];
-		if(!a.hetatm){
-			ok(a.closestDistance!==undefined, 'Check closestDistance parameter is defined');
-			ok(a.closestDistance>0, 'Check closestDistance parameter greater than 0');
-		}
-	}
-});
-
-test('Check bug caused by repeated use of inner loop variables', function(){
-	let mol = ChemDoodle.readPDB('AUTHOR    GENERATED BY OPEN BABEL 2.3.0\nHETATM    1  C   LIG     1      -0.756   0.000   0.000  1.00  0.00           C\nHETATM    2  C   LIG     1       0.756   0.000   0.000  1.00  0.00           C\nHETATM    3  H   LIG     1      -1.140   0.659   0.784  1.00  0.00           H\nHETATM    4  H   LIG     1      -1.140   0.350  -0.963  1.00  0.00           H\nHETATM    5  H   LIG     1      -1.141  -1.009   0.178  1.00  0.00           H\nHETATM    6  H   LIG     1       1.140  -0.350   0.963  1.00  0.00           H\nHETATM    7  H   LIG     1       1.141   1.009  -0.178  1.00  0.00           H\nHETATM    8  H   LIG     1       1.140  -0.659  -0.784  1.00  0.00           H\nCONECT    1    2    3    4    5\nCONECT    1\nCONECT    2    1    6    7    8\nCONECT    2\nCONECT    3    1\nCONECT    4    1\nCONECT    5    1\nCONECT    6    2\nCONECT    7    2\nCONECT    8    2\nMASTER        0    0    0    0    0    0    0    0    8    0    8    0\nEND');
-	expect(2);
-	equal(8, mol.atoms.length);
-	equal(7, mol.bonds.length);
-});
-
-test('Check finds element given element in wrong column', function(){
-	let mol = ChemDoodle.readPDB(pdb_custom_atom_label_in_wrong_position);
-	expect(2);
-	let numCl = 0;
-	let numBr = 0;
-	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-		let a = mol.atoms[i];
-		if(a.label==='Cl'){
-			numCl++;
-		}else if(a.label==='Br'){
-			numBr++;
-		}
-	}
-	equal(3, numCl, 'Check 3 Cl');
-	equal(1, numBr, 'Check 1 Br');
-});
-module('CMLInterpreter');
-
-test('Check CMLInterpreter class exists', function() {
+test('Check isPointInPoly simple pass', function(){
 	expect(1);
-	ok(ChemDoodle.io.CMLInterpreter, 'ChemDoodle.io.CMLInterpreter class exists');
+	ok(ChemDoodle.math.isPointInPoly([{x:-1, y:1}, {x:1, y:1}, {x:1, y:-1}, {x:-1, y:-1}], {x:0, y:0}), 'Check point is in poly');
 });
 
-test('Check CMLInterpreter class extends Interpreter', function(){
+test('Check isPointInPoly simple fail', function(){
 	expect(1);
-    ok(new ChemDoodle.io.CMLInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.CMLInterpreter class extends Interpreter');
+	ok(!ChemDoodle.math.isPointInPoly([{x:-1, y:1}, {x:1, y:1}, {x:1, y:-1}, {x:-1, y:-1}], {x:10, y:10}), 'Check point is not in poly');
 });
 
-test('Check readCML shortcut exists', function() {
+test('Check clamp', function(){
+	expect(5);
+	equal(2, ChemDoodle.math.clamp(1, 2, 4), 'Check less');
+	equal(2, ChemDoodle.math.clamp(2, 2, 4), 'Check lower');
+	equal(3, ChemDoodle.math.clamp(3, 2, 4), 'Check between');
+	equal(4, ChemDoodle.math.clamp(4, 2, 4), 'Check higher');
+	equal(4, ChemDoodle.math.clamp(5, 2, 4), 'Check more');
+});
+
+test('Check angleBounds', function(){
+	expect(4);
+	equal(Math.PI, ChemDoodle.math.angleBounds(-Math.PI), 'Check less');
+	equal(Math.PI, ChemDoodle.math.angleBounds(3*Math.PI), 'Check more');
+	equal(180, ChemDoodle.math.angleBounds(-Math.PI, true), 'Check convert to degrees less');
+	equal(180, ChemDoodle.math.angleBounds(3*Math.PI, true), 'Check convert to degrees more');
+});
+
+test('Check Get Parameterized Intersection Pt 1', function(){
+	expect(4);
+	let solution = ChemDoodle.math.getParameterizedIntersectionPt(0, 3, 2, 4, 1, -2, 2, 1);
+	ok(Array.isArray(solution));
+	equal(2, solution.length);
+	equal(1.6, solution[0]);
+	equal(2.2, solution[1]);
+});
+
+test('Check Get Parameterized Intersection Pt 2', function(){
+	expect(4);
+	let solution = ChemDoodle.math.getParameterizedIntersectionPt(0, 1.5, 1, 0, 0, 3, 2, 0);
+	ok(Array.isArray(solution));
+	equal(2, solution.length);
+	equal(Infinity, solution[0]);
+	equal(Infinity, solution[1]);
+});
+module('Bounds');
+
+test('Check Bounds class exists', function(){
 	expect(1);
-	ok(ChemDoodle.readCML, 'readCML shortcut exists');
+    ok(ChemDoodle.math.Bounds, 'ChemDoodle.math.Bounds class exists');
 });
 
-test('Check writeCML shortcut exists', function() {
+test('Check constructor', function(){
+	let b = new ChemDoodle.math.Bounds();
+	expect(6);
+    equal(Infinity, b.minX, 'Check minX');
+    equal(Infinity, b.minY, 'Check minY');
+    equal(-Infinity, b.maxX, 'Check maxX');
+    equal(-Infinity, b.maxY, 'Check maxY');
+    equal(Infinity, b.minZ, 'Check minZ');
+    equal(-Infinity, b.maxZ, 'Check maxZ');
+});
+
+test('Check adding Point', function(){
+	let b = new ChemDoodle.math.Bounds();
+	b.expand(1, 2);
+	expect(6);
+    equal(1, b.minX, 'Check minX');
+    equal(2, b.minY, 'Check minY');
+    equal(1, b.maxX, 'Check maxX');
+    equal(2, b.maxY, 'Check maxY');
+    equal(Infinity, b.minZ, 'Check minZ');
+    equal(-Infinity, b.maxZ, 'Check maxZ');
+});
+
+test('Check adding Rectangle', function(){
+	let b = new ChemDoodle.math.Bounds();
+	b.expand(1, 2, 3, 4);
+	expect(6);
+    equal(1, b.minX, 'Check minX');
+    equal(2, b.minY, 'Check minY');
+    equal(3, b.maxX, 'Check maxX');
+    equal(4, b.maxY, 'Check maxY');
+    equal(Infinity, b.minZ, 'Check minZ');
+    equal(-Infinity, b.maxZ, 'Check maxZ');
+});
+
+test('Check adding Rectangle Prism', function(){
+	let b = new ChemDoodle.math.Bounds();
+	b.expand3D(1, 2, 3, 4, 5, 6);
+	expect(6);
+    equal(1, b.minX, 'Check minX');
+    equal(2, b.minY, 'Check minY');
+    equal(3, b.minZ, 'Check minZ');
+    equal(4, b.maxX, 'Check maxX');
+    equal(5, b.maxY, 'Check maxY');
+    equal(6, b.maxZ, 'Check maxZ');
+});
+
+test('Check adding another Bounds', function(){
+	let b = new ChemDoodle.math.Bounds();
+	b.expand(1, 2, 3, 4);
+	expect(6);
+    let b2 = new ChemDoodle.math.Bounds();
+	b2.expand(5, 6, 7, 8);
+	b.expand(b2);
+    equal(1, b.minX, 'Check minX');
+    equal(2, b.minY, 'Check minY');
+    equal(7, b.maxX, 'Check maxX');
+    equal(8, b.maxY, 'Check maxY');
+    equal(Infinity, b.minZ, 'Check minZ');
+    equal(-Infinity, b.maxZ, 'Check maxZ');
+});
+
+test('Check adding another Bounds 3D', function(){
+	let b = new ChemDoodle.math.Bounds();
+	b.expand3D(1, 2, 3, 4, 5, 6);
+	expect(6);
+    let b2 = new ChemDoodle.math.Bounds();
+	b2.expand3D(7, 8, 9, 10, 11, 12);
+	b.expand(b2);
+    equal(1, b.minX, 'Check minX');
+    equal(2, b.minY, 'Check minY');
+    equal(3, b.minZ, 'Check minZ');
+    equal(10, b.maxX, 'Check maxX');
+    equal(11, b.maxY, 'Check maxY');
+    equal(12, b.maxZ, 'Check maxZ');
+});
+module('RXNInterpreter');
+
+test('Check RXNInterpreter class exists', function() {
 	expect(1);
-	ok(ChemDoodle.writeCML, 'writeCML shortcut exists');
+	ok(ChemDoodle.io.RXNInterpreter, 'ChemDoodle.io.RXNInterpreter class exists.');
 });
 
-test('Check simple read', function(){
-    let mol = ChemDoodle.readCML(cml_caffeine);
-    expect(2);
-    equal(14, mol[0].atoms.length, 'Check 14 atoms');
-    equal(15, mol[0].bonds.length, 'Check 15 bonds');
+test('Check RXNInterpreter class extends Interpreter', function(){
+	expect(1);
+    ok(new ChemDoodle.io.RXNInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.RXNInterpreter class extends Interpreter');
 });
 
-test('Check simple write', function(){
-    let mol = [new ChemDoodle.structures.Molecule()];
-    mol[0].atoms[0] = new ChemDoodle.structures.Atom();
-    mol[0].atoms[1] = new ChemDoodle.structures.Atom();
-    mol[0].bonds[0] = new ChemDoodle.structures.Bond(mol[0].atoms[0], mol[0].atoms[1]);
-    let out = ChemDoodle.writeCML(mol);
+test('Check readRXN shortcut', function () {
+	expect(1);
+	ok(ChemDoodle.readRXN, 'readRXN shortcut exists');
+});
+
+test('Check writeRXN shortcut', function () {
+	expect(1);
+	ok(ChemDoodle.writeRXN, 'writeRXN shortcut exists');
+});
+
+test('Check simple read', function() {
+	let stuff = ChemDoodle.readRXN(oso4catrxn1);
+	let points = stuff.shapes[0].getPoints();
+	expect(7);
+	ok(stuff.molecules, 'returned molecules');
+	ok(stuff.shapes, 'returned shapes');
+	equal(3, stuff.molecules.length, 'Check 3 molecules');
+	equal(1, stuff.shapes.length, 'Check 1 shape');
+	ok(stuff.shapes[0] instanceof ChemDoodle.structures.d2.Line, 'Check shape is a line');
+	ok(stuff.shapes[0].arrowType == ChemDoodle.structures.d2.Line.ARROW_SYNTHETIC, 'Check for Synthetic Arrow');
+	equal(40, points[0].distance(points[1]), 'Check line is 40 pixels');
+});
+
+test('Check simple write', function() {
+	let reactant = new ChemDoodle.structures.Molecule();
+    reactant.atoms[0] = new ChemDoodle.structures.Atom();
+    reactant.atoms[1] = new ChemDoodle.structures.Atom();
+    reactant.bonds[0] = new ChemDoodle.structures.Bond(reactant.atoms[0], reactant.atoms[1]);
+    let product = new ChemDoodle.structures.Molecule();
+    product.atoms[0] = new ChemDoodle.structures.Atom();
+    product.atoms[1] = new ChemDoodle.structures.Atom();
+    product.bonds[0] = new ChemDoodle.structures.Bond(product.atoms[0], product.atoms[1]);
+    let line = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(-20, 0), new ChemDoodle.structures.Point(20, 0));
+    let out = ChemDoodle.writeRXN([reactant, product], [line]);
     expect(1);
-    ok(out && out.length > 0, 'Check output isn\'t empty');
+    ok(out != null && out.length > 0, 'Check output isn\'t empty');
 });
 
-test('Check data is reversible', function(){
-	let mol = ChemDoodle.readCML(cml_caffeine);
-    let cml = ChemDoodle.writeCML(mol);
-    mol = ChemDoodle.readCML(cml);
-    expect(3);
-    ok(cml && cml.length > 0, 'Output not empty');
-    equal(14, mol[0].atoms.length, 'Check 14 atoms');
-    equal(15, mol[0].bonds.length, 'Check 15 bonds');
+test('Check data is reversable', function() {
+	let foo = ChemDoodle.readRXN(oso4catrxn1);
+	let bar = ChemDoodle.writeRXN(foo.molecules, foo.shapes);
+	let stuff = ChemDoodle.readRXN(bar);
+	expect(4);
+	ok(stuff.molecules, 'returned molecules');
+	ok(stuff.shapes, 'returned shapes');
+	equal(3, stuff.molecules.length, 'Check 3 molecules');
+	equal(1, stuff.shapes.length, 'Check 1 shape');
 });
 
-test('Check single atom molecule read', function() {
-	let mol = ChemDoodle.readCML(cml_xenon);
-	expect(2);
-	equal(1, mol[0].atoms.length, 'Check 1 atom');
-	equal(0, mol[0].bonds.length, 'Check 0 bonds');
+test('Check missing or null molecule cases (all return nothing)', function() {
+	let molecules = [ChemDoodle.readMOL(benzene), ChemDoodle.readMOL(thiophene), ChemDoodle.readMOL(hexane), ChemDoodle.readMOL(napthalene)];
+	let shapes = [new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(-20, 0), new ChemDoodle.structures.Point(20, 0))];
+	let out1 = ChemDoodle.writeRXN();
+	let out2 = ChemDoodle.writeRXN(molecules, null);
+	let out3 = ChemDoodle.writeRXN(null, shapes);
+	expect(3);
+    ok(!out1, 'Check nothing passed.');
+    ok(!out2, 'Check no shapes passed.');
+    ok(!out3, 'Check no molecules passed.');
 });
 
-test('Check single atom molecule write', function() {
-	let mol = [new ChemDoodle.structures.Molecule()];
-	mol[0].atoms[0] = new ChemDoodle.structures.Atom();
-	cml = ChemDoodle.writeCML(mol);
-	expect(1);
-	ok(cml && cml.length > 0, 'Output not empty');
-});
 
-test('Check single atom case is reversible', function() {
-	let mol = ChemDoodle.readCML(cml_xenon);
-    let cml = ChemDoodle.writeCML(mol);
-    mol = ChemDoodle.readCML(cml);
-    expect(3);
-    ok(cml && cml.length > 0, 'Output not empty');
-    equal(1, mol[0].atoms.length, 'Check 1 atoms');
-    equal(0, mol[0].bonds.length, 'Check 0 bonds');
-});
-
-test('Test writing and reading formal charge, multiple molecules', function() {
-	let mol = [new ChemDoodle.structures.Molecule(), new ChemDoodle.structures.Molecule()];
-    mol[0].atoms[0] = new ChemDoodle.structures.Atom('Na', 0, 0, 0);
-    mol[0].atoms[0].charge = 1;
-    mol[1].atoms[0] = new ChemDoodle.structures.Atom('Cl', 0, 0, 0);
-    mol[1].atoms[0].charge = -1;
-    let cml = ChemDoodle.writeCML(mol);
-    mol = ChemDoodle.readCML(cml);
-    expect(7);
-    ok(cml && cml.length > 0, 'Output not empty');
-    equal(1, mol[0].atoms.length, 'Check 1 atom, molecule 0');
-    equal(1, mol[1].atoms.length, 'Check 1 atom, molecule 1');
-    equal(0, mol[0].bonds.length, 'Check 0 bonds, molecule 0');
-    equal(0, mol[1].bonds.length, 'Check 0 bonds, molecule 1');
-    equal(1, mol[0].atoms[0].charge, 'Sodium charge is +1');
-    equal(-1, mol[1].atoms[0].charge, 'Chlorine charge is -1');
-});
 module('JSONInterpreter');
 
 test('Check JSONInterpreter class exists', function() {
@@ -2119,6 +1636,13 @@ test('Check write persistent IDs when molecule separated', function() {
 test('Check write persistent IDs when PIDs are deleted on core objects', function() {
 	expect(0);
 });
+
+test('Check read recessed bond', function() {
+	expect(1);
+	let json = new ChemDoodle.io.JSONInterpreter();
+	let m = json.molFrom({"a":[{"x":237.5,"y":150,"z":20},{"x":254.8205,"y":140,"z":20},{"x":237.5,"y":170,"z":20},{"x":272.141,"y":150,"z":20},{"x":220.1795,"y":140,"z":-20,"l":"O"}],"b":[{"b":0,"e":1},{"b":0,"e":2},{"b":1,"e":3},{"b":0,"s":"recessed","e":4,"o":1}]});
+	equal('recessed', m.bonds[3].stereo);
+});
 module('JCAMPInterpreter');
 
 test('Check JCAMPInterpreter class exists', function() {
@@ -2261,132 +1785,97 @@ test('Check molecule read correctly HNMR', function(){
     }
 	ok(Math.abs(20-spectrum.molecule.getAverageBondLength())<.001, 'Check average bond distance');
 });
-module('XYZInterpreter');
+module('CMLInterpreter');
 
-test('Check XYZInterpreter class exists', function() {
+test('Check CMLInterpreter class exists', function() {
 	expect(1);
-	ok(ChemDoodle.io.XYZInterpreter, 'ChemDoodle.io.XYZInterpreter class exists');
+	ok(ChemDoodle.io.CMLInterpreter, 'ChemDoodle.io.CMLInterpreter class exists');
 });
 
-test('Check XYZInterpreter class extends Interpreter', function(){
+test('Check CMLInterpreter class extends Interpreter', function(){
 	expect(1);
-    ok(new ChemDoodle.io.XYZInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.XYZInterpreter class extends Interpreter');
+    ok(new ChemDoodle.io.CMLInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.CMLInterpreter class extends Interpreter');
 });
 
-test('Check readXYZ shortcut exists', function() {
+test('Check readCML shortcut exists', function() {
 	expect(1);
-	ok(ChemDoodle.readXYZ, 'readXYZ shortcut exists');
+	ok(ChemDoodle.readCML, 'readCML shortcut exists');
+});
+
+test('Check writeCML shortcut exists', function() {
+	expect(1);
+	ok(ChemDoodle.writeCML, 'writeCML shortcut exists');
 });
 
 test('Check simple read', function(){
-    let mol = ChemDoodle.readXYZ(xyz_chemmime_example);
+    let mol = ChemDoodle.readCML(cml_caffeine);
     expect(2);
-    equal(20, mol.atoms.length, 'Check number of atoms');
-    equal(20, mol.bonds.length, 'Check number of bonds');
+    equal(14, mol[0].atoms.length, 'Check 14 atoms');
+    equal(15, mol[0].bonds.length, 'Check 15 bonds');
 });
 
-test('Check simple read with bond deduction disabled', function(){
-	let xyz = new ChemDoodle.io.XYZInterpreter();
-	xyz.deduceCovalentBonds = false;
-    let mol = xyz.read(xyz_chemmime_example);
-    expect(2);
-    equal(20, mol.atoms.length, 'Check number of atoms');
-    equal(0, mol.bonds.length, 'Check no bonds');
-});
-
-test('Check simple all labels are elements', function(){
-    let mol = ChemDoodle.readXYZ(xyz_chemmime_example);
-    expect(23);
-    let hcount = 0, ncount = 0, ocount = 0;
-    for(let i = 0, ii=mol.atoms.length; i<ii; i++){
-    	let l = mol.atoms[i].label;
-    	if(l==='H'){
-    		hcount++;
-    	}else if(l==='N'){
-    		ncount++;
-    	}else if(l==='O'){
-    		ocount++;
-    	}
-    	ok(ChemDoodle.ELEMENT[l], 'Checked '+l);
-    }
-    equal(6, hcount, 'Check number of hydrogens');
-    equal(4, ocount, 'Check number of oxygens');
-    equal(2, ncount, 'Check number of nitrogens');
-});
-module('RXNInterpreter');
-
-test('Check RXNInterpreter class exists', function() {
-	expect(1);
-	ok(ChemDoodle.io.RXNInterpreter, 'ChemDoodle.io.RXNInterpreter class exists.');
-});
-
-test('Check RXNInterpreter class extends Interpreter', function(){
-	expect(1);
-    ok(new ChemDoodle.io.RXNInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.RXNInterpreter class extends Interpreter');
-});
-
-test('Check readRXN shortcut', function () {
-	expect(1);
-	ok(ChemDoodle.readRXN, 'readRXN shortcut exists');
-});
-
-test('Check writeRXN shortcut', function () {
-	expect(1);
-	ok(ChemDoodle.writeRXN, 'writeRXN shortcut exists');
-});
-
-test('Check simple read', function() {
-	let stuff = ChemDoodle.readRXN(oso4catrxn1);
-	let points = stuff.shapes[0].getPoints();
-	expect(7);
-	ok(stuff.molecules, 'returned molecules');
-	ok(stuff.shapes, 'returned shapes');
-	equal(3, stuff.molecules.length, 'Check 3 molecules');
-	equal(1, stuff.shapes.length, 'Check 1 shape');
-	ok(stuff.shapes[0] instanceof ChemDoodle.structures.d2.Line, 'Check shape is a line');
-	ok(stuff.shapes[0].arrowType == ChemDoodle.structures.d2.Line.ARROW_SYNTHETIC, 'Check for Synthetic Arrow');
-	equal(40, points[0].distance(points[1]), 'Check line is 40 pixels');
-});
-
-test('Check simple write', function() {
-	let reactant = new ChemDoodle.structures.Molecule();
-    reactant.atoms[0] = new ChemDoodle.structures.Atom();
-    reactant.atoms[1] = new ChemDoodle.structures.Atom();
-    reactant.bonds[0] = new ChemDoodle.structures.Bond(reactant.atoms[0], reactant.atoms[1]);
-    let product = new ChemDoodle.structures.Molecule();
-    product.atoms[0] = new ChemDoodle.structures.Atom();
-    product.atoms[1] = new ChemDoodle.structures.Atom();
-    product.bonds[0] = new ChemDoodle.structures.Bond(product.atoms[0], product.atoms[1]);
-    let line = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(-20, 0), new ChemDoodle.structures.Point(20, 0));
-    let out = ChemDoodle.writeRXN([reactant, product], [line]);
+test('Check simple write', function(){
+    let mol = [new ChemDoodle.structures.Molecule()];
+    mol[0].atoms[0] = new ChemDoodle.structures.Atom();
+    mol[0].atoms[1] = new ChemDoodle.structures.Atom();
+    mol[0].bonds[0] = new ChemDoodle.structures.Bond(mol[0].atoms[0], mol[0].atoms[1]);
+    let out = ChemDoodle.writeCML(mol);
     expect(1);
-    ok(out != null && out.length > 0, 'Check output isn\'t empty');
+    ok(out && out.length > 0, 'Check output isn\'t empty');
 });
 
-test('Check data is reversable', function() {
-	let foo = ChemDoodle.readRXN(oso4catrxn1);
-	let bar = ChemDoodle.writeRXN(foo.molecules, foo.shapes);
-	let stuff = ChemDoodle.readRXN(bar);
-	expect(4);
-	ok(stuff.molecules, 'returned molecules');
-	ok(stuff.shapes, 'returned shapes');
-	equal(3, stuff.molecules.length, 'Check 3 molecules');
-	equal(1, stuff.shapes.length, 'Check 1 shape');
+test('Check data is reversible', function(){
+	let mol = ChemDoodle.readCML(cml_caffeine);
+    let cml = ChemDoodle.writeCML(mol);
+    mol = ChemDoodle.readCML(cml);
+    expect(3);
+    ok(cml && cml.length > 0, 'Output not empty');
+    equal(14, mol[0].atoms.length, 'Check 14 atoms');
+    equal(15, mol[0].bonds.length, 'Check 15 bonds');
 });
 
-test('Check missing or null molecule cases (all return nothing)', function() {
-	let molecules = [ChemDoodle.readMOL(benzene), ChemDoodle.readMOL(thiophene), ChemDoodle.readMOL(hexane), ChemDoodle.readMOL(napthalene)];
-	let shapes = [new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(-20, 0), new ChemDoodle.structures.Point(20, 0))];
-	let out1 = ChemDoodle.writeRXN();
-	let out2 = ChemDoodle.writeRXN(molecules, null);
-	let out3 = ChemDoodle.writeRXN(null, shapes);
-	expect(3);
-    ok(!out1, 'Check nothing passed.');
-    ok(!out2, 'Check no shapes passed.');
-    ok(!out3, 'Check no molecules passed.');
+test('Check single atom molecule read', function() {
+	let mol = ChemDoodle.readCML(cml_xenon);
+	expect(2);
+	equal(1, mol[0].atoms.length, 'Check 1 atom');
+	equal(0, mol[0].bonds.length, 'Check 0 bonds');
 });
 
+test('Check single atom molecule write', function() {
+	let mol = [new ChemDoodle.structures.Molecule()];
+	mol[0].atoms[0] = new ChemDoodle.structures.Atom();
+	cml = ChemDoodle.writeCML(mol);
+	expect(1);
+	ok(cml && cml.length > 0, 'Output not empty');
+});
 
+test('Check single atom case is reversible', function() {
+	let mol = ChemDoodle.readCML(cml_xenon);
+    let cml = ChemDoodle.writeCML(mol);
+    mol = ChemDoodle.readCML(cml);
+    expect(3);
+    ok(cml && cml.length > 0, 'Output not empty');
+    equal(1, mol[0].atoms.length, 'Check 1 atoms');
+    equal(0, mol[0].bonds.length, 'Check 0 bonds');
+});
+
+test('Test writing and reading formal charge, multiple molecules', function() {
+	let mol = [new ChemDoodle.structures.Molecule(), new ChemDoodle.structures.Molecule()];
+    mol[0].atoms[0] = new ChemDoodle.structures.Atom('Na', 0, 0, 0);
+    mol[0].atoms[0].charge = 1;
+    mol[1].atoms[0] = new ChemDoodle.structures.Atom('Cl', 0, 0, 0);
+    mol[1].atoms[0].charge = -1;
+    let cml = ChemDoodle.writeCML(mol);
+    mol = ChemDoodle.readCML(cml);
+    expect(7);
+    ok(cml && cml.length > 0, 'Output not empty');
+    equal(1, mol[0].atoms.length, 'Check 1 atom, molecule 0');
+    equal(1, mol[1].atoms.length, 'Check 1 atom, molecule 1');
+    equal(0, mol[0].bonds.length, 'Check 0 bonds, molecule 0');
+    equal(0, mol[1].bonds.length, 'Check 0 bonds, molecule 1');
+    equal(1, mol[0].atoms[0].charge, 'Sodium charge is +1');
+    equal(-1, mol[1].atoms[0].charge, 'Chlorine charge is -1');
+});
 module('MOLInterpreter');
 
 test('Check MOLInterpreter class exists', function() {
@@ -3025,6 +2514,200 @@ test('Check unit cell vectors are correctly generated for orthorhombic unit cell
 	ok(Math.abs(15.67679185930591-content.unitCell.unitCellVectors.xyz[1])<.00001, 'Unit cell xyz vector y calculated correctly');
 	equal(7.618, content.unitCell.unitCellVectors.xyz[2], 'Unit cell xyz vector z calculated correctly');
 });
+module('PDBInterpreter');
+
+test('Check PDBInterpreter class exists', function() {
+	expect(1);
+	ok(ChemDoodle.io.PDBInterpreter, 'ChemDoodle.io.PDBInterpreter class exists');
+});
+
+test('Check PDBInterpreter class extends Interpreter', function(){
+	expect(1);
+    ok(new ChemDoodle.io.PDBInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.PDBInterpreter class extends Interpreter');
+});
+
+test('Check readPDB shortcut exists', function() {
+	expect(1);
+	ok(ChemDoodle.readPDB, 'readPDB shortcut exists');
+});
+
+test('Check simple read', function(){
+	let pdb = new ChemDoodle.io.PDBInterpreter();
+	pdb.deduceResidueBonds = true;
+	let mol = pdb.read(oneBNA);
+	expect(2);
+	equal(566, mol.atoms.length, 'Check 566 atoms');
+	equal(544, mol.bonds.length, 'Check 544 bonds');
+});
+
+test('Check simple read ignoring residue bonds', function(){
+	let pdb = new ChemDoodle.io.PDBInterpreter();
+	let mol = pdb.read(oneBNA);
+	expect(2);
+	equal(566, mol.atoms.length, 'Check 566 atoms');
+	equal(0, mol.bonds.length, 'Check 0 bonds');
+});
+
+test('Check correctly reads ZN from hetatm record', function(){
+	let mol = ChemDoodle.readPDB(testPDBZN);
+	expect(3);
+	equal(1, mol.atoms.length, 'Check 1 atom');
+	equal(0, mol.bonds.length, 'Check 0 bonds');
+	equal('Zn', mol.atoms[0].label, 'Check Zn label is correct');
+});
+
+test('Check atom elements read correctly from name if not at end of record', function(){
+	let mol = ChemDoodle.readPDB(pdb_walp);
+	expect(1);
+	let count = 0;
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		if(mol.atoms[i].label!=='C'){
+			count++;
+		}
+	}
+	equal(240, count);
+});
+
+test('Check HD converted to H', function(){
+	let mol = ChemDoodle.readPDB(pdb_walp);
+	expect(367);
+	let count = 0;
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		ok(mol.atoms[i].label!=='HD'&&mol.atoms[i].label!=='D');
+	}
+});
+
+test('Check small molecule pdb file read', function(){
+	let pdb = new ChemDoodle.io.PDBInterpreter();
+	pdb.deduceResidueBonds = true;
+	let mol = pdb.read(pdb_small_molecule_caffeine);
+	expect(2);
+	equal(24, mol.atoms.length);
+	equal(25, mol.bonds.length);
+});
+
+test('Check water counts on 1BNA', function(){
+	let mol = ChemDoodle.readPDB(oneBNA);
+	expect(82);
+	let waterCount = 0;
+	let hetatomCount = 0;
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		let a = mol.atoms[i];
+		if(a.isWater){
+			waterCount++;
+			equal('O', a.label, 'Water atom label is oxygen');
+		}
+		if(a.hetatm){
+			hetatomCount++;
+		}
+	}
+	equal(80, waterCount, 'Found all water oxygens');
+	equal(80, hetatomCount, 'Found all hetatms');
+});
+
+test('Check distances on 1BNA', function(){
+	let pdb = new ChemDoodle.io.PDBInterpreter();
+	pdb.calculateRibbonDistances = true;
+	let mol = pdb.read(oneBNA);
+	expect(972);
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		let a = mol.atoms[i];
+		if(!a.hetatm){
+			ok(a.closestDistance!==undefined, 'Check closestDistance parameter is defined');
+			equal(0, a.closestDistance, 'Check closestDistance parameter is 0 because there are no HETATM other than water');
+		}
+	}
+});
+
+test('Check distances on 20EY', function(){
+	let pdb = new ChemDoodle.io.PDBInterpreter();
+	pdb.calculateRibbonDistances = true;
+	let mol = pdb.read(pdb_20EY);
+	expect(1588);
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		let a = mol.atoms[i];
+		if(!a.hetatm){
+			ok(a.closestDistance!==undefined, 'Check closestDistance parameter is defined');
+			ok(a.closestDistance>0, 'Check closestDistance parameter greater than 0');
+		}
+	}
+});
+
+test('Check bug caused by repeated use of inner loop variables', function(){
+	let mol = ChemDoodle.readPDB('AUTHOR    GENERATED BY OPEN BABEL 2.3.0\nHETATM    1  C   LIG     1      -0.756   0.000   0.000  1.00  0.00           C\nHETATM    2  C   LIG     1       0.756   0.000   0.000  1.00  0.00           C\nHETATM    3  H   LIG     1      -1.140   0.659   0.784  1.00  0.00           H\nHETATM    4  H   LIG     1      -1.140   0.350  -0.963  1.00  0.00           H\nHETATM    5  H   LIG     1      -1.141  -1.009   0.178  1.00  0.00           H\nHETATM    6  H   LIG     1       1.140  -0.350   0.963  1.00  0.00           H\nHETATM    7  H   LIG     1       1.141   1.009  -0.178  1.00  0.00           H\nHETATM    8  H   LIG     1       1.140  -0.659  -0.784  1.00  0.00           H\nCONECT    1    2    3    4    5\nCONECT    1\nCONECT    2    1    6    7    8\nCONECT    2\nCONECT    3    1\nCONECT    4    1\nCONECT    5    1\nCONECT    6    2\nCONECT    7    2\nCONECT    8    2\nMASTER        0    0    0    0    0    0    0    0    8    0    8    0\nEND');
+	expect(2);
+	equal(8, mol.atoms.length);
+	equal(7, mol.bonds.length);
+});
+
+test('Check finds element given element in wrong column', function(){
+	let mol = ChemDoodle.readPDB(pdb_custom_atom_label_in_wrong_position);
+	expect(2);
+	let numCl = 0;
+	let numBr = 0;
+	for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+		let a = mol.atoms[i];
+		if(a.label==='Cl'){
+			numCl++;
+		}else if(a.label==='Br'){
+			numBr++;
+		}
+	}
+	equal(3, numCl, 'Check 3 Cl');
+	equal(1, numBr, 'Check 1 Br');
+});
+module('XYZInterpreter');
+
+test('Check XYZInterpreter class exists', function() {
+	expect(1);
+	ok(ChemDoodle.io.XYZInterpreter, 'ChemDoodle.io.XYZInterpreter class exists');
+});
+
+test('Check XYZInterpreter class extends Interpreter', function(){
+	expect(1);
+    ok(new ChemDoodle.io.XYZInterpreter() instanceof ChemDoodle.io._Interpreter, 'ChemDoodle.informatics.XYZInterpreter class extends Interpreter');
+});
+
+test('Check readXYZ shortcut exists', function() {
+	expect(1);
+	ok(ChemDoodle.readXYZ, 'readXYZ shortcut exists');
+});
+
+test('Check simple read', function(){
+    let mol = ChemDoodle.readXYZ(xyz_chemmime_example);
+    expect(2);
+    equal(20, mol.atoms.length, 'Check number of atoms');
+    equal(20, mol.bonds.length, 'Check number of bonds');
+});
+
+test('Check simple read with bond deduction disabled', function(){
+	let xyz = new ChemDoodle.io.XYZInterpreter();
+	xyz.deduceCovalentBonds = false;
+    let mol = xyz.read(xyz_chemmime_example);
+    expect(2);
+    equal(20, mol.atoms.length, 'Check number of atoms');
+    equal(0, mol.bonds.length, 'Check no bonds');
+});
+
+test('Check simple all labels are elements', function(){
+    let mol = ChemDoodle.readXYZ(xyz_chemmime_example);
+    expect(23);
+    let hcount = 0, ncount = 0, ocount = 0;
+    for(let i = 0, ii=mol.atoms.length; i<ii; i++){
+    	let l = mol.atoms[i].label;
+    	if(l==='H'){
+    		hcount++;
+    	}else if(l==='N'){
+    		ncount++;
+    	}else if(l==='O'){
+    		ocount++;
+    	}
+    	ok(ChemDoodle.ELEMENT[l], 'Checked '+l);
+    }
+    equal(6, hcount, 'Check number of hydrogens');
+    equal(4, ocount, 'Check number of oxygens');
+    equal(2, ncount, 'Check number of nitrogens');
+});
 module('File');
 
 test('Check File package exists', function() {
@@ -3042,6 +2725,728 @@ test('Check file content function', function(assert) {
 	});
 });
 	
+module('PNG');
+
+test('Check PNG package exists', function() {
+	expect(1);
+	ok(ChemDoodle.io.png, 'ChemDoodle.io.png package exists');
+});
+module('SVG');
+
+test('Check SVG package exists', function() {
+	if(!ChemDoodle.io.svg){
+		return expect(0);
+	}
+	expect(1);
+	ok(ChemDoodle.io.svg, 'ChemDoodle.io.svg package exists');
+});
+module('TransformCanvas');
+
+test('Check TransformCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.TransformCanvas, 'ChemDoodle.TransformCanvas class exists');
+});
+
+test('Check TransformCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle.TransformCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.TransformCanvas class extends _Canvas');
+});
+module('MolGrabberCanvas');
+
+test('Check MolGrabberCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.MolGrabberCanvas, 'ChemDoodle.MolGrabberCanvas class exists');
+});
+
+test('Check MolGrabberCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(ChemDoodle.MolGrabberCanvas.prototype instanceof ChemDoodle._Canvas, 'ChemDoodle.MolGrabberCanvas class extends _Canvas');
+});
+module('ViewerCanvas');
+
+test('Check ViewerCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.ViewerCanvas, 'ChemDoodle.ViewerCanvas class exists');
+});
+
+test('Check ViewerCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle.ViewerCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.ViewerCanvas class extends _Canvas');
+});
+module('HyperlinkCanvas');
+
+test('Check HyperlinkCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.HyperlinkCanvas, 'ChemDoodle.HyperlinkCanvas class exists');
+});
+
+test('Check HyperlinkCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle.HyperlinkCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.HyperlinkCanvas class extends _Canvas');
+});
+module('PeriodicTableCanvas');
+
+test('Check PeriodicTableCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.PeriodicTableCanvas, 'ChemDoodle.PeriodicTableCanvas class exists');
+});
+
+test('Check PeriodicTableCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(ChemDoodle.PeriodicTableCanvas.prototype instanceof ChemDoodle._Canvas, 'ChemDoodle.PeriodicTableCanvas class extends _Canvas');
+});
+module('AnimatorCanvas');
+
+test('Check AnimatorCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle._AnimatorCanvas, 'ChemDoodle.AnimatorCanvas class exists');
+});
+
+test('Check AnimatorCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle._AnimatorCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.AnimatorCanvas class extends _Canvas');
+});
+module('RotatorCanvas');
+
+test('Check RotatorCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.RotatorCanvas, 'ChemDoodle.RotatorCanvas class exists');
+});
+
+test('Check RotatorCanvas class extends _AnimatorCanvas', function(){
+	expect(1);
+    ok(new ChemDoodle.RotatorCanvas() instanceof ChemDoodle._AnimatorCanvas, 'ChemDoodle.RotatorCanvas class extends _AnimatorCanvas');
+});
+module('SlideshowCanvas');
+
+test('Check SlideshowCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.SlideshowCanvas, 'ChemDoodle.SlideshowCanvas class exists');
+});
+
+test('Check SlideshowCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle.SlideshowCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle.SlideshowCanvas class extends _Canvas');
+});
+module('Canvas3D');
+
+test('Check Canvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle._Canvas3D, 'ChemDoodle._Canvas3D class exists');
+});
+
+test('Check Canvas3D class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle._Canvas3D() instanceof ChemDoodle._Canvas, 'ChemDoodle._Canvas3D class extends _Canvas');
+});
+module('MolGrabberCanvas3D');
+
+test('Check MolGrabberCanvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle.MolGrabberCanvas3D, 'ChemDoodle.MolGrabberCanvas3D class exists');
+});
+
+test('Check MolGrabberCanvas3D class extends _Canvas3D', function(){
+	expect(1);
+    ok(ChemDoodle.MolGrabberCanvas3D.prototype instanceof ChemDoodle._Canvas3D, 'ChemDoodle.MolGrabberCanvas3D class extends _Canvas3D');
+});
+module('ViewerCanvas3D');
+
+test('Check ViewerCanvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle.ViewerCanvas3D, 'ChemDoodle.ViewerCanvas3D class exists');
+});
+
+test('Check ViewerCanvas3D class extends _Canvas3D', function(){
+	expect(1);
+    ok(new ChemDoodle.ViewerCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.ViewerCanvas3D class extends _Canvas3D');
+});
+module('MovieCanvas3D');
+
+test('Check MovieCanvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle.MovieCanvas3D, 'ChemDoodle.MovieCanvas3D class exists');
+});
+
+test('Check MovieCanvas3D class extends _Canvas3D', function(){
+	expect(1);
+    ok(new ChemDoodle.MovieCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.MovieCanvas3D class extends _Canvas3D');
+});
+module('RotatorCanvas3D');
+
+test('Check RotatorCanvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle.RotatorCanvas3D, 'ChemDoodle.RotatorCanvas3D class exists');
+});
+
+test('Check RotatorCanvas3D class extends _Canvas3D', function(){
+	expect(1);
+    ok(new ChemDoodle.RotatorCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.RotatorCanvas3D class extends _Canvas3D');
+});
+module('TransformCanvas3D');
+
+test('Check TransformCanvas3D class exists', function(){
+	expect(1);
+    ok(ChemDoodle.TransformCanvas3D, 'ChemDoodle.TransformCanvas3D class exists');
+});
+
+test('Check TransformCanvas3D class extends _Canvas3D', function(){
+	expect(1);
+    ok(new ChemDoodle.TransformCanvas3D() instanceof ChemDoodle._Canvas3D, 'ChemDoodle.TransformCanvas3D class extends _Canvas3D');
+});
+module('Canvas');
+
+test('Check Canvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle._Canvas, 'ChemDoodle._Canvas class exists');
+});
+
+test('Check loadMolecule', function(){
+	expect(2);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	equal(0, c.molecules.length, 'Array molecules is Empty');
+	let m = new ChemDoodle.structures.Molecule();
+	c.loadMolecule(m);
+	equal(1, c.molecules.length, 'Array molecules contains loaded molecule');
+});
+
+test('Check getMolecule', function(){
+	expect(2);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	c.loadMolecule(m);
+	equal(1, c.molecules.length, 'Array molecules contains loaded molecule');
+	ok(m===c.getMolecule(), 'Molecule object is identical');
+});
+
+test('Check addMolecule', function(){
+	expect(3);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m);
+	let m2 = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m2);
+	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
+	ok(m===c.getMolecules()[0], 'First molecule object is identical');
+	ok(m2===c.getMolecules()[1], 'Second molecule object is identical');
+});
+
+test('Check addShape', function(){
+	expect(3);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.shapes = [];
+	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));
+	c.addShape(s);
+	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
+	c.addShape(s2);
+	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
+	ok(s===c.getShapes()[0], 'First line is identical');
+	ok(s2===c.getShapes()[1], 'Second line is identical');
+});
+
+test('Check removeMolecule', function(){
+	expect(6);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m);
+	let m2 = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m2);
+	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
+	c.removeMolecule(m2);
+	equal(1, c.molecules.length, 'Array molecules contains one less molecule');
+	ok(m===c.getMolecules()[0], 'First molecule object is identical');
+	
+	c.clear();
+	c.addMolecule(m);
+	c.addMolecule(m2);
+	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
+	c.removeMolecule(m);
+	equal(1, c.molecules.length, 'Array molecules contains one less molecule');
+	ok(m2===c.getMolecules()[0], 'Second molecule object is identical');
+});
+
+test('Check removeShape', function(){
+	expect(6);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.shapes = [];
+	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));;
+	c.addShape(s);
+	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
+	c.addShape(s2);
+	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
+	c.removeShape(s2);
+	equal(1, c.shapes.length, 'Array shapes contains one less line');
+	ok(s===c.getShapes()[0], 'First shape object is identical');
+	
+	c.clear();
+	c.addShape(s);
+	c.addShape(s2);
+	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
+	c.removeShape(s);
+	equal(1, c.shapes.length, 'Array shapes contains one less line');
+	ok(s2===c.getShapes()[0], 'Second shape object is identical');
+});
+
+test('Check getMolecule if empty', function(){
+	expect(1);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.molecules = [];
+	c.styles = new ChemDoodle.structures.Styles();
+	equal(undefined, c.getMolecule(), 'undefined returned');
+});
+
+test('Check getMolecules', function(){
+	expect(3);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m);
+	let m2 = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m2);
+	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	equal(m2, c.getMolecules()[1], 'Check second molecule');
+});
+
+test('Check loadContent', function(){
+	expect(6);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	let m = new ChemDoodle.structures.Molecule();
+	let m2 = new ChemDoodle.structures.Molecule();
+	let mols = [m, m2];
+	let s = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(0, 0), new ChemDoodle.structures.Point(0, 10));;
+	let s2 = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(10, 0), new ChemDoodle.structures.Point(20, -5));
+	let shapes = [s, s2];
+	c.loadContent(mols, shapes);
+	equal(2, c.molecules.length, 'Array molecules contains loaded molecules');
+	ok(m===c.getMolecules()[0], 'First molecule object is identical');
+	ok(m2===c.getMolecules()[1], 'Second molecule object is identical');
+	equal(2, c.shapes.length, 'Array shapes contains loaded lines');
+	ok(s===c.getShapes()[0], 'First line is identical');
+	ok(s2===c.getShapes()[1], 'Second line is identical');
+});
+
+test('Check clear', function(){
+	expect(5);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.molecules = [];
+	c.shapes = [];
+	c.styles = new ChemDoodle.structures.Styles();
+	let m = new ChemDoodle.structures.Molecule();
+	c.addMolecule(m);
+	let s = new ChemDoodle.structures.d2.Line();
+	c.addShape(s);
+	c.styles.scale = .5;
+	equal(1, c.molecules.length, 'Check molecules length 1');
+	equal(1, c.shapes.length, 'Check shapes length 1');
+	c.clear();
+	equal(0, c.molecules.length, 'Check molecules empty');
+	equal(0, c.shapes.length, 'Check shapes empty');
+	equal(1, c.styles.scale, 'Check scale is reset');
+});
+
+test('Check bondExists', function(){
+	expect(5);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
+	c.addMolecule(m);
+	equal(1, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	ok(c.bondExists(m.atoms[0], m.atoms[1]), 'Check first bond exists');
+	ok(c.bondExists(m.atoms[1], m.atoms[2]), 'Check second bond exists');
+	ok(!c.bondExists(m.atoms[0], m.atoms[2]), 'Make sure false for bond between end atoms');
+});
+
+test('Check getBond', function(){
+	expect(5);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
+	c.addMolecule(m);
+	equal(1, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	equal(m.bonds[0], c.getBond(m.atoms[0], m.atoms[1]), 'Get first bond');
+	equal(m.bonds[1], c.getBond(m.atoms[1], m.atoms[2]), 'Get second bond');
+	equal(undefined, c.getBond(m.atoms[0], m.atoms[2]), 'Make sure undefined is returned for getBond between two end atoms');
+});
+
+test('Check getAllAtoms', function(){
+	expect(10);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
+	let m2 = new ChemDoodle.structures.Molecule();
+	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
+	c.addMolecule(m);
+	c.addMolecule(m2);
+	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	equal(m2, c.getMolecules()[1], 'Check second molecule');
+	equal(6, c.getAllAtoms().length, 'Check allAtoms length');
+	equal(m.atoms[0], c.getAllAtoms()[0], 'Check atom 0');
+	equal(m.atoms[1], c.getAllAtoms()[1], 'Check atom 1');
+	equal(m.atoms[2], c.getAllAtoms()[2], 'Check atom 2');
+	equal(m2.atoms[0], c.getAllAtoms()[3], 'Check atom 3');
+	equal(m2.atoms[1], c.getAllAtoms()[4], 'Check atom 4');
+	equal(m2.atoms[2], c.getAllAtoms()[5], 'Check atom 5');
+});
+
+test('Check getAllBonds', function(){
+	expect(8);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
+	let m2 = new ChemDoodle.structures.Molecule();
+	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
+	c.addMolecule(m);
+	c.addMolecule(m2);
+	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	equal(m2, c.getMolecules()[1], 'Check second molecule');
+	equal(4, c.getAllBonds().length, 'Check allBonds length');
+	equal(m.bonds[0], c.getAllBonds()[0], 'Check bond 0');
+	equal(m.bonds[1], c.getAllBonds()[1], 'Check bond 1');
+	equal(m2.bonds[0], c.getAllBonds()[2], 'Check bond 2');
+	equal(m2.bonds[1], c.getAllBonds()[3], 'Check bond 3');
+});
+
+test('Check getMoleculeByAtom', function(){
+	expect(9);
+	let c = new ChemDoodle._Canvas();
+	c.test = true;
+	c.styles = new ChemDoodle.structures.Styles();
+	c.molecules = [];
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m.bonds = [new ChemDoodle.structures.Bond(m.atoms[0], m.atoms[1]), new ChemDoodle.structures.Bond(m.atoms[1], m.atoms[2])];
+	let m2 = new ChemDoodle.structures.Molecule();
+	m2.atoms = [new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom()];
+	m2.bonds = [new ChemDoodle.structures.Bond(m2.atoms[0], m2.atoms[1]), new ChemDoodle.structures.Bond(m2.atoms[1], m2.atoms[2])];
+	c.addMolecule(m);
+	c.addMolecule(m2);
+	equal(2, c.getMolecules().length, 'Molecules array is the correct length');
+	equal(m, c.getMolecules()[0], 'Check first molecule');
+	equal(m2, c.getMolecules()[1], 'Check second molecule');
+	let returned = c.getMoleculeByAtom(m.atoms[0]);
+	equal(m, c.getMoleculeByAtom(m.atoms[0]), 'Check atom 0');
+	equal(m, c.getMoleculeByAtom(m.atoms[1]), 'Check atom 1');
+	equal(m, c.getMoleculeByAtom(m.atoms[2]), 'Check atom 2');
+	equal(m2, c.getMoleculeByAtom(m2.atoms[0]), 'Check atom 3');
+	equal(m2, c.getMoleculeByAtom(m2.atoms[1]), 'Check atom 4');
+	equal(m2, c.getMoleculeByAtom(m2.atoms[2]), 'Check atom 5');
+});
+module('SeekerCanvas');
+
+test('Check SeekerCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.SeekerCanvas, 'ChemDoodle.SeekerCanvas class exists');
+});
+
+test('Check SeekerCanvas class extends _SpectrumCanvas', function(){
+	expect(1);
+    ok(new ChemDoodle.SeekerCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.SeekerCanvas class extends _SpectrumCanvas');
+});
+module('OverlayCanvas');
+
+test('Check OverlayCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.OverlayCanvas, 'ChemDoodle.OverlayCanvas class exists');
+});
+
+test('Check OverlayCanvas class extends _SpectrumCanvas', function(){
+	expect(1);
+    ok(new ChemDoodle.OverlayCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.OverlayCanvas class extends _SpectrumCanvas');
+});
+module('PerspectiveCanvas');
+
+test('Check PerspectiveCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.PerspectiveCanvas, 'ChemDoodle.PerspectiveCanvas class exists');
+});
+
+test('Check PerspectiveCanvas class extends _SpectrumCanvas', function(){
+	expect(1);
+    ok(new ChemDoodle.PerspectiveCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.PerspectiveCanvas class extends _SpectrumCanvas');
+});
+module('ObserverCanvas');
+
+test('Check ObserverCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle.ObserverCanvas, 'ChemDoodle.ObserverCanvas class exists');
+});
+
+test('Check ObserverCanvas class extends _SpectrumCanvas', function(){
+	expect(1);
+    ok(new ChemDoodle.ObserverCanvas() instanceof ChemDoodle._SpectrumCanvas, 'ChemDoodle.ObserverCanvas class extends _SpectrumCanvas');
+});
+module('SpectrumCanvas');
+
+test('Check SpectrumCanvas class exists', function(){
+	expect(1);
+    ok(ChemDoodle._SpectrumCanvas, 'ChemDoodle._SpectrumCanvas class exists');
+});
+
+test('Check SpectrumCanvas class extends _Canvas', function(){
+	expect(1);
+    ok(new ChemDoodle._SpectrumCanvas() instanceof ChemDoodle._Canvas, 'ChemDoodle._SpectrumCanvas class extends _Canvas');
+});
+module('ElementalData');
+
+test('Check ELEMENT array exists', function() {
+	expect(1);
+	ok(ChemDoodle.ELEMENT, 'ChemDoodle.ELEMENT array exists');
+});
+
+test('Check SYMBOLS array exists', function() {
+	expect(1);
+	ok(ChemDoodle.SYMBOLS, 'ChemDoodle.SYMBOLS array exists');
+});
+
+test('Check there are 118 element symbols', function(){
+	expect(1);
+    equal(118, ChemDoodle.SYMBOLS.length, 'Check SYMBOLS length');
+});
+
+test('Check each symbol is in the ChemDoodle.ELEMENT array', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]], 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has a covalent radius', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].covalentRadius!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has a van der Waals radius', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].vdWRadius!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has a JMol color', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].jmolColor, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has a PyMOL color', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].pymolColor, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element is present in the SYMBOLS array', function(){
+	expect(118);
+	for(let e in ChemDoodle.ELEMENT){
+		ok(ChemDoodle.SYMBOLS.indexOf(e)!==-1, 'Check STMBOLS for ELEMENT value: '+e);
+	}
+});
+
+test('Check each element has a symbol and it is the same as its hash', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		equal(ChemDoodle.SYMBOLS[i], ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].symbol, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has a name', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].name, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has an atomic number', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].atomicNumber, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has an valency', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].valency!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+
+test('Check each element has an mass', function(){
+	expect(118);
+	for(let i = 0; i<ChemDoodle.SYMBOLS.length; i++){
+		ok(ChemDoodle.ELEMENT[ChemDoodle.SYMBOLS[i]].mass!==undefined, 'Check '+ChemDoodle.SYMBOLS[i]);
+	}
+});
+module('ResidueData');
+
+test('Check RESIDUE array exists', function() {
+	expect(1);
+	ok(ChemDoodle.ELEMENT, 'ChemDoodle.RESIDUE array exists');
+});
+
+test('Check there are 29 residues', function(){
+	expect(1);
+	let count = 0;
+	for(name in ChemDoodle.RESIDUE){
+		count++;
+	}
+    equal(29, count, 'Check RESIDUE length');
+});
+
+test('Check wildcard exists', function(){
+	expect(1);
+	ok(ChemDoodle.RESIDUE['*'], 'Wildcard found');
+});
+
+test('Check each residue has a symbol', function(){
+	expect(29);
+	for(name in ChemDoodle.RESIDUE){
+		ok(ChemDoodle.RESIDUE[name].symbol, 'Check '+name);
+	}
+});
+
+test('Check each amino acid has a polarity', function(){
+	expect(22);
+	for(name in ChemDoodle.RESIDUE){
+		if(name.length===3){
+			ok(ChemDoodle.RESIDUE[name].polar!==undefined, 'Check '+name);
+		}
+	}
+});
+
+test('Check each residue has an amino color', function(){
+	expect(29);
+	for(name in ChemDoodle.RESIDUE){
+		ok(ChemDoodle.RESIDUE[name].aminoColor, 'Check '+name);
+	}
+});
+
+test('Check each residue has a shapely color', function(){
+	expect(29);
+	for(name in ChemDoodle.RESIDUE){
+		ok(ChemDoodle.RESIDUE[name].shapelyColor, 'Check '+name);
+	}
+});
+module('ChemDoodle');
+
+test('Check global ChemDoodle variable initialized', function(){
+	expect(1);
+	ok(ChemDoodle, 'ChemDoodle is initialized');
+});
+
+test('Check structures package initialized', function(){
+	expect(1);
+	ok(ChemDoodle.structures, 'ChemDoodle.structures is initialized');
+});
+
+test('Check iChemLabs package initialized', function(){
+	expect(1);
+	ok(ChemDoodle.iChemLabs, 'ChemDoodle.iChemLabs is initialized');
+});
+
+test('Check informatics package initialized', function(){
+	expect(1);
+	ok(ChemDoodle.informatics, 'ChemDoodle.informatics is initialized');
+});
+
+test('Check io package initialized', function(){
+	expect(1);
+	ok(ChemDoodle.io, 'ChemDoodle.io is initialized');
+});
+
+test('Check version number', function(){
+	expect(6);
+	ok(ChemDoodle.getVersion, 'ChemDoodle.getVersion is initialized');
+    equal(-1, ChemDoodle.getVersion().indexOf('VERSION'), 'Check version is set');
+    let nums = ChemDoodle.getVersion().split('.');
+    ok(nums.length===3, 'Check version is a correct 3 numbered string');
+    for(let i = 0; i<nums.length; i++){
+    	ok(!isNaN(nums[i]), 'Check that each component is a number');
+    }
+});
+module('Extensions');
+
+test('Check extensions package exists', function() {
+	expect(1);
+	ok(ChemDoodle.extensions, 'ChemDoodle.extensions package exists');
+});
+
+test('Check vec3AngleFrom', function() {
+	expect(1);
+	equal(Math.PI/2, ChemDoodle.extensions.vec3AngleFrom([1,0,0], [0,1,0]), 'Correctly calculated angle between axes');
+});
+
+test('Check getFontString function', function() {
+	expect(1);
+	equal('12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times']), 'Checking default function output');
+});
+
+test('Check getFontString function with multiword font family', function() {
+	expect(1);
+	equal('12px "Times New Roman",Times', ChemDoodle.extensions.getFontString(12, ['Times New Roman', 'Times']), 'Checking function output with quotes');
+});
+
+test('Check getFontString function with bold', function() {
+	expect(1);
+	equal('bold 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], true), 'Checking default function output with bold');
+});
+
+test('Check getFontString function with italic', function() {
+	expect(1);
+	equal('italic 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], false, true), 'Checking default function output with italic');
+});
+
+test('Check getFontString function with both bold and italic', function() {
+	expect(1);
+	equal('bold italic 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], true, true), 'Checking default function output with both bold and italic');
+});
 module('Extensions');
 
 test('Check stringStarsWith success', function() {
@@ -3128,1669 +3533,768 @@ test('Check supports gesture events', function(){
 	ok(ChemDoodle.featureDetection.supports_gesture, 'gesture events function exists');
 });
 
-module('Extensions');
+module('Styles');
 
-test('Check extensions package exists', function() {
+test('Check Styles class exists', function() {
 	expect(1);
-	ok(ChemDoodle.extensions, 'ChemDoodle.extensions package exists');
+	ok(ChemDoodle.structures.Styles, 'ChemDoodle.structures.Styles class exists');
 });
 
-test('Check vec3AngleFrom', function() {
-	expect(1);
-	equal(Math.PI/2, ChemDoodle.extensions.vec3AngleFrom([1,0,0], [0,1,0]), 'Correctly calculated angle between axes');
+test('Check modification doesn\'t affect previous instances', function() {
+	expect(6);
+	let save = ChemDoodle.DEFAULT_STYLES.lightDirection_3D;
+	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = [2];
+	let styles = new ChemDoodle.structures.Styles();
+	ok(1, styles.lightDirection_3D.length, 'Length is correct');
+	ok(2, styles.lightDirection_3D[0], 'Value is correct');
+	ChemDoodle.DEFAULT_STYLES.lightDirection_3D[0] = [-3];
+	ok(1, styles.lightDirection_3D.length, 'Length is correct');
+	ok(2, styles.lightDirection_3D[0], 'Value is correct');
+	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = [1,2,3,4];
+	ok(1, styles.lightDirection_3D.length, 'Length is correct');
+	ok(2, styles.lightDirection_3D[0], 'Value is correct');
+	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = save;
 });
 
-test('Check getFontString function', function() {
-	expect(1);
-	equal('12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times']), 'Checking default function output');
+test('Check creation creates copies of objects', function() {
+	let styles = new ChemDoodle.structures.Styles();
+	expect(4);
+	ok(styles.lightDirection_3D !== ChemDoodle.DEFAULT_STYLES.lightDirection_3D, 'Check lightDirection_3D is a copy');
+	ok(styles.atoms_font_families_2D !== ChemDoodle.DEFAULT_STYLES.atoms_font_families_2D, 'Check atoms_font_families_2D is a copy');
+	ok(styles.macro_rainbowColors !== ChemDoodle.DEFAULT_STYLES.macro_rainbowColors, 'Check macro_rainbowColors is a copy');
+	ok(styles.text_font_families !== ChemDoodle.DEFAULT_STYLES.text_font_families, 'Check text_font_families is a copy');
 });
 
-test('Check getFontString function with multiword font family', function() {
-	expect(1);
-	equal('12px "Times New Roman",Times', ChemDoodle.extensions.getFontString(12, ['Times New Roman', 'Times']), 'Checking function output with quotes');
+test('Check copy creates copies of objects', function() {
+	let styles1 = new ChemDoodle.structures.Styles();
+	styles1.colorHover = 'orange';
+	let styles2 = styles1.copy();
+	expect(8);
+	ok(styles1.lightDirection_3D !== styles2.lightDirection_3D, 'Check lightDirection_3D is a copy');
+	ok(styles1.atoms_font_families_2D !== styles2.atoms_font_families_2D, 'Check atoms_font_families_2D is a copy');
+	ok(styles1.macro_rainbowColors !== styles2.macro_rainbowColors, 'Check macro_rainbowColors is a copy');
+	ok(styles1.text_font_families !== styles2.text_font_families, 'Check text_font_families is a copy');
+	equal('orange', styles2.colorHover, 'Check colorHover is copied');
+	// change a spec
+	styles2.colorSelect = 'gold';
+	equal('#0060B2', styles1.colorSelect, 'Check colorSelect is default');
+	// reverse
+	styles1.colorError = 'black';
+	equal('#c10000', styles2.colorError, 'Check colorError is default');
+	// check function is still a function
+	ok(styles2.set3DRepresentation instanceof Function);
 });
 
-test('Check getFontString function with bold', function() {
-	expect(1);
-	equal('bold 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], true), 'Checking default function output with bold');
+test('Check set3DRepresentation with Wireframe works on copy', function() {
+	expect(4);
+	let styles = new ChemDoodle.structures.Styles().copy();
+	styles.set3DRepresentation('Wireframe');
+	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use VDWDiameters for atoms');
+	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
+	equal(.15, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
+	equal(ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, styles.bonds_materialAmbientColor_3D, 'Check bond material ambient is the same as the default atom material ambient color');
 });
 
-test('Check getFontString function with italic', function() {
-	expect(1);
-	equal('italic 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], false, true), 'Checking default function output with italic');
+test('Check creation absorbs defaults', function() {
+	let styles = new ChemDoodle.structures.Styles();
+	expect(181);
+	// canvas properties
+	equal(styles.backgroundColor, ChemDoodle.DEFAULT_STYLES.backgroundColor, 'Check backgroundColor');
+	equal(styles.scale, ChemDoodle.DEFAULT_STYLES.scale, 'Check scale');
+	equal(styles.rotateAngle, ChemDoodle.DEFAULT_STYLES.rotateAngle, 'Check rotateAngle');
+	equal(styles.bondLength_2D, ChemDoodle.DEFAULT_STYLES.bondLength_2D, 'Check bondLength_2D');
+	equal(styles.angstromsPerBondLength, ChemDoodle.DEFAULT_STYLES.angstromsPerBondLength, 'Check angstromsPerBondLength');
+	deepEqual(styles.lightDirection_3D, ChemDoodle.DEFAULT_STYLES.lightDirection_3D, 'Check lightDirection_3D');
+	equal(styles.lightDiffuseColor_3D, ChemDoodle.DEFAULT_STYLES.lightDiffuseColor_3D, 'Check lightDiffuseColor_3D');
+	equal(styles.lightSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.lightSpecularColor_3D, 'Check lightSpecularColor_3D');
+	equal(styles.projectionPerspective_3D, ChemDoodle.DEFAULT_STYLES.projectionPerspective_3D, 'Check projectionPerspective_3D');
+	equal(styles.projectionPerspectiveVerticalFieldOfView_3D, ChemDoodle.DEFAULT_STYLES.projectionPerspectiveVerticalFieldOfView_3D, 'Check projectionPerspectiveVerticalFieldOfView_3D');
+	equal(styles.projectionOrthoWidth_3D, ChemDoodle.DEFAULT_STYLES.projectionOrthoWidth_3D, 'Check projectionOrthoWidth_3D');
+	equal(styles.projectionWidthHeightRatio_3D, ChemDoodle.DEFAULT_STYLES.projectionWidthHeightRatio_3D, 'Check projectionWidthHeightRatio_3D');
+	equal(styles.projectionFrontCulling_3D, ChemDoodle.DEFAULT_STYLES.projectionFrontCulling_3D, 'Check projectionFrontCulling_3D');
+	equal(styles.projectionBackCulling_3D, ChemDoodle.DEFAULT_STYLES.projectionBackCulling_3D, 'Check projectionBackCulling_3D');
+	equal(styles.backFaceCulling_3D, ChemDoodle.DEFAULT_STYLES.backFaceCulling_3D, 'Check backFaceCulling_3D');
+	equal(styles.fog_mode_3D, ChemDoodle.DEFAULT_STYLES.fog_mode_3D, 'Check fog_mode_3D');
+	equal(styles.fog_color_3D, ChemDoodle.DEFAULT_STYLES.fog_color_3D, 'Check fog_color_3D');
+	equal(styles.fog_start_3D, ChemDoodle.DEFAULT_STYLES.fog_start_3D, 'Check fog_start_3D');
+	equal(styles.fog_end_3D, ChemDoodle.DEFAULT_STYLES.fog_end_3D, 'Check fog_end_3D');
+	equal(styles.fog_density_3D, ChemDoodle.DEFAULT_STYLES.fog_density_3D, 'Check fog_density_3D');
+	equal(styles.shadow_3D, ChemDoodle.DEFAULT_STYLES.shadow_3D, 'Check shadow_3D');
+	equal(styles.shadow_intensity_3D, ChemDoodle.DEFAULT_STYLES.shadow_intensity_3D, 'Check shadow_intensity_3D');
+	equal(styles.flat_color_3D, ChemDoodle.DEFAULT_STYLES.flat_color_3D, 'Check flat_color_3D');
+	equal(styles.antialias_3D, ChemDoodle.DEFAULT_STYLES.antialias_3D, 'Check antialias_3D');
+	equal(styles.gammaCorrection_3D, ChemDoodle.DEFAULT_STYLES.gammaCorrection_3D, 'Check gammaCorrection_3D');
+	equal(styles.colorHover, ChemDoodle.DEFAULT_STYLES.colorHover, 'Check colorHover');
+	equal(styles.colorSelect, ChemDoodle.DEFAULT_STYLES.colorSelect, 'Check colorSelect');
+	equal(styles.colorError, ChemDoodle.DEFAULT_STYLES.colorError, 'Check colorError');
+	equal(styles.colorPreview, ChemDoodle.DEFAULT_STYLES.colorPreview, 'Check colorPreview');
+	
+	// 3D shaders
+	equal(styles.ssao_3D, ChemDoodle.DEFAULT_STYLES.ssao_3D, 'Check ssao_3D');
+	equal(styles.ssao_kernel_radius, ChemDoodle.DEFAULT_STYLES.ssao_kernel_radius, 'Check ssao_kernel_radius');
+	equal(styles.ssao_kernel_samples, ChemDoodle.DEFAULT_STYLES.ssao_kernel_samples, 'Check ssao_kernel_samples');
+	equal(styles.ssao_power, ChemDoodle.DEFAULT_STYLES.ssao_power, 'Check ssao_power');
+	equal(styles.outline_3D, ChemDoodle.DEFAULT_STYLES.outline_3D, 'Check outline_3D');
+	equal(styles.outline_normal_threshold, ChemDoodle.DEFAULT_STYLES.outline_normal_threshold, 'Check outline_normal_threshold');
+	equal(styles.outline_depth_threshold, ChemDoodle.DEFAULT_STYLES.outline_depth_threshold, 'Check outline_depth_threshold');
+	equal(styles.outline_thickness, ChemDoodle.DEFAULT_STYLES.outline_thickness, 'Check outline_thickness');
+	equal(styles.fxaa_edgeThreshold, ChemDoodle.DEFAULT_STYLES.fxaa_edgeThreshold, 'Check fxaa_edgeThreshold');
+	equal(styles.fxaa_edgeThresholdMin, ChemDoodle.DEFAULT_STYLES.fxaa_edgeThresholdMin, 'Check fxaa_edgeThresholdMin');
+	equal(styles.fxaa_searchSteps, ChemDoodle.DEFAULT_STYLES.fxaa_searchSteps, 'Check fxaa_searchSteps');
+	equal(styles.fxaa_searchThreshold, ChemDoodle.DEFAULT_STYLES.fxaa_searchThreshold, 'Check fxaa_searchThreshold');
+	equal(styles.fxaa_subpixCap, ChemDoodle.DEFAULT_STYLES.fxaa_subpixCap, 'Check fxaa_subpixCap');
+	equal(styles.fxaa_subpixTrim, ChemDoodle.DEFAULT_STYLES.fxaa_subpixTrim, 'Check fxaa_subpixTrim');
+
+	// atom properties
+	equal(styles.atoms_display, ChemDoodle.DEFAULT_STYLES.atoms_display, 'Check atoms_display');
+	equal(styles.atoms_color, ChemDoodle.DEFAULT_STYLES.atoms_color, 'Check atoms_color');
+	equal(styles.atoms_font_size_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_size_2D, 'Check atoms_font_size_2D');
+	deepEqual(styles.atoms_font_families_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_families_2D, 'Check atoms_font_families_2D');
+	equal(styles.atoms_font_bold_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_bold_2D, 'Check atoms_font_bold_2D');
+	equal(styles.atoms_font_italic_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_italic_2D, 'Check atoms_font_italic_2D');
+	equal(styles.atoms_circles_2D, ChemDoodle.DEFAULT_STYLES.atoms_circles_2D, 'Check atoms_circles_2D');
+	equal(styles.atoms_circleDiameter_2D, ChemDoodle.DEFAULT_STYLES.atoms_circleDiameter_2D, 'Check atoms_circleDiameter_2D');
+	equal(styles.atoms_circleBorderWidth_2D, ChemDoodle.DEFAULT_STYLES.atoms_circleBorderWidth_2D, 'Check atoms_circleBorderWidth_2D');
+	equal(styles.atoms_lonePairDistance_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairDistance_2D, 'Check atoms_lonePairDistance_2D');
+	equal(styles.atoms_lonePairSpread_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairSpread_2D, 'Check atoms_lonePairSpread_2D');
+	equal(styles.atoms_lonePairDiameter_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairDiameter_2D, 'Check atoms_lonePairDiameter_2D');
+	equal(styles.atoms_useJMOLColors, ChemDoodle.DEFAULT_STYLES.atoms_useJMOLColors, 'Check atoms_useJMOLColors');
+	equal(styles.atoms_usePYMOLColors, ChemDoodle.DEFAULT_STYLES.atoms_usePYMOLColors, 'Check atoms_usePYMOLColors');
+	equal(styles.atoms_resolution_3D, ChemDoodle.DEFAULT_STYLES.atoms_resolution_3D, 'Check atoms_resolution_3D');
+	equal(styles.atoms_sphereDiameter_3D, ChemDoodle.DEFAULT_STYLES.atoms_sphereDiameter_3D, 'Check atoms_sphereDiameter_3D');
+	equal(styles.atoms_useVDWDiameters_3D, ChemDoodle.DEFAULT_STYLES.atoms_useVDWDiameters_3D, 'Check atoms_useVDWDiameters_3D');
+	equal(styles.atoms_vdwMultiplier_3D, ChemDoodle.DEFAULT_STYLES.atoms_vdwMultiplier_3D, 'Check atoms_vdwMultiplier_3D');
+	equal(styles.atoms_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, 'Check atoms_materialAmbientColor_3D');
+	equal(styles.atoms_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialSpecularColor_3D, 'Check atoms_materialSpecularColor_3D');
+	equal(styles.atoms_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialShininess_3D, 'Check atoms_materialShininess_3D');
+	equal(styles.atoms_implicitHydrogens_2D, ChemDoodle.DEFAULT_STYLES.atoms_implicitHydrogens_2D, 'Check atoms_implicitHydrogens_2D');
+	equal(styles.atoms_displayTerminalCarbonLabels_2D, ChemDoodle.DEFAULT_STYLES.atoms_displayTerminalCarbonLabels_2D, 'Check atoms_displayTerminalCarbonLabels_2D');
+	equal(styles.atoms_showHiddenCarbons_2D, ChemDoodle.DEFAULT_STYLES.atoms_showHiddenCarbons_2D, 'Check atoms_showHiddenCarbons_2D');
+	equal(styles.atoms_showAttributedCarbons_2D, ChemDoodle.DEFAULT_STYLES.atoms_showAttributedCarbons_2D, 'Check atoms_showAttributedCarbons_2D');
+	equal(styles.atoms_displayAllCarbonLabels_2D, ChemDoodle.DEFAULT_STYLES.atoms_displayAllCarbonLabels_2D, 'Check atoms_displayAllCarbonLabels_2D');
+	equal(styles.atoms_nonBondedAsStars_3D, ChemDoodle.DEFAULT_STYLES.atoms_nonBondedAsStars_3D, 'Check atoms_nonBondedAsStars_3D');
+	equal(styles.atoms_displayLabels_3D, ChemDoodle.DEFAULT_STYLES.atoms_displayLabels_3D, 'Check atoms_displayLabels_3D');
+	equal(styles.atoms_HBlack_2D, ChemDoodle.DEFAULT_STYLES.atoms_HBlack_2D, 'Check atoms_HBlack_2D');
+
+	// bond properties
+	equal(styles.bonds_display, ChemDoodle.DEFAULT_STYLES.bonds_display, 'Check bonds_display');
+	equal(styles.bonds_color, ChemDoodle.DEFAULT_STYLES.bonds_color, 'Check bonds_color');
+	equal(styles.bonds_width_2D, ChemDoodle.DEFAULT_STYLES.bonds_width_2D, 'Check bonds_width_2D');
+	equal(styles.bonds_useAbsoluteSaturationWidths_2D, ChemDoodle.DEFAULT_STYLES.bonds_useAbsoluteSaturationWidths_2D, 'Check bonds_useAbsoluteSaturationWidths_2D');
+	equal(styles.bonds_saturationWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationWidth_2D, 'Check bonds_saturationWidth_2D');
+	equal(styles.bonds_saturationWidthAbs_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationWidthAbs_2D, 'Check bonds_saturationWidthAbs_2D');
+	equal(styles.bonds_ends_2D, ChemDoodle.DEFAULT_STYLES.bonds_ends_2D, 'Check bonds_ends_2D');
+	equal(styles.bonds_splitColor, ChemDoodle.DEFAULT_STYLES.bonds_splitColor, 'Check bonds_splitColor');
+	equal(styles.bonds_colorGradient, ChemDoodle.DEFAULT_STYLES.bonds_colorGradient, 'Check bonds_colorGradient');
+	equal(styles.bonds_saturationAngle_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationAngle_2D, 'Check bonds_saturationAngle_2D');
+	equal(styles.bonds_symmetrical_2D, ChemDoodle.DEFAULT_STYLES.bonds_symmetrical_2D, 'Check bonds_symmetrical_2D');
+	equal(styles.bonds_clearOverlaps_2D, ChemDoodle.DEFAULT_STYLES.bonds_clearOverlaps_2D, 'Check bonds_clearOverlaps_2D');
+	equal(styles.bonds_overlapClearWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_overlapClearWidth_2D, 'Check bonds_overlapClearWidth_2D');
+	equal(styles.bonds_atomLabelBuffer_2D, ChemDoodle.DEFAULT_STYLES.bonds_atomLabelBuffer_2D, 'Check bonds_atomLabelBuffer_2D');
+	equal(styles.bonds_wedgeThickness_2D, ChemDoodle.DEFAULT_STYLES.bonds_wedgeThickness_2D, 'Check bonds_wedgeThickness_2D');
+	equal(styles.bonds_wavyLength_2D, ChemDoodle.DEFAULT_STYLES.bonds_wavyLength_2D, 'Check bonds_wavyLength_2D');
+	equal(styles.bonds_hashWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_hashWidth_2D, 'Check bonds_hashWidth_2D');
+	equal(styles.bonds_hashSpacing_2D, ChemDoodle.DEFAULT_STYLES.bonds_hashSpacing_2D, 'Check bonds_hashSpacing_2D');
+	equal(styles.bonds_dotSize_2D, ChemDoodle.DEFAULT_STYLES.bonds_dotSize_2D, 'Check bonds_dotSize_2D');
+	equal(styles.bonds_lewisStyle_2D, ChemDoodle.DEFAULT_STYLES.bonds_lewisStyle_2D, 'Check bonds_lewisStyle_2D');
+	equal(styles.bonds_showBondOrders_3D, ChemDoodle.DEFAULT_STYLES.bonds_showBondOrders_3D, 'Check bonds_showBondOrders_3D');
+	equal(styles.bonds_resolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_resolution_3D, 'Check bonds_resolution_3D');
+	equal(styles.bonds_renderAsLines_3D, ChemDoodle.DEFAULT_STYLES.bonds_renderAsLines_3D, 'Check bonds_renderAsLines_3D');
+	equal(styles.bonds_cylinderDiameter_3D, ChemDoodle.DEFAULT_STYLES.bonds_cylinderDiameter_3D, 'Check bonds_cylinderDiameter_3D');
+	equal(styles.bonds_pillHeight_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillHeight_3D, 'Check bonds_pillHeight_3D');
+	equal(styles.bonds_pillLatitudeResolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillLatitudeResolution_3D, 'Check bonds_pillLatitudeResolution_3D');
+	equal(styles.bonds_pillLongitudeResolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillLongitudeResolution_3D, 'Check bonds_pillLongitudeResolution_3D');
+	equal(styles.bonds_pillSpacing_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillSpacing_3D, 'Check bonds_pillSpacing_3D');
+	equal(styles.bonds_pillDiameter_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillDiameter_3D, 'Check bonds_pillDiameter_3D');
+	equal(styles.bonds_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialAmbientColor_3D, 'Check bonds_materialAmbientColor_3D');
+	equal(styles.bonds_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialSpecularColor_3D, 'Check bonds_materialSpecularColor_3D');
+	equal(styles.bonds_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialShininess_3D, 'Check bonds_materialShininess_3D');
+	
+	// macromolecular properties
+	equal(styles.proteins_displayRibbon, ChemDoodle.DEFAULT_STYLES.proteins_displayRibbon, 'Check proteins_displayRibbon');
+	equal(styles.proteins_displayBackbone, ChemDoodle.DEFAULT_STYLES.proteins_displayBackbone, 'Check proteins_displayBackbone');
+	equal(styles.proteins_backboneThickness, ChemDoodle.DEFAULT_STYLES.proteins_backboneThickness, 'Check proteins_backboneThickness');
+	equal(styles.proteins_backboneColor, ChemDoodle.DEFAULT_STYLES.proteins_backboneColor, 'Check proteins_backboneColor');
+	equal(styles.proteins_ribbonCartoonize, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonize, 'Check proteins_ribbonCartoonize');
+	equal(styles.proteins_residueColor, ChemDoodle.DEFAULT_STYLES.proteins_residueColor, 'Check proteins_residueColor');
+	equal(styles.proteins_primaryColor, ChemDoodle.DEFAULT_STYLES.proteins_primaryColor, 'Check proteins_primaryColor');
+	equal(styles.proteins_secondaryColor, ChemDoodle.DEFAULT_STYLES.proteins_secondaryColor, 'Check proteins_secondaryColor');
+	equal(styles.proteins_ribbonCartoonHelixPrimaryColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonHelixPrimaryColor, 'Check proteins_ribbonCartoonHelixPrimaryColor');
+	equal(styles.proteins_ribbonCartoonHelixSecondaryColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonHelixSecondaryColor, 'Check proteins_ribbonCartoonHelixSecondaryColor');
+	equal(styles.proteins_tubeColor, ChemDoodle.DEFAULT_STYLES.proteins_tubeColor, 'Check proteins_tubeColor');
+	equal(styles.proteins_tubeResolution_3D, ChemDoodle.DEFAULT_STYLES.proteins_tubeResolution_3D, 'Check proteins_tubeResolution_3D');
+	equal(styles.proteins_displayPipePlank, ChemDoodle.DEFAULT_STYLES.proteins_displayPipePlank, 'Check proteins_displayPipePlank');
+	equal(styles.proteins_ribbonThickness, ChemDoodle.DEFAULT_STYLES.proteins_ribbonThickness, 'Check proteins_ribbonThickness');
+	equal(styles.proteins_ribbonCartoonSheetColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonSheetColor, 'Check proteins_ribbonCartoonSheetColor');
+	equal(styles.proteins_tubeThickness, ChemDoodle.DEFAULT_STYLES.proteins_tubeThickness, 'Check proteins_tubeThickness');
+	equal(styles.proteins_plankSheetWidth, ChemDoodle.DEFAULT_STYLES.proteins_plankSheetWidth, 'Check proteins_plankSheetWidth');
+	equal(styles.proteins_cylinderHelixDiameter, ChemDoodle.DEFAULT_STYLES.proteins_cylinderHelixDiameter, 'Check proteins_cylinderHelixDiameter');
+	equal(styles.proteins_verticalResolution, ChemDoodle.DEFAULT_STYLES.proteins_verticalResolution, 'Check proteins_verticalResolution');
+	equal(styles.proteins_horizontalResolution, ChemDoodle.DEFAULT_STYLES.proteins_horizontalResolution, 'Check proteins_horizontalResolution');
+	equal(styles.proteins_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialAmbientColor_3D, 'Check proteins_materialAmbientColor_3D');
+	equal(styles.proteins_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialSpecularColor_3D, 'Check proteins_materialSpecularColor_3D');
+	equal(styles.proteins_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialShininess_3D, 'Check proteins_materialShininess_3D');
+	equal(styles.macro_displayAtoms, ChemDoodle.DEFAULT_STYLES.macro_displayAtoms, 'Check macro_displayAtoms');
+	equal(styles.macro_displayBonds, ChemDoodle.DEFAULT_STYLES.macro_displayBonds, 'Check macro_displayBonds');
+	equal(styles.macro_atomToLigandDistance, ChemDoodle.DEFAULT_STYLES.macro_atomToLigandDistance, 'Check macro_atomToLigandDistance');
+	equal(styles.nucleics_display, ChemDoodle.DEFAULT_STYLES.nucleics_display, 'Check nucleics_display');
+	equal(styles.nucleics_tubeColor, ChemDoodle.DEFAULT_STYLES.nucleics_tubeColor, 'Check nucleics_tubeColor');
+	equal(styles.nucleics_baseColor, ChemDoodle.DEFAULT_STYLES.nucleics_baseColor, 'Check nucleics_baseColor');
+	equal(styles.nucleics_residueColor, ChemDoodle.DEFAULT_STYLES.nucleics_residueColor, 'Check nucleics_residueColor');
+	equal(styles.nucleics_tubeThickness, ChemDoodle.DEFAULT_STYLES.nucleics_tubeThickness, 'Check nucleics_tubeThickness');
+	equal(styles.nucleics_tubeResolution_3D, ChemDoodle.DEFAULT_STYLES.nucleics_tubeResolution_3D, 'Check nucleics_tubeResolution_3D');
+	equal(styles.nucleics_verticalResolution, ChemDoodle.DEFAULT_STYLES.nucleics_verticalResolution, 'Check nucleics_verticalResolution');
+	equal(styles.nucleics_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialAmbientColor_3D, 'Check nucleics_materialAmbientColor_3D');
+	equal(styles.nucleics_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialSpecularColor_3D, 'Check nucleics_materialSpecularColor_3D');
+	equal(styles.nucleics_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialShininess_3D, 'Check nucleics_materialShininess_3D');
+	equal(styles.macro_showWater, ChemDoodle.DEFAULT_STYLES.macro_showWater, 'Check macro_showWater');
+	equal(styles.macro_colorByChain, ChemDoodle.DEFAULT_STYLES.macro_colorByChain, 'Check macro_colorByChain');
+	deepEqual(styles.macro_rainbowColors, ChemDoodle.DEFAULT_STYLES.macro_rainbowColors, 'Check macro_rainbowColors');
+	
+	// surface properties
+	equal(styles.surfaces_display, ChemDoodle.DEFAULT_STYLES.surfaces_display, 'Check surfaces_display');
+	equal(styles.surfaces_alpha, ChemDoodle.DEFAULT_STYLES.surfaces_alpha, 'Check surfaces_alpha');
+	equal(styles.surfaces_style, ChemDoodle.DEFAULT_STYLES.surfaces_style, 'Check surfaces_style');
+	equal(styles.surfaces_color, ChemDoodle.DEFAULT_STYLES.surfaces_color, 'Check surfaces_color');
+	equal(styles.surfaces_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialAmbientColor_3D, 'Check surfaces_materialAmbientColor_3D');
+	equal(styles.surfaces_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialSpecularColor_3D, 'Check surfaces_materialSpecularColor_3D');
+	equal(styles.surfaces_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialShininess_3D, 'Check surfaces_materialShininess_3D');
+	
+	// spectrum properties
+	equal(styles.plots_color, ChemDoodle.DEFAULT_STYLES.plots_color, 'Check plots_color');
+	equal(styles.plots_width, ChemDoodle.DEFAULT_STYLES.plots_width, 'Check plots_width');
+	equal(styles.plots_showIntegration, ChemDoodle.DEFAULT_STYLES.plots_showIntegration, 'Check plots_showIntegration');
+	equal(styles.plots_integrationColor, ChemDoodle.DEFAULT_STYLES.plots_integrationColor, 'Check plots_integrationColor');
+	equal(styles.plots_integrationLineWidth, ChemDoodle.DEFAULT_STYLES.plots_integrationLineWidth, 'Check plots_integrationLineWidth');
+	equal(styles.plots_showGrid, ChemDoodle.DEFAULT_STYLES.plots_showGrid, 'Check plots_showGrid');
+	equal(styles.plots_gridColor, ChemDoodle.DEFAULT_STYLES.plots_gridColor, 'Check plots_gridColor');
+	equal(styles.plots_gridLineWidth, ChemDoodle.DEFAULT_STYLES.plots_gridLineWidth, 'Check plots_gridLineWidth');
+	equal(styles.plots_showYAxis, ChemDoodle.DEFAULT_STYLES.plots_showYAxis, 'Check plots_showYAxis');
+	equal(styles.plots_flipXAxis, ChemDoodle.DEFAULT_STYLES.plots_flipXAxis, 'Check plots_flipXAxis');
+	
+	// shape properties
+	equal(styles.text_font_size, ChemDoodle.DEFAULT_STYLES.text_font_size, 'Check text_font_size');
+	deepEqual(styles.text_font_families, ChemDoodle.DEFAULT_STYLES.text_font_families, 'Check text_font_families');
+	equal(styles.text_font_bold, ChemDoodle.DEFAULT_STYLES.text_font_bold, 'Check text_font_bold');
+	equal(styles.text_font_italic, ChemDoodle.DEFAULT_STYLES.text_font_italic, 'Check text_font_italic');
+	equal(styles.text_font_stroke_3D, ChemDoodle.DEFAULT_STYLES.text_font_stroke_3D, 'Check text_font_stroke_3D');
+	equal(styles.text_color, ChemDoodle.DEFAULT_STYLES.text_color, 'Check text_color');
+	equal(styles.shapes_color, ChemDoodle.DEFAULT_STYLES.shapes_color, 'Check shapes_color');
+	equal(styles.shapes_lineWidth, ChemDoodle.DEFAULT_STYLES.shapes_lineWidth, 'Check shapes_lineWidth');
+	equal(styles.shapes_pointSize, ChemDoodle.DEFAULT_STYLES.shapes_pointSize, 'Check shapes_pointSize');
+	equal(styles.shapes_arrowLength_2D, ChemDoodle.DEFAULT_STYLES.shapes_arrowLength_2D, 'Check shapes_arrowLength_2D');
+	equal(styles.compass_display, ChemDoodle.DEFAULT_STYLES.compass_display, 'Check compass_display');
+	equal(styles.compass_axisXColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisXColor_3D, 'Check compass_axisXColor_3D');
+	equal(styles.compass_axisYColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisYColor_3D, 'Check compass_axisYColor_3D');
+	equal(styles.compass_axisZColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisZColor_3D, 'Check compass_axisZColor_3D');
+	equal(styles.compass_size_3D, ChemDoodle.DEFAULT_STYLES.compass_size_3D, 'Check compass_size_3D');
+	equal(styles.compass_resolution_3D, ChemDoodle.DEFAULT_STYLES.compass_resolution_3D, 'Check compass_resolution_3D');
+	equal(styles.compass_displayText_3D, ChemDoodle.DEFAULT_STYLES.compass_displayText_3D, 'Check compass_displayText_3D');
+	equal(styles.compass_type_3D, ChemDoodle.DEFAULT_STYLES.compass_type_3D, 'Check compass_type_3D');
+	equal(styles.measurement_update_3D, ChemDoodle.DEFAULT_STYLES.measurement_update_3D, 'Check measurement_update_3D');
+	equal(styles.measurement_angleBands_3D, ChemDoodle.DEFAULT_STYLES.measurement_angleBands_3D, 'Check measurement_angleBands_3D');
+	equal(styles.measurement_displayText_3D, ChemDoodle.DEFAULT_STYLES.measurement_displayText_3D, 'Check measurement_displayText_3D');
 });
 
-test('Check getFontString function with both bold and italic', function() {
-	expect(1);
-	equal('bold italic 12px Arial,Times', ChemDoodle.extensions.getFontString(12, ['Arial', 'Times'], true, true), 'Checking default function output with both bold and italic');
+test('Check set3DRepresentation with Ball and Stick', function() {
+	expect(4);
+	let styles = new ChemDoodle.structures.Styles();
+	styles.set3DRepresentation('Ball and Stick');
+	equal(.3, styles.atoms_vdwMultiplier_3D, 'Check vdw multiplier');
+	ok(styles.bonds_splitColor == false, 'Check bonds_splitColor is false');
+	equal(.3, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
+	ok(styles.bonds_materialAmbientColor_3D == ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, 'Check bond material ambient color is default');
 });
-module('StructureBuilder');
 
-test('Check StructureBuilder class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.StructureBuilder, 'ChemDoodle.informatics.StructureBuilder class exists');
-});
-
-test('Check correctly copies an empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
+test('Check set3DRepresentation with van der Waals Spheres', function() {
 	expect(2);
-    equal(0, copyMol.atoms.length, 'Check copy atoms');
-	equal(0, copyMol.bonds.length, 'Check copy bonds');
+	let styles = new ChemDoodle.structures.Styles();
+	styles.set3DRepresentation('van der Waals Spheres');
+	ok(styles.bonds_display == false, 'Check that bonds are not displayed');
+	equal(1, styles.atoms_vdwMultiplier_3D, 'Check vdwMultiplier is 1');
 });
 
-test('Check correctly copies thiophene', function(){
-	let mol = ChemDoodle.readMOL(thiophene);
-	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
-	expect(4);
-    equal(5, copyMol.atoms.length, 'Check copy atoms');
-	equal(5, copyMol.bonds.length, 'Check copy bonds');
-	let foundS = 0;
-	let doublebonds = 0;
-	for(let i = 0; i<copyMol.atoms.length; i++){
-		if(copyMol.atoms[i].label==='S'){
-			foundS++;
-		}
-	}
-	for(let i = 0; i<copyMol.bonds.length; i++){
-		if(copyMol.bonds[i].bondOrder===2){
-			doublebonds++;
-		}
-	}
-	equal(1, foundS, 'Check copy has 1 sulfur');
-	equal(2, doublebonds, 'Check copy has 2 double bonds');
-});
-
-test('Check correctly copies stereochemistry', function(){
-	let mol = ChemDoodle.readMOL(hexane);
-	mol.bonds[0].stereo = ChemDoodle.structures.Bond.STEREO_PROTRUDING;
-	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
-	expect(2);
-    equal(ChemDoodle.structures.Bond.STEREO_PROTRUDING, copyMol.bonds[0].stereo, 'Check bond 1 stereo');
-    equal(ChemDoodle.structures.Bond.STEREO_NONE, copyMol.bonds[1].stereo, 'Check bond 2 stereo');
-});
-module('BondDeducer');
-
-test('Check BondDeducer class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.BondDeducer, 'ChemDoodle.informatics.BondDeducer class exists');
-});
-
-test('Check BondDeducer has no effect on empty molecule', function(){
-	expect(4);
-	let mol = new ChemDoodle.structures.Molecule();
-    equal(0, mol.atoms.length, 'Check atoms before');
-	equal(0, mol.bonds.length, 'Check bonds before');
-	new ChemDoodle.informatics.BondDeducer().deduceCovalentBonds(mol);
-    equal(0, mol.atoms.length, 'Check atoms after');
-	equal(0, mol.bonds.length, 'Check bonds after');
-});
-
-test('Check BondDeducer is successful on large PDB file', function(){
-	expect(4);
-	let mol = ChemDoodle.readPDB(oneBNA);
-    equal(566, mol.atoms.length, 'Check atoms before');
-	mol.bonds = [];
-	equal(0, mol.bonds.length, 'Check bonds before');
-	let deducer = new ChemDoodle.informatics.BondDeducer();
-	deducer.deduceCovalentBonds(mol, 1);
-    equal(566, mol.atoms.length, 'Check atoms after');
-	equal(544, mol.bonds.length, 'Check bonds after');
-});
-
-test('Check margin has effect when deducing bonds', function(){
-	expect(1);
-	let mol = ChemDoodle.readPDB(oneBNA);
-	mol.bonds = [];
-	let deducer = new ChemDoodle.informatics.BondDeducer();
-	deducer.margin = 0;
-	deducer.deduceCovalentBonds(mol);
-	equal(0, mol.bonds.length, 'Check no bonds found with 0 margin');
-});
-
-test('Check margin is unique to each BondDeducer instance', function(){
-	expect(3);
-	let mol = ChemDoodle.readPDB(oneBNA);
-	mol.bonds = [];
-	let deducer = new ChemDoodle.informatics.BondDeducer();
-	deducer.margin = 0;
-	let deducer2 = new ChemDoodle.informatics.BondDeducer();
-	let deducer3 = new ChemDoodle.informatics.BondDeducer();
-	deducer2.margin = 2;
-	equal(0, deducer.margin, 'Check first BondDeducer margin');
-	equal(2, deducer2.margin, 'Check second BondDeducer margin');
-	equal(1.1, deducer3.margin, 'Check third BondDeducer margin');
-});
-
-test('Check getPointsPerAngstrom function', function(){
-	expect(1);
-    equal(ChemDoodle.DEFAULT_STYLES.bondLength_2D / ChemDoodle.DEFAULT_STYLES.angstromsPerBondLength, ChemDoodle.informatics.getPointsPerAngstrom(), 'Check calculation');
-});
-module('HydrogenDeducer');
-
-test('Check HydrogenDeducer class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.HydrogenDeducer, 'ChemDoodle.informatics.HydrogenDeducer class exists');
-});
-
-test('Check HydrogenDeducer properly handles an empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(4);
-    equal(0, mol.atoms.length, 'Check atoms before');
-	equal(0, mol.bonds.length, 'Check bonds before');
-	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
-    equal(0, mol.atoms.length, 'Check atoms after');
-	equal(0, mol.bonds.length, 'Check bonds after');
-});
-
-test('Check HydrogenDeducer properly removes hydrogens for molecular hydrogen', function(){
-	let mol = ChemDoodle.readMOL(hydrogen);
-	expect(4);
-    equal(2, mol.atoms.length, 'Check atoms before');
-	equal(1, mol.bonds.length, 'Check bonds before');
-	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
-    equal(0, mol.atoms.length, 'Check atoms after');
-	equal(0, mol.bonds.length, 'Check bonds after');
-});
-
-test('Check HydrogenDeducer properly removes hydrogens for benzene', function(){
-	let mol = ChemDoodle.readMOL(benzene);
-	expect(16);
-    equal(12, mol.atoms.length, 'Check benzene atoms before');
-	equal(12, mol.bonds.length, 'Check benzene bonds before');
-	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
-    equal(6, mol.atoms.length, 'Check benzene atoms after');
-	equal(6, mol.bonds.length, 'Check benzene bonds after');
-	for(let i = 0; i<mol.atoms.length; i++){
-		ok(mol.atoms[i].label!=='H', 'Check constituent atom is not hydrogen');
-	}
-	for(let i = 0; i<mol.bonds.length; i++){
-		ok(mol.bonds[i].a1.label!=='H'&&mol.bonds[i].a2.label!=='H', 'Check constituent bond contains no hydrogen');
-	}
-});
-
-test('Check HydrogenDeducer properly handles the same molecule twice', function(){
-	let mol = ChemDoodle.readMOL(benzene);
-	let deducer = new ChemDoodle.informatics.HydrogenDeducer();
-	deducer.removeHydrogens(mol);
-	expect(16);
-    equal(6, mol.atoms.length, 'Check benzene atoms before');
-	equal(6, mol.bonds.length, 'Check benzene bonds before');
-	deducer.removeHydrogens(mol);
-    equal(6, mol.atoms.length, 'Check benzene atoms after');
-	equal(6, mol.bonds.length, 'Check benzene bonds after');
-	for(let i = 0; i<mol.atoms.length; i++){
-		ok(mol.atoms[i].label!=='H', 'Check constituent atom is not hydrogen');
-	}
-	for(let i = 0; i<mol.bonds.length; i++){
-		ok(mol.bonds[i].a1.label!=='H'&&mol.bonds[i].a2.label!=='H', 'Check constituent bond contains no hydrogen');
-	}
-});
-
-test('Check HydrogenDeducer properly removes hydrogens but leaves stereo connected hydrogens', function(){
-	let mol = ChemDoodle.readJSON('{"m":[{"a":[{"x":201,"i":"a0","y":153},{"x":183.6795,"i":"a1","y":163},{"x":183.6795,"i":"a2","y":183},{"x":201,"i":"a3","y":193},{"x":218.3205,"i":"a4","y":183},{"x":218.3205,"i":"a5","y":163},{"x":201,"i":"a6","y":133,"l":"H"},{"x":166.359,"i":"a7","y":153,"l":"H"},{"x":166.359,"i":"a8","y":193,"l":"H"},{"x":201,"i":"a9","y":213,"l":"H"},{"x":235.641,"i":"a10","y":193,"l":"H"},{"x":235.641,"i":"a11","y":153,"l":"H"}],"b":[{"b":0,"e":1,"i":"b0","o":2},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":3,"e":4,"i":"b3"},{"b":4,"e":5,"i":"b4","o":2},{"b":5,"e":0,"i":"b5"},{"b":0,"s":"protruding","e":6,"i":"b6","o":1},{"b":1,"e":7,"i":"b7"},{"b":2,"e":8,"i":"b8"},{"b":3,"e":9,"i":"b9"},{"b":4,"s":"recessed","e":10,"i":"b10","o":1},{"b":5,"e":11,"i":"b11"}]}]}').molecules[0];
-    equal(12, mol.atoms.length, 'Check atoms before');
-	equal(12, mol.bonds.length, 'Check bonds before');
-	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
-    equal(8, mol.atoms.length, 'Check atoms after');
-	equal(8, mol.bonds.length, 'Check bonds after');
-});
-
-test('Check HydrogenDeducer force remove leaves stereo connected hydrogens', function(){
-	let mol = ChemDoodle.readJSON('{"m":[{"a":[{"x":201,"i":"a0","y":153},{"x":183.6795,"i":"a1","y":163},{"x":183.6795,"i":"a2","y":183},{"x":201,"i":"a3","y":193},{"x":218.3205,"i":"a4","y":183},{"x":218.3205,"i":"a5","y":163},{"x":201,"i":"a6","y":133,"l":"H"},{"x":166.359,"i":"a7","y":153,"l":"H"},{"x":166.359,"i":"a8","y":193,"l":"H"},{"x":201,"i":"a9","y":213,"l":"H"},{"x":235.641,"i":"a10","y":193,"l":"H"},{"x":235.641,"i":"a11","y":153,"l":"H"}],"b":[{"b":0,"e":1,"i":"b0","o":2},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":3,"e":4,"i":"b3"},{"b":4,"e":5,"i":"b4","o":2},{"b":5,"e":0,"i":"b5"},{"b":0,"s":"protruding","e":6,"i":"b6","o":1},{"b":1,"e":7,"i":"b7"},{"b":2,"e":8,"i":"b8"},{"b":3,"e":9,"i":"b9"},{"b":4,"s":"recessed","e":10,"i":"b10","o":1},{"b":5,"e":11,"i":"b11"}]}]}').molecules[0];
-    equal(12, mol.atoms.length, 'Check atoms before');
-	equal(12, mol.bonds.length, 'Check bonds before');
-	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol, true);
-    equal(6, mol.atoms.length, 'Check atoms after');
-	equal(6, mol.bonds.length, 'Check bonds after');
-});
-module('Splitter');
-
-test('Check Splitter class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.Splitter, 'ChemDoodle.informatics.Splitter class exists');
-});
-
-test('Check correctly handles empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(1);
-    equal(0, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-});
-
-test('Check correctly handles monatomic molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	expect(1);
-    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-});
-
-test('Check correctly handles two disconnected atoms', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	expect(2);
-    equal(2, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-});
-
-test('Check correctly handles three disconnected atoms', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	expect(3);
-    equal(3, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[1]);
-    equal(2, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
-});
-
-test('Check all atoms and bonds accounted for in discrete molecule', function(){
-	let mol = ChemDoodle.readMOL(cubane);
-	expect(3);
-	let mols = new ChemDoodle.informatics.Splitter().split(mol);
-    equal(1, mols.length, 'Check split');
-    equal(8, mols[0].atoms.length, 'Check number of atoms is correct');
-    equal(12, mols[0].bonds.length, 'Check number of bonds is correct');
-});
-
-test('Check all atoms and bonds accounted for in two discrete molecules', function(){
-	let mol = ChemDoodle.readMOL(benzene);
-	let mol2 = ChemDoodle.readMOL(thiophene);
-	mol.atoms = mol.atoms.concat(mol2.atoms);
-	mol.bonds = mol.bonds.concat(mol2.bonds);
+test('Check set3DRepresentation with Stick', function() {
 	expect(5);
-	let mols = new ChemDoodle.informatics.Splitter().split(mol);
-    equal(2, mols.length, 'Check split found 2 molecules');
-    equal(12, mols[0].atoms.length, 'Check number of atoms is correct for first molecule');
-    equal(12, mols[0].bonds.length, 'Check number of bonds is correct for first molecule');
-    equal(5, mols[1].atoms.length, 'Check number of atoms is correct for second molecule');
-    equal(5, mols[1].bonds.length, 'Check number of bonds is correct for second molecule');
-});
-module('FrerejacqueNumberCounter');
-
-test('Check FrerejacqueNumberCounter class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.FrerejacqueNumberCounter, 'ChemDoodle.informatics.FrerejacqueNumberCounter class exists');
+	let styles = new ChemDoodle.structures.Styles();
+	styles.set3DRepresentation('Stick');
+	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use VDWDiameters for atoms');
+	ok(styles.bonds_showBondOrders_3D == false, 'Dont show bond orders');
+	equal(.8, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter'); 
+	equal(.8, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
+	equal(styles.bonds_materialAmbientColor_3D, styles.atoms_materialAmbientColor_3D, 'Check that bond and atom material ambient colors are equal');
 });
 
-test('Check FrerejacqueNumberCounter class extends Counter', function(){
-	expect(1);
-    ok(new ChemDoodle.informatics.FrerejacqueNumberCounter(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._Counter, 'ChemDoodle.informatics.FrerejacqueNumberCounter class extends Counter');
-});
-
-test('Check correctly handles empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(1);
-    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles monatomic molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	expect(1);
-    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles two disconnected atoms', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	expect(1);
-    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles hexane', function(){
-	let mol = ChemDoodle.readMOL(hexane);
-	expect(1);
-    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles cyclohexane', function(){
-	let mol = ChemDoodle.readMOL(cyclohexane);
-	expect(1);
-    equal(1, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles napthalene', function(){
-	let mol = ChemDoodle.readMOL(napthalene);
-	expect(1);
-    equal(2, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles cubane', function(){
-	let mol = ChemDoodle.readMOL(cubane);
-	expect(1);
-    equal(5, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
-});
-module('NumberOfMoleculesCounter');
-
-test('Check NumberOfMoleculesCounter class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.NumberOfMoleculesCounter, 'ChemDoodle.informatics.NumberOfMoleculesCounter class exists');
-});
-
-test('Check NumberOfMoleculesCounter class extends Counter', function(){
-	expect(1);
-    ok(new ChemDoodle.informatics.NumberOfMoleculesCounter(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._Counter, 'ChemDoodle.informatics.NumberOfMoleculesCounter class extends Counter');
-});
-
-test('Check correctly handles empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(1);
-    equal(0, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles monatomic molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	expect(1);
-    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
-});
-
-test('Check correctly handles two disconnected atoms', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	expect(2);
-    equal(2, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a bond');
-});
-
-test('Check correctly handles three disconnected atoms', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
-	mol.atoms[2] = new ChemDoodle.structures.Atom('O');
-	expect(3);
-    equal(3, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[1]);
-    equal(2, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a bond');
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a second bond');
-});
-module('RingFinder');
-
-test('Check abstract RingFinder class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics._RingFinder, 'ChemDoodle.informatics._RingFinder class exists');
-});
-
-test('Check RingFinder correctly reduces an empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(2);
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(0, rf.atoms.length, 'Check no atoms found');
-    equal(0, rf.bonds.length, 'Check no bonds found');
-});
-
-test('Check RingFinder correctly reduces a monotomic molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	expect(2);
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(0, rf.atoms.length, 'Check no atoms found');
-    equal(0, rf.bonds.length, 'Check no bonds found');
-});
-
-test('Check RingFinder correctly reduces hexane', function(){
-	let mol = ChemDoodle.readMOL(hexane);
-	expect(2);
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(0, rf.atoms.length, 'Check no atoms found');
-    equal(0, rf.bonds.length, 'Check no bonds found');
-});
-
-test('Check RingFinder correctly reduces an empty cyclohexane', function(){
-	let mol = ChemDoodle.readMOL(cyclohexane);
+test('Check set3DRepresentation with Wireframe', function() {
 	expect(4);
-	equal(18, mol.atoms.length, 'Check has 18 atoms');
-	equal(18, mol.bonds.length, 'Check has 18 bonds');
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(6, rf.atoms.length, 'Check 6 atoms found');
-    equal(6, rf.bonds.length, 'Check 6 bonds found');
+	let styles = new ChemDoodle.structures.Styles();
+	styles.set3DRepresentation('Wireframe');
+	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use WDWDiameters for atoms');
+	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
+	equal(.15, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
+	equal(ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, styles.bonds_materialAmbientColor_3D, 'Check bond material ambient is the same as the default atom material ambient color');
 });
 
-test('Check RingFinder correctly reduces an empty napthalene', function(){
-	let mol = ChemDoodle.readMOL(napthalene);
-	expect(2);
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(10, rf.atoms.length, 'Check 10 atoms found');
-    equal(11, rf.bonds.length, 'Check 11 bonds found');
+test('Check set3DRepresentation with Line', function() {
+	expect(4);
+	let styles = new ChemDoodle.structures.Styles();
+	styles.set3DRepresentation('Line');
+	ok(styles.atoms_display == false, 'Dont display atoms');
+	ok(styles.bonds_renderAsLines_3D, 'Render bonds as lines');
+	equal(1, styles.bonds_width_2D, 'Check bond width');
+	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter.');
 });
+module('Query');
 
-test('Check RingFinder correctly reduces cubane', function(){
-	let mol = ChemDoodle.readMOL(cubane);
-	expect(2);
-	let rf = new ChemDoodle.informatics._RingFinder();
-	rf.setMolecule(mol);
-    equal(8, rf.atoms.length, 'Check 8 atoms found');
-    equal(12, rf.bonds.length, 'Check 12 bonds found');
-});
-module('EulerFacetRingFinder');
-
-test('Check EulerFacetRingFinder class exists', function() {
+test('Check Query class exists', function(){
 	expect(1);
-	ok(ChemDoodle.informatics.EulerFacetRingFinder, 'ChemDoodle.informatics.EulerFacetRingFinder class exists');
+    ok(ChemDoodle.structures.Query, 'ChemDoodle.structures.Query class exists');
 });
 
-test('Check EulerFacetRingFinder class extends RingFinder', function(){
+test('Check default constructor for atom', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
 	expect(1);
-    ok(new ChemDoodle.informatics.EulerFacetRingFinder(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._RingFinder, 'ChemDoodle.informatics.EulerFacetRingFinder class extends RingFinder');
+    equal(ChemDoodle.structures.Query.TYPE_ATOM, q.type, 'Check type');
 });
 
-test('Check correctly handles empty molecule', function(){
-	let mol = new ChemDoodle.structures.Molecule();
+test('Check default constructor for bond', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
 	expect(1);
-    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check no rings found');
+    equal(ChemDoodle.structures.Query.TYPE_BOND, q.type, 'Check type');
 });
 
-test('Check correctly handles monatomic', function(){
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
+test('Check write empty atom', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
 	expect(1);
-    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check no rings found');
+    equal('[a]', q.toString(), 'Check output');
 });
 
-test('Check correctly handles hexane', function(){
-	let mol = ChemDoodle.readMOL(hexane);
+test('Check write atom identity', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.elements.v.push('C', 'Fe', 'x');
 	expect(1);
-    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check 0 rings found');
+    equal('[C,Fe,x]', q.toString(), 'Check output');
 });
 
-test('Check correctly handles cyclohexane', function(){
-	let mol = ChemDoodle.readMOL(cyclohexane);
-	expect(2);
-	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
-    equal(1, rings.length, 'Check 1 rings found');
-	equal(6, rings[0].atoms.length, 'Check 6-membered ring found');
+test('Check write atom identity not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.elements.v.push('C', 'Fe', 'x');
+	q.elements.not = true;
+	expect(1);
+    equal('![C,Fe,x]', q.toString(), 'Check output');
 });
 
-test('Check correctly handles napthalene', function(){
-	let mol = ChemDoodle.readMOL(napthalene);
+test('Check write atom attribute aromatic', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.aromatic = {v:true};
+	expect(1);
+    equal('[a](A)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute aromatic not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.aromatic = {v:true, not:true};
+	expect(1);
+    equal('[a](!A)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute charge', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.charge = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](C=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute charge not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.charge = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!C=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute hydrogens', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.hydrogens = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](H=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute hydrogens not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.hydrogens = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!H=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute ringCount', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.ringCount = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](R=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute ringCount not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.ringCount = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!R=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute saturation', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.saturation = {v:true};
+	expect(1);
+    equal('[a](S)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute saturation', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.saturation = {v:true, not:true};
+	expect(1);
+    equal('[a](!S)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute connectivity', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.connectivity = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](X=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute connectivitynot', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.connectivity = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!X=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute connectivityNoH', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.connectivityNoH = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](x=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute connectivityNoH not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.connectivityNoH = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!x=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute chirality', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.chirality = {v:'R'};
+	expect(1);
+    equal('[a](@=R)', q.toString(), 'Check output');
+});
+
+test('Check write atom attribute chirality not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.chirality = {v:'R', not:true};
+	expect(1);
+    equal('[a](!@=R)', q.toString(), 'Check output');
+});
+
+test('Check write atom identity and attribute variables', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
+	q.connectivityNoH = {v:[{x:1,y:2},{x:5}]};
+	q.chirality = {v:'R'};
+	q.saturation = {v:true};
+	q.elements.v.push('C', 'Fe', 'x');
+	expect(1);
+    equal('[C,Fe,x](@=R,S,x=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write empty bond', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	expect(1);
+    equal('[a]', q.toString(), 'Check output');
+});
+
+test('Check write bond identity', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.orders.v.push('1', 'h', '3');
+	expect(1);
+    equal('[1,h,3]', q.toString(), 'Check output');
+});
+
+test('Check write bond identity not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.orders.v.push('1', 'h', '3');
+	q.orders.not = true;
+	expect(1);
+    equal('![1,h,3]', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute aromatic', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.aromatic = {v:true};
+	expect(1);
+    equal('[a](A)', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute aromatic not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.aromatic = {v:true, not:true};
+	expect(1);
+    equal('[a](!A)', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute ringCount', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.ringCount = {v:[{x:1,y:2},{x:5}]};
+	expect(1);
+    equal('[a](R=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute ringCount not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.ringCount = {v:[{x:1,y:2},{x:5}], not:true};
+	expect(1);
+    equal('[a](!R=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute chirality', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.stereo = {v:'E'};
+	expect(1);
+    equal('[a](@=E)', q.toString(), 'Check output');
+});
+
+test('Check write bond attribute chirality not', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.stereo = {v:'E', not:true};
+	expect(1);
+    equal('[a](!@=E)', q.toString(), 'Check output');
+});
+
+test('Check write bond identity and attribute variables', function(){
+	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
+	q.ringCount = {v:[{x:1,y:2},{x:5}]};
+	q.stereo = {v:'E'};
+	q.aromatic = true;
+	q.orders.v.push('1', 'h', '3');
+	expect(1);
+    equal('[1,h,3](@=E,A,R=1-2,5)', q.toString(), 'Check output');
+});
+
+test('Check parseRange single value', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('3');
 	expect(3);
-	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
-    equal(2, rings.length, 'Check 2 rings found');
-	equal(6, rings[0].atoms.length, 'Check first 6-membered ring found');
-	equal(6, rings[1].atoms.length, 'Check second 6-membered ring found');
+    equal(1, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(3, r0.x, 'Check x');
+    equal(undefined, r0.y, 'Check y');
 });
 
-test('Check correctly handles cubane', function(){
-	let mol = ChemDoodle.readMOL(cubane);
+test('Check parseRange single value negative', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('-3');
+	expect(3);
+    equal(1, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(-3, r0.x, 'Check x');
+    equal(undefined, r0.y, 'Check y');
+});
+
+
+test('Check parseRange wide', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('1-2, 5, 7-9');
 	expect(7);
-	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
-    equal(6, rings.length, 'Check 6 rings found');
-	equal(4, rings[0].atoms.length, 'Check first 4-membered ring found');
-	equal(4, rings[1].atoms.length, 'Check second 4-membered ring found');
-	equal(4, rings[2].atoms.length, 'Check third 4-membered ring found');
-	equal(4, rings[3].atoms.length, 'Check fourth 4-membered ring found');
-	equal(4, rings[4].atoms.length, 'Check fifth 4-membered ring found');
-	equal(4, rings[5].atoms.length, 'Check sixth 4-membered ring found');
+    equal(3, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(1, r0.x, 'Check x');
+    equal(2, r0.y, 'Check y');
+    let r1 = rs[1];
+    equal(5, r1.x, 'Check x');
+    equal(undefined, r1.y, 'Check y');
+    let r2 = rs[2];
+    equal(7, r2.x, 'Check x');
+    equal(9, r2.y, 'Check y');
 });
 
-test('Check correctly handles c60', function(){
-	let mol = ChemDoodle.readMOL('Molecule Name\n  ChemDodl08081808032D 0   0.00000     0.00000     0\n[Insert Comment Here]\n 60 90  0  0  0  0  0  0  0  0  1 V2000\n   -3.1373    0.2154    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.6072    0.7734   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.7036    1.6818   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2926   -0.4190   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.4599    1.0349   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9979    2.5048   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.4974    1.3807   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.8246   -1.3728   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.0683   -0.7260   -0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.9818    0.0992   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.0833    2.1050   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.0855    3.0111   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.4274    1.8967   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8181    0.1652   -0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.6611   -1.1162   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9291   -2.2693   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1563   -1.8695   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.2358    2.2191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.1387    2.7041   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.2410    3.1273    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.3229    1.0002   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.9464   -0.0699   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.6184   -1.7512   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8872   -2.8922   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2631   -2.1002   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.9127   -0.9281    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.7679    1.2652    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3059    2.7352    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.7399    2.6306   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8872    2.8922    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.9127    0.9281   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.1667   -1.1918   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.7399   -2.6306    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.2410   -3.1273   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.3059   -2.7351   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.3229   -1.0002    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.1667    1.1918    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2631    2.1002    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.6184    1.7512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9291    2.2693    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.1373   -0.2154   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.7679   -1.2652   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.1387   -2.7041    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0855   -3.0111    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.2358   -2.2191   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.9464    0.0699    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.4274   -1.8967    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.1563    1.8696    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.6611    1.1162    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8246    1.3728    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.9818   -0.0992    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9979   -2.5048    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.0833   -2.1050    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8181   -0.1652    0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.4974   -1.3807    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0683    0.7260    0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2926    0.4190    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.4599   -1.0349    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7036   -1.6818    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.6072   -0.7734    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n  2  3  2  0  0  0  0\n  2  4  1  0  0  0  0\n  2  5  1  0  0  0  0\n  3  6  1  0  0  0  0\n  3  7  1  0  0  0  0\n  4  8  2  0  0  0  0\n  4  9  1  0  0  0  0\n  5 10  2  0  0  0  0\n  5 11  1  0  0  0  0\n  6 11  1  0  0  0  0\n  6 12  2  0  0  0  0\n  7 13  2  0  0  0  0\n  7 14  1  0  0  0  0\n  8 15  1  0  0  0  0\n  8 16  1  0  0  0  0\n  9 14  1  0  0  0  0\n  9 17  2  0  0  0  0\n 10 15  1  0  0  0  0\n 10  1  1  0  0  0  0\n 11 18  2  0  0  0  0\n 12 19  1  0  0  0  0\n 12 20  1  0  0  0  0\n 13 19  1  0  0  0  0\n 13 21  1  0  0  0  0\n 14 22  2  0  0  0  0\n 15 23  2  0  0  0  0\n 16 17  1  0  0  0  0\n 16 24  2  0  0  0  0\n 17 25  1  0  0  0  0\n  1 26  2  0  0  0  0\n  1 27  1  0  0  0  0\n 18 27  1  0  0  0  0\n 18 28  1  0  0  0  0\n 19 29  2  0  0  0  0\n 20 28  1  0  0  0  0\n 20 30  2  0  0  0  0\n 21 22  1  0  0  0  0\n 21 31  2  0  0  0  0\n 22 32  1  0  0  0  0\n 23 26  1  0  0  0  0\n 23 33  1  0  0  0  0\n 24 33  1  0  0  0  0\n 24 34  1  0  0  0  0\n 25 32  2  0  0  0  0\n 25 35  1  0  0  0  0\n 26 36  1  0  0  0  0\n 27 37  2  0  0  0  0\n 28 38  2  0  0  0  0\n 29 30  1  0  0  0  0\n 29 39  1  0  0  0  0\n 30 40  1  0  0  0  0\n 31 39  1  0  0  0  0\n 31 41  1  0  0  0  0\n 32 42  1  0  0  0  0\n 33 43  2  0  0  0  0\n 34 35  2  0  0  0  0\n 34 44  1  0  0  0  0\n 35 45  1  0  0  0  0\n 36 46  2  0  0  0  0\n 36 47  1  0  0  0  0\n 37 38  1  0  0  0  0\n 37 46  1  0  0  0  0\n 38 48  1  0  0  0  0\n 39 49  2  0  0  0  0\n 40 48  2  0  0  0  0\n 40 50  1  0  0  0  0\n 41 42  2  0  0  0  0\n 41 51  1  0  0  0  0\n 42 45  1  0  0  0  0\n 43 44  1  0  0  0  0\n 43 47  1  0  0  0  0\n 44 52  2  0  0  0  0\n 45 53  2  0  0  0  0\n 46 54  1  0  0  0  0\n 47 55  2  0  0  0  0\n 48 56  1  0  0  0  0\n 49 50  1  0  0  0  0\n 49 51  1  0  0  0  0\n 50 57  2  0  0  0  0\n 51 58  2  0  0  0  0\n 52 53  1  0  0  0  0\n 52 59  1  0  0  0  0\n 53 58  1  0  0  0  0\n 54 55  1  0  0  0  0\n 54 56  2  0  0  0  0\n 55 59  1  0  0  0  0\n 56 57  1  0  0  0  0\n 57 60  1  0  0  0  0\n 58 60  1  0  0  0  0\n 59 60  2  0  0  0  0\nM  END', 20);
-	expect(1);
-	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
-    equal(32, rings.length, 'Check 6 rings found');
-});
-module('SSSRFinder');
 
-test('Check SSSRFinder class exists', function() {
-	expect(1);
-	ok(ChemDoodle.informatics.SSSRFinder, 'ChemDoodle.informatics.SSSRFinder class exists');
-});
-
-test('Check correctly handles empty molecule', function() {
-	let mol = new ChemDoodle.structures.Molecule();
-	expect(1);
-	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check no rings found');
-});
-
-test('Check correctly handles monatomic molecule', function() {
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	expect(1);
-	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check no rings found');
-});
-
-test('Check correctly handles hexane', function() {
-	let mol = ChemDoodle.readMOL(hexane);
-	expect(1);
-	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check 0 rings found');
-});
-
-test('Check correctly handles cyclohexane', function() {
-	let mol = ChemDoodle.readMOL(cyclohexane);
-	expect(2);
-	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
-	equal(1, rings.length, 'Check 1 rings found');
-	equal(6, rings[0].atoms.length, 'Check 6-membered ring found');
-});
-
-test('Check correctly handles napthalene', function() {
-	let mol = ChemDoodle.readMOL(napthalene);
-	expect(3);
-	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
-	equal(2, rings.length, 'Check 2 rings found');
-	equal(6, rings[0].atoms.length, 'Check first 6-membered ring found');
-	equal(6, rings[1].atoms.length, 'Check second 6-membered ring found');
-});
-
-test('Check correctly handles cubane', function() {
-	let mol = ChemDoodle.readMOL(cubane);
-	expect(6);
-	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
-	equal(5, rings.length, 'Check 5 rings found');
-	equal(4, rings[0].atoms.length, 'Check first 4-membered ring found');
-	equal(4, rings[1].atoms.length, 'Check second 4-membered ring found');
-	equal(4, rings[2].atoms.length, 'Check third 4-membered ring found');
-	equal(4, rings[3].atoms.length, 'Check fourth 4-membered ring found');
-	equal(4, rings[4].atoms.length, 'Check fifth 4-membered ring found');
-});
-module('Bounds');
-
-test('Check Bounds class exists', function(){
-	expect(1);
-    ok(ChemDoodle.math.Bounds, 'ChemDoodle.math.Bounds class exists');
-});
-
-test('Check constructor', function(){
-	let b = new ChemDoodle.math.Bounds();
-	expect(6);
-    equal(Infinity, b.minX, 'Check minX');
-    equal(Infinity, b.minY, 'Check minY');
-    equal(-Infinity, b.maxX, 'Check maxX');
-    equal(-Infinity, b.maxY, 'Check maxY');
-    equal(Infinity, b.minZ, 'Check minZ');
-    equal(-Infinity, b.maxZ, 'Check maxZ');
-});
-
-test('Check adding Point', function(){
-	let b = new ChemDoodle.math.Bounds();
-	b.expand(1, 2);
-	expect(6);
-    equal(1, b.minX, 'Check minX');
-    equal(2, b.minY, 'Check minY');
-    equal(1, b.maxX, 'Check maxX');
-    equal(2, b.maxY, 'Check maxY');
-    equal(Infinity, b.minZ, 'Check minZ');
-    equal(-Infinity, b.maxZ, 'Check maxZ');
-});
-
-test('Check adding Rectangle', function(){
-	let b = new ChemDoodle.math.Bounds();
-	b.expand(1, 2, 3, 4);
-	expect(6);
-    equal(1, b.minX, 'Check minX');
-    equal(2, b.minY, 'Check minY');
-    equal(3, b.maxX, 'Check maxX');
-    equal(4, b.maxY, 'Check maxY');
-    equal(Infinity, b.minZ, 'Check minZ');
-    equal(-Infinity, b.maxZ, 'Check maxZ');
-});
-
-test('Check adding Rectangle Prism', function(){
-	let b = new ChemDoodle.math.Bounds();
-	b.expand3D(1, 2, 3, 4, 5, 6);
-	expect(6);
-    equal(1, b.minX, 'Check minX');
-    equal(2, b.minY, 'Check minY');
-    equal(3, b.minZ, 'Check minZ');
-    equal(4, b.maxX, 'Check maxX');
-    equal(5, b.maxY, 'Check maxY');
-    equal(6, b.maxZ, 'Check maxZ');
-});
-
-test('Check adding another Bounds', function(){
-	let b = new ChemDoodle.math.Bounds();
-	b.expand(1, 2, 3, 4);
-	expect(6);
-    let b2 = new ChemDoodle.math.Bounds();
-	b2.expand(5, 6, 7, 8);
-	b.expand(b2);
-    equal(1, b.minX, 'Check minX');
-    equal(2, b.minY, 'Check minY');
-    equal(7, b.maxX, 'Check maxX');
-    equal(8, b.maxY, 'Check maxY');
-    equal(Infinity, b.minZ, 'Check minZ');
-    equal(-Infinity, b.maxZ, 'Check maxZ');
-});
-
-test('Check adding another Bounds 3D', function(){
-	let b = new ChemDoodle.math.Bounds();
-	b.expand3D(1, 2, 3, 4, 5, 6);
-	expect(6);
-    let b2 = new ChemDoodle.math.Bounds();
-	b2.expand3D(7, 8, 9, 10, 11, 12);
-	b.expand(b2);
-    equal(1, b.minX, 'Check minX');
-    equal(2, b.minY, 'Check minY');
-    equal(3, b.minZ, 'Check minZ');
-    equal(10, b.maxX, 'Check maxX');
-    equal(11, b.maxY, 'Check maxY');
-    equal(12, b.maxZ, 'Check maxZ');
-});
-module('Math Utilities');
-
-test('Check math package exists', function() {
-	expect(1);
-	ok(ChemDoodle.math, 'ChemDoodle.math class exists');
-});
-
-test('Check angleBetweenLargest function with no angles is set correctly', function(){
-	expect(2);
-	let check = ChemDoodle.math.angleBetweenLargest([]);
-    ok(check.angle!==undefined, 'Check angle');
-    ok(check.largest, 'Check largest');
-});
-
-test('Check angleBetweenLargest function with 1 angle is set correctly', function(){
-	expect(2);
-	let check = ChemDoodle.math.angleBetweenLargest([Math.PI]);
-    ok(check.angle, 'Check angle');
-    ok(check.largest, 'Check largest');
-});
-
-test('Check angleBetweenLargest angle function', function(){
-	expect(1);
-    equal(0, ChemDoodle.math.angleBetweenLargest([5*Math.PI/6, 7*Math.PI/6]).angle%(Math.PI*2), 'Check [150, 210]');
-});
-
-test('Check angleBetweenLargest largest function', function(){
-	expect(1);
-    ok(Math.abs(5*Math.PI/3-ChemDoodle.math.angleBetweenLargest([5*Math.PI/6, 7*Math.PI/6]).largest)<.0001, 'Check [150, 210]');
-});
-
-test('Check isBetween function', function(){
+test('Check parseRange split through 0', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('-1,1');
 	expect(5);
-    ok(!ChemDoodle.math.isBetween(-1, 0, 5), 'Check -1 between 0-5');
-    ok(!ChemDoodle.math.isBetween(6, 0, 5), 'Check 6 between 0-5');
-    ok(ChemDoodle.math.isBetween(2, 0, 5), 'Check 2 between 0-5');
-    ok(ChemDoodle.math.isBetween(0, 0, 5), 'Check 0 between 0-5');
-    ok(ChemDoodle.math.isBetween(5, 0, 5), 'Check 5 between 0-5');
+    equal(2, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(-1, r0.x, 'Check x');
+    equal(undefined, r0.y, 'Check y');
+    let r1 = rs[1];
+    equal(1, r1.x, 'Check x');
+    equal(undefined, r1.y, 'Check y');
 });
 
-test('Check isBetween function with reversed parameters', function(){
+
+test('Check parseRange split through 0', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('-1-1');
+	expect(3);
+    equal(1, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(-1, r0.x, 'Check x');
+    equal(1, r0.y, 'Check y');
+});
+
+
+test('Check parseRange all negative', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('-2--1');
+	expect(3);
+    equal(1, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(-2, r0.x, 'Check x');
+    equal(-1, r0.y, 'Check y');
+});
+
+
+test('Check parseRange reverse', function(){
+	let rs = new ChemDoodle.structures.Query(0).parseRange('3-1');
+	expect(3);
+    equal(1, rs.length, 'Check length');
+    let r0 = rs[0];
+    equal(1, r0.x, 'Check x');
+    equal(3, r0.y, 'Check y');
+});
+
+module('Reaction');
+
+test('Check Reaction class exists', function() {
+	expect(1);
+	ok(ChemDoodle.structures.Reaction, 'ChemDoodle.structures.Reaction class exists');
+});
+
+test('Check resolve 1 reactant 1 product', function(){
 	expect(5);
-    ok(!ChemDoodle.math.isBetween(-1, 5, 0), 'Check -1 between 0-5');
-    ok(!ChemDoodle.math.isBetween(6, 5, 0), 'Check 6 between 0-5');
-    ok(ChemDoodle.math.isBetween(2, 5, 0), 'Check 2 between 0-5');
-    ok(ChemDoodle.math.isBetween(0, 5, 0), 'Check 0 between 0-5');
-    ok(ChemDoodle.math.isBetween(5, 5, 0), 'Check 5 between 0-5');
-});
-
-test('Check getRGB function with HEX value', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('#CE84C6', 1);
-	equal(206/255, rgb[0], 'Check r is correct');
-	equal(132/255, rgb[1], 'Check g is correct');
-	equal(198/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with HEX value shortcut', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('#cde', 1);
-	equal(204/255, rgb[0], 'Check r is correct');
-	equal(221/255, rgb[1], 'Check g is correct');
-	equal(238/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with RGB value', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('rgb(107,202,63)', 1);
-	equal(107/255, rgb[0], 'Check r is correct');
-	equal(202/255, rgb[1], 'Check g is correct');
-	equal(63/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with RGB value with spaces', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('rgb( 107, 202, 63 )', 1);
-	equal(107/255, rgb[0], 'Check r is correct');
-	equal(202/255, rgb[1], 'Check g is correct');
-	equal(63/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with RGBA value', function(){
-	expect(4);
-	let rgb = ChemDoodle.math.getRGB('rgba(107,202,63,12)', 1);
-	equal(107/255, rgb[0], 'Check r is correct');
-	equal(202/255, rgb[1], 'Check g is correct');
-	equal(63/255, rgb[2], 'Check b is correct');
-	equal(12/255, rgb[3], 'Check a is correct');
-});
-
-test('Check getRGB function with RGBA value with spaces', function(){
-	expect(4);
-	let rgb = ChemDoodle.math.getRGB('rgba( 107, 202, 63, 12 )', 1);
-	equal(107/255, rgb[0], 'Check r is correct');
-	equal(202/255, rgb[1], 'Check g is correct');
-	equal(63/255, rgb[2], 'Check b is correct');
-	equal(12/255, rgb[3], 'Check a is correct');
-});
-
-test('Check getRGB function with named color', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('goldenrod', 1);
-	equal(218/255, rgb[0], 'Check r is correct');
-	equal(165/255, rgb[1], 'Check g is correct');
-	equal(32/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with named color with caps', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('goLDeNrOD', 1);
-	equal(218/255, rgb[0], 'Check r is correct');
-	equal(165/255, rgb[1], 'Check g is correct');
-	equal(32/255, rgb[2], 'Check b is correct');
-});
-
-test('Check getRGB function with unknown color returns black', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.getRGB('unknown', 1);
-	equal(0, rgb[0], 'Check r is correct');
-	equal(0, rgb[1], 'Check g is correct');
-	equal(0, rgb[2], 'Check b is correct');
-});
-
-test('Check distanceFromPointToLineInclusive function', function(){
-	expect(1);
-	equal(2.0000000000000004, ChemDoodle.math.distanceFromPointToLineInclusive(new ChemDoodle.structures.Point(1,2), new ChemDoodle.structures.Point(0,0), new ChemDoodle.structures.Point(2,0)), 'Check distance from axis is correct');
-});
-
-test('Check calculateDistanceInterior function', function(){
-	expect(4);
-	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:5, y:15}, {x:0, y:0, w:10, h:10}), 'Check distance south is correct');
-	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:5, y:-5}, {x:0, y:0, w:10, h:10}), 'Check distance north is correct');
-	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:15, y:5}, {x:0, y:0, w:10, h:10}), 'Check distance east is correct');
-	equal(5, ChemDoodle.math.calculateDistanceInterior({x:5, y:5}, {x:-5, y:5}, {x:0, y:0, w:10, h:10}), 'Check distance west is correct');
-});
-
-test('Check calculateDistanceInterior function returns 0 if line isn\'t contained', function(){
-	expect(1);
-	equal(0, ChemDoodle.math.calculateDistanceInterior({x:50, y:50}, {x:50, y:150}, {x:0, y:0, w:10, h:10}), 'Check 0 is returned');
-});
-
-test('Check intersectLines function', function(){
-	expect(2);
-	let p = ChemDoodle.math.intersectLines(93, 390, 199, 72, 25, 136, 311, 427);
-	ok(Math.abs(p.x-139)<.01, 'Check intersection x is correct');
-	ok(Math.abs(p.y-252)<.01, 'Check intersection y is correct');
-});
-
-test('Check hsl2rgb', function(){
-	expect(3);
-	let rgb = ChemDoodle.math.hsl2rgb(.5, .5, .5);
-	equal(63.75, rgb[0], 'Check r is correct');
-	ok(Math.abs(191.25-rgb[1])<.001, 'Check g is correct');
-	ok(Math.abs(191.25-rgb[2])<.001, 'Check b is correct');
-});
-
-test('Check isPointInPoly simple pass', function(){
-	expect(1);
-	ok(ChemDoodle.math.isPointInPoly([{x:-1, y:1}, {x:1, y:1}, {x:1, y:-1}, {x:-1, y:-1}], {x:0, y:0}), 'Check point is in poly');
-});
-
-test('Check isPointInPoly simple fail', function(){
-	expect(1);
-	ok(!ChemDoodle.math.isPointInPoly([{x:-1, y:1}, {x:1, y:1}, {x:1, y:-1}, {x:-1, y:-1}], {x:10, y:10}), 'Check point is not in poly');
-});
-
-test('Check clamp', function(){
-	expect(5);
-	equal(2, ChemDoodle.math.clamp(1, 2, 4), 'Check less');
-	equal(2, ChemDoodle.math.clamp(2, 2, 4), 'Check lower');
-	equal(3, ChemDoodle.math.clamp(3, 2, 4), 'Check between');
-	equal(4, ChemDoodle.math.clamp(4, 2, 4), 'Check higher');
-	equal(4, ChemDoodle.math.clamp(5, 2, 4), 'Check more');
-});
-
-test('Check angleBounds', function(){
-	expect(4);
-	equal(Math.PI, ChemDoodle.math.angleBounds(-Math.PI), 'Check less');
-	equal(Math.PI, ChemDoodle.math.angleBounds(3*Math.PI), 'Check more');
-	equal(180, ChemDoodle.math.angleBounds(-Math.PI, true), 'Check convert to degrees less');
-	equal(180, ChemDoodle.math.angleBounds(3*Math.PI, true), 'Check convert to degrees more');
-});
-module('iChemLabs');
-
-test('Check url is valid', function() {
-	expect(2);
-	ok(ChemDoodle.iChemLabs.SERVER_URL.startsWith('http://') || ChemDoodle.iChemLabs.SERVER_URL.startsWith('https://') || ChemDoodle.iChemLabs.SERVER_URL==='/cdcloud.php', 'SERVER_URL correctly uses http or https protocol');
-	notEqual(ChemDoodle.iChemLabs.SERVER_URL, 'https://ichemlabs.cloud.chemdoodle.com/icl_cdc_v090000/WebHQ', 'Check server url is set');
-});
-
-test('Check use HTTPS', function() {
-	expect(1);
-	let save = ChemDoodle.iChemLabs.SERVER_URL;
-	// this is no longer a function as SERVER_URL is now always HTTPS
-	//ChemDoodle.iChemLabs.useHTTPS();
-	ok(ChemDoodle.iChemLabs.SERVER_URL.indexOf('https') === 0 || ChemDoodle.iChemLabs.SERVER_URL==='/cdcloud.php', 'SERVER_URL correctly uses https protocol');
-	ChemDoodle.iChemLabs.SERVER_URL = save;
-});
-
-test('Check INFO', function() {
-	expect(9);
-	ok(ChemDoodle.iChemLabs.INFO.userAgent, 'User agent is not undefined.');
-	ok(ChemDoodle.iChemLabs.INFO.platform, 'Platform is not undefined.');
-	ok(ChemDoodle.iChemLabs.INFO.v_cwc, 'v_cwc is not undefined.');
-	equal(ChemDoodle.getVersion(), ChemDoodle.iChemLabs.INFO.v_cwc, 'v_cwc is correct.');
-	ok(ChemDoodle.iChemLabs.INFO.v_jQuery, 'v_jQuery is not undefined.');
-	equal(ChemDoodle.lib.jQuery.fn.jquery, ChemDoodle.iChemLabs.INFO.v_jQuery, 'v_jQuery is correct.');
-	ok(ChemDoodle.iChemLabs.INFO.v_jQuery_ui, 'v_jQuery_ui is not undefined.');
-	ok(ChemDoodle.iChemLabs.INFO.v_jQuery_ui!=='N/A', 'v_jQuery_ui is not not applicable.');
-	equal(ChemDoodle.lib.jQuery.ui.version, ChemDoodle.iChemLabs.INFO.v_jQuery_ui, 'v_jQuery_ui is correct.');
-});
-
-test('Check optimize 2D', function(assert) {
-	expect(3);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.optimize(mol, {
-		dimension : 2
-	}, function() {
-		equal(2, mol.atoms.length, 'Check the number of atoms');
-		equal(1, mol.bonds.length, 'Check the number of bonds');
-		ok(Math.abs(20 - mol.atoms[0].distance(mol.atoms[1])) < .0001, 'Check bond distance');
-		done();
-	});
-});
-
-test('Check optimize 3D', function(assert) {
-	expect(3);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.optimize(mol, {
-		dimension : 3
-	}, function(returned) {
-		let result = returned;
-		// atoms and bonds are more because hydrogens should have been added
-		equal(8, result.atoms.length, 'Check the number of atoms');
-		equal(7, result.bonds.length, 'Check the number of bonds');
-		let c1, c2;
-		for ( let i = 0, ii = result.atoms.length; i < ii; i++) {
-			let a = result.atoms[i];
-			if (a.label === 'C') {
-				if (c1) {
-					c2 = a;
-				} else {
-					c1 = a;
-				}
-			}
-		}
-		equal(1.53, c1.distance(c2), 'Check bond distance');
-		done();
-	});
-});
-
-test('Check readSMILES', function(assert) {
-	expect(5);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.readSMILES('CCC', {}, function(returned) {
-		let result = returned;
-		equal(1, result.molecules.length);
-		equal(0, result.shapes.length);
-		let m = result.molecules[0];
-		ok(m instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(3, m.atoms.length, 'Check the number of atoms');
-		equal(2, m.bonds.length, 'Check the number of bonds');
-		done();
-	});
-});
-
-test('Check readSMILES kekulizes', function(assert) {
-	expect(5);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.readSMILES('c1ccccc1', {'kekulize':true}, function(returned) {
-		let result = returned;
-		let m = result.molecules[0];
-		ok(m instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(6, m.atoms.length, 'Check the number of atoms');
-		equal(6, m.bonds.length, 'Check the number of bonds');
-		let singleCount = 0;
-		let doubleCount = 0;
-		for ( let i = 0, ii = m.bonds.length; i < ii; i++) {
-			let bO = m.bonds[i].bondOrder;
-			if (bO === 1) {
-				singleCount++;
-			} else if (bO === 2) {
-				doubleCount++;
-			}
-		}
-		equal(3, singleCount);
-		equal(3, doubleCount);
-		done();
-	});
-});
-
-test('Check writeSMILES', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.writeSMILES([mol], [], {}, function(returned) {
-		let result = returned;
-		equal('CC', result, 'Check SMILES string is correct');
-		done();
-	});
-});
-
-test('Check saveFile', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.saveFile(mol, {
-		ext : 'icl'
-	}, function(returned) {
-		let result = returned;
-		let protocol = result.substring(0, 7);
-		ok(protocol=='http://'||protocol=='https:/', 'Check url begins correctly');
-		equal('.icl', result.substring(result.length - 4), 'Check url ends correctly');
-		done();
-	});
-});
-
-test('Check getMoleculeFromDatabase 2D from PubChem', function(assert) {
-	expect(3);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getMoleculeFromDatabase('caffeine', {
-		database : 'pubchem'
-	}, function(returned) {
-		let result = returned;
-		equal(14, result.atoms.length, 'Check the number of atoms');
-		equal(15, result.bonds.length, 'Check the number of bonds');
-		ok(Math.abs(20 - result.atoms[0].distance(result.atoms[1])) < .01, 'Check the bond length');
-		done();
-	});
-});
-
-test('Check getMoleculeFromDatabase 2D from ChemSpider', function(assert) {
-	expect(3);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getMoleculeFromDatabase('caffeine', {
-		database : 'chemspider'
-	}, function(returned) {
-		let result = returned;
-		equal(14, result.atoms.length, 'Check the number of atoms');
-		equal(15, result.bonds.length, 'Check the number of bonds');
-		ok(result.atoms[0].distance(result.atoms[1])>10, 'Check the bond length');
-		done();
-	});
-});
-
-test('Check getMoleculeFromDatabase 3D from PubChem', function(assert) {
-	expect(3);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getMoleculeFromDatabase('methane', {
-		database : 'pubchem',
-		dimension : 3
-	}, function(returned) {
-		let result = returned;
-		equal(5, result.atoms.length, 'Check the number of atoms');
-		equal(4, result.bonds.length, 'Check the number of bonds');
-		ok(result.bonds[0].a1.distance(result.bonds[0].a2)<1, 'Check the bond length');
-		done();
-	});
-});
-
-test('Check getMoleculeFromContent 2D from SLN', function(assert) {
-	expect(2);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getMoleculeFromContent('CH3CH2CH3', {
-		format : 'sln'
-	}, function(returned) {
-		let result = returned;
-		equal(3, result.atoms.length, 'Check the number of atoms');
-		equal(2, result.bonds.length, 'Check the number of bonds');
-		done();
-	});
-});
-
-test('Check calculate', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.calculate(mol, {
-		descriptors : [ 'mf', 'mw' ]
-	}, function(returned) {
-		let result = returned;
-		equal('CH4', result.mf, 'Check molecular formula');
-		equal(16.04252, result.mw, 'Check molecular mass');
-		done();
-	});
-});
-
-test('Check simulate1HNMR', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.simulate1HNMR(mol, {}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
-		equal(531, result.data.length, 'Check the number of points in the plot');
-		done();
-	});
-});
-
-test('Check simulate13CNMR', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.simulate13CNMR(mol, {}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
-		equal(531, result.data.length, 'Check the number of points in the plot');
-		done();
-	});
-});
-
-test('Check simulateMassParentPeak', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.simulateMassParentPeak(mol, {}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
-		equal(3, result.data.length, 'Check the number of points in the plot');
-		done();
-	});
-});
-
-test('Check getOptimizedPDBStructure', function(assert) {
-	expect(6);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getOptimizedPDBStructure('1CRN', {
-		withAtoms : true
-	}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		ok(result.fromJSON, 'Check that molecule is correctly tagged as coming from JSON');
-		equal(0, result.atoms.length, 'Check the number of atoms');
-		equal(0, result.bonds.length, 'Check the number of bonds');
-		ok(result.chains, 'Check that chains are present');
-		equal(1, result.chains.length, 'Check the number of chains');
-		done();
-	});
-});
-
-test('Check getOptimizedPDBStructure with hetatoms', function(assert) {
-	expect(6);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getOptimizedPDBStructure('3N4B', {
-		withAtoms : true
-	}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		ok(result.fromJSON, 'Check that molecule is correctly tagged as coming from JSON');
-		equal(304, result.atoms.length, 'Check the number of atoms');
-		equal(46, result.bonds.length, 'Check the number of bonds');
-		ok(result.chains, 'Check that chains are present');
-		equal(1, result.chains.length, 'Check the number of chains');
-		done();
-	});
-});
-
-test('Check kekulize', function(assert) {
-	expect(5);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.kekulize(mol, {}, function(returned) {
-		let result = returned;
-		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(3, result.atoms.length, 'Check the number of atoms');
-		equal(2, result.bonds.length, 'Check the number of bonds');
-		equal(2, result.bonds[0].bondOrder, 'Check first bond order');
-		equal(1, result.bonds[1].bondOrder, 'Check second bond order');
-		done();
-	});
-});
-
-test('Check isGraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
+ 
+	let mol1 = new ChemDoodle.structures.Molecule();
+	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 0, 0, 0));
 	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.atoms[2] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isGraphIsomorphism(mol, mol2, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
+	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 100, 0, 0));
+	
+	let r = new ChemDoodle.structures.Reaction();
+	let reaction = r.resolve(arrow, [mol1, mol2]);
+	
+	ok(reaction, 'Resolve function returned an object');
+    equal(1, reaction.reactants.length, 'Check reactants length');
+    equal(1, reaction.products.length, 'Check products length');
+    ok(reaction.reactants[0]===mol1, 'Check reactant 1');
+    ok(reaction.products[0]===mol2, 'Check product 1');
 });
 
-test('Check isGraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isGraphIsomorphism(mol, mol2, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
 
-test('Check isSubgraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.atoms[2] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol, mol2, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
-});
-
-test('Check isSubgraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol, mol2, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
-
-test('Check isSupergraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.atoms[2] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
-});
-
-test('Check isSupergraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
-
-test('Check query isGraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	mol.atoms[3] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
-	mol.bonds[2] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[3], 2);
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isGraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
-});
-
-test('Check query isGraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.atoms[2] = new ChemDoodle.structures.Atom();
-	mol.atoms[3] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
-	mol.bonds[2] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[3]);
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isGraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
-
-test('Check query isSubgraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":140,"i":"a0","y":218},{"x":157.3205,"i":"a1","y":208},{"x":174.641,"i":"a2","y":218},{"x":191.9615,"i":"a3","y":208},{"x":122.6795,"i":"a4","y":208}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":0,"e":4,"i":"b3"}]});
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
-});
-
-test('Check query isSubgraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":140,"i":"a0","y":218},{"x":157.3205,"i":"a1","y":208},{"x":174.641,"i":"a2","y":218},{"x":191.9615,"i":"a3","y":208},{"x":122.6795,"i":"a4","y":208}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2"},{"b":0,"e":4,"i":"b3"}]});
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
-
-test('Check query isSupergraphIsomorphism true', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1], 2);
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(result, 'Check value is true');
-		done();
-	});
-});
-
-test('Check query isSupergraphIsomorphism false', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom();
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1], 3);
-	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
-		let result = returned;
-		ok(!result, 'Check value is false');
-		done();
-	});
-});
-
-test('Check getSimilarityMeasure', function(assert) {
-	expect(1);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
-	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms[0] = new ChemDoodle.structures.Atom();
-	mol2.atoms[1] = new ChemDoodle.structures.Atom();
-	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getSimilarityMeasure(mol, mol2, {}, function(returned) {
-		let result = returned;
-		ok(Math.abs(1/2-result)<.001, 'Check value');
-		done();
-	});
-});
-
-test('Check readIUPACName', function(assert) {
+test('Check resolve 2 reactants 0 products', function(){
 	expect(5);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.readIUPACName('acetonitrile', {}, function(mols, warning) {
-		equal(1, mols.length);
-		ok(warning===undefined);
-		let result = mols[0];
-		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(3, result.atoms.length, 'Check the number of atoms');
-		equal(2, result.bonds.length, 'Check the number of bonds');
-		done();
-	});
+	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
+ 
+	let mol1 = new ChemDoodle.structures.Molecule();
+	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 0, 0, 0));
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 10, 0, 0));
+	
+	let r = new ChemDoodle.structures.Reaction();
+	let reaction = r.resolve(arrow, [mol1, mol2]);
+	
+	ok(reaction, 'Resolve function returned an object');
+    equal(2, reaction.reactants.length, 'Check reactants length');
+    equal(0, reaction.products.length, 'Check products length');
+    ok(reaction.reactants[0]===mol1, 'Check reactant 1');
+    ok(reaction.reactants[1]===mol2, 'Check reactant 2');
 });
 
-test('Check readIUPACName warning', function(assert) {
-	expect(4);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.readIUPACName('test', {}, function(mols, warning) {
-		equal(0, mols.length);
-		ok(warning!==undefined);
-		ok(warning.length>10);
-		ok(warning.indexOf('test')>0);
-		done();
-	});
-});
 
-test('Check generateImage', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.generateImage(mol, {
-		ext : 'png'
-	}, function(returned) {
-		let result = returned;
-		let protocol = result.substring(0, 7);
-		ok(protocol=='http://'||protocol=='https:/', 'Check url begins correctly');
-		equal('.png', result.substring(result.length - 4), 'Check url ends correctly');
-		done();
-	});
-});
-
-test('Check getZeoliteFromIZA', function(assert) {
-	expect(4);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.getZeoliteFromIZA('LTA', {}, function(returned) {
-		let result = returned;
-		ok(result.molecule instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(72, result.molecule.atoms.length, 'Check the number of atoms');
-		equal(72, result.molecule.bonds.length, 'Check the number of bonds');
-		ok(result.unitCell instanceof ChemDoodle.structures.d3.UnitCell, 'Check that unit cell is present');
-		done();
-	});
-});
-
-test('Check generateIUPACName', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.generateIUPACName(mol, {}, function(traditional, pin) {
-		equal('Methane', traditional, 'Check the traditional name is Methane');
-		equal('methane', pin, 'Check the PIN is methane');
-		done();
-	});
-});
-
-test('Check createLewisDotStructure', function(assert) {
-	expect(2);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.createLewisDotStructure(mol, {}, function(returned) {
-		let result = returned;
-		equal(5, result.atoms.length, 'Check 5 atoms');
-		equal(4, result.bonds.length, 'Check 4 bonds');
-		done();
-	});
-});
-
-test('Check matchMechanism match', function(assert) {
-	expect(2);
-	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
-	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}];
-	const done = assert.async();
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
-		let result = returned.value;
-		equal(1, result.length, 'Check 1 result');
-		equal(1, result[0], 'Check result is a match');
-		done();
-	});
-});
-
-test('Check matchMechanism match stereo', function(assert) {
-	expect(4);
-	let arrow = {"m":[{"a":[{"x":237.5,"y":180.84375,"i":"a0"},{"x":237.5,"y":160.84375,"i":"a1"},{"x":220.1794919243112,"y":190.84375,"i":"a2","l":"O"},{"x":254.82050807568876,"y":190.84375,"i":"a3","l":"N"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":0,"e":3,"i":"b2","s":"protruding"}]},{"a":[{"x":184.5,"y":140.84375,"i":"a4","l":"Cl"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a4","o2":"a0","e":2}]};
-	let targets = [{"m":[{"a":[{"x":237.5,"y":180.84375,"i":"a0"},{"x":237.5,"y":160.84375,"i":"a1"},{"x":220.1794919243112,"y":190.84375,"i":"a2","l":"O"},{"x":254.82050807568876,"y":190.84375,"i":"a3","l":"N"}],"b":[{"b":0,"e":1,"i":"b0","s":"protruding"},{"b":0,"e":2,"i":"b1"},{"b":0,"e":3,"i":"b2"}]},{"a":[{"x":184.5,"y":140.84375,"i":"a4","l":"Cl"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a4","o2":"a0","e":2}]}];
-	const done1 = assert.async();
-	const done2 = assert.async();
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
-		let result = returned.value;
-		equal(1, result.length, 'Check 1 result');
-		equal(0, result[0], 'Check result is a match');
-		done1();
-	});
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {enforceStereo:true}, function(returned) {
-		let result = returned.value;
-		equal(1, result.length, 'Check 1 result');
-		equal(1, result[0], 'Check result is a match');
-		done2();
-	});
-});
-
-test('Check matchMechanism partial match', function(assert) {
-	expect(2);
-	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[]};
-	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}];
-	const done = assert.async();
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
-		let result = returned.value;
-		equal(1, result.length, 'Check 1 result');
-		equal(2, result[0], 'Check result is a partial match');
-		done();
-	});
-});
-
-test('Check matchMechanism not match', function(assert) {
-	expect(2);
-	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
-	let targets = [{"m":[{"a":[{"x":125.5,"y":122,"i":"a0"},{"x":142.82050807568876,"y":112,"i":"a1"},{"x":160.14101615137753,"y":122,"i":"a2"},{"x":177.4615242270663,"y":112,"i":"a3"},{"x":194.78203230275506,"y":122,"i":"a4","l":"O"},{"x":177.4615242270663,"y":92,"i":"a5","l":"O"},{"x":212.10254037844382,"y":112,"i":"a6"},{"x":229.42304845413258,"y":122,"i":"a7"},{"x":142.82050807568876,"y":92,"i":"a8","l":"O","c":-1}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1","o":2},{"b":2,"e":3,"i":"b2"},{"b":3,"e":4,"i":"b3"},{"b":3,"e":5,"i":"b4","o":2},{"b":4,"e":6,"i":"b5"},{"b":6,"e":7,"i":"b6"},{"b":1,"e":8,"i":"b7"}]},{"a":[{"x":159.5,"y":148,"i":"a9"},{"x":179.5,"y":148,"i":"a10"},{"x":169.5,"y":165.32050807568876,"i":"a11","l":"O"}],"b":[{"b":0,"e":1,"i":"b8"},{"b":0,"e":2,"i":"b9"},{"b":2,"e":1,"i":"b10"}]},{"a":[{"x":143.5,"y":59,"i":"a12","l":"Na","c":1}]}],"s":[{"i":"s0","t":"Pusher","o1":"a8","o2":"b7","e":2},{"i":"s1","t":"Pusher","o1":"b1","o2":"a9","e":2},{"i":"s2","t":"Pusher","o1":"b9","o2":"a11","e":2}]}];
-	const done = assert.async();
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
-		let result = returned.value;
-		equal(1, result.length, 'Check 1 result');
-		equal(0, result[0], 'Check result is not a match');
-		done();
-	});
-});
-
-test('Check matchMechanism multiple', function(assert) {
-	expect(3);
-	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
-	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}, {"m":[{"a":[{"x":125.5,"y":122,"i":"a0"},{"x":142.82050807568876,"y":112,"i":"a1"},{"x":160.14101615137753,"y":122,"i":"a2"},{"x":177.4615242270663,"y":112,"i":"a3"},{"x":194.78203230275506,"y":122,"i":"a4","l":"O"},{"x":177.4615242270663,"y":92,"i":"a5","l":"O"},{"x":212.10254037844382,"y":112,"i":"a6"},{"x":229.42304845413258,"y":122,"i":"a7"},{"x":142.82050807568876,"y":92,"i":"a8","l":"O","c":-1}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1","o":2},{"b":2,"e":3,"i":"b2"},{"b":3,"e":4,"i":"b3"},{"b":3,"e":5,"i":"b4","o":2},{"b":4,"e":6,"i":"b5"},{"b":6,"e":7,"i":"b6"},{"b":1,"e":8,"i":"b7"}]},{"a":[{"x":159.5,"y":148,"i":"a9"},{"x":179.5,"y":148,"i":"a10"},{"x":169.5,"y":165.32050807568876,"i":"a11","l":"O"}],"b":[{"b":0,"e":1,"i":"b8"},{"b":0,"e":2,"i":"b9"},{"b":2,"e":1,"i":"b10"}]},{"a":[{"x":143.5,"y":59,"i":"a12","l":"Na","c":1}]}],"s":[{"i":"s0","t":"Pusher","o1":"a8","o2":"b7","e":2},{"i":"s1","t":"Pusher","o1":"b1","o2":"a9","e":2},{"i":"s2","t":"Pusher","o1":"b9","o2":"a11","e":2}]}];
-	const done = assert.async();
-	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
-		let result = returned.value;
-		equal(2, result.length, 'Check 2 results');
-		equal(1, result[0], 'Check first result is a match');
-		equal(0, result[1], 'Check second result is not a match');
-		done();
-	});
-});
-
-test('Check version', function(assert) {
-	expect(3);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.version({}, function(returned) {
-		let result = returned;
-		ok(result.length>0, 'Check result is not empty');
-		equal(-1, result.indexOf('__CHEMDOODLE_CLOUD_VERSION__'), 'Check cloud version placeholder is set');
-		equal(-1, result.indexOf('__CHEMDOODLE_JAR_REVISION__'), 'Check chemdoodle jar version placeholder is set');
-		done();
-	});
-});
-
-test('Check resolveCIP', function(assert) {
-	expect(26);
-	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":247.2768,"i":"a0","y":405.5226},{"x":229.9563,"i":"a1","y":395.5226,"l":"N"},{"x":264.5973,"i":"a2","y":395.5226},{"x":247.2768,"i":"a3","y":425.5226},{"x":212.6357,"i":"a4","y":405.5226},{"x":281.9178,"i":"a5","y":405.5226},{"x":254.5973,"i":"a6","y":378.2021,"l":"H"},{"x":274.5973,"i":"a7","y":378.2021,"l":"O"},{"x":229.9562,"i":"a8","y":435.5226},{"x":212.6357,"i":"a9","y":425.5226},{"x":299.2383,"i":"a10","y":395.5226,"l":"N"},{"x":316.5588,"i":"a11","y":405.5226}],"b":[{"b":0,"e":2,"i":"b0"},{"b":0,"e":1,"i":"b1","o":2},{"b":1,"e":4,"i":"b2"},{"b":4,"e":9,"i":"b3","o":2},{"b":9,"e":8,"i":"b4"},{"b":8,"e":3,"i":"b5","o":2},{"b":3,"e":0,"i":"b6"},{"b":2,"e":5,"i":"b7"},{"b":5,"e":10,"i":"b8","o":2},{"b":10,"e":11,"i":"b9"},{"b":2,"s":"protruding","e":7,"i":"b10","o":1},{"b":2,"s":"recessed","e":6,"i":"b11","o":1}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.resolveCIP(mol, {}, function(ac, bc) {
-		equal(12, ac.length);
-		for(let i = 0; i<ac.length; i++){
-			equal(i==2?'R':'', ac[i]);
-		}
-		equal(12, bc.length);
-		for(let i = 0; i<bc.length; i++){
-			equal(i==8?'E':'', bc[i]);
-		}
-		done();
-	});
-});
-
-test('Check balanceReaction reaction', function(assert) {
-	expect(2);
-	let content = new ChemDoodle.io.JSONInterpreter().contentFrom({"s":[{"a":"synthetic","t":"Line","y1":366.064,"x1":275,"y2":366.064,"i":"s0","x2":317}],"m":[{"a":[{"x":99.3879,"i":"a0","y":366.8397},{"x":89.3879,"i":"a1","y":349.5193},{"x":89.3879,"i":"a2","y":384.1603},{"x":119.3879,"i":"a3","y":366.8397},{"x":69.3879,"i":"a4","y":349.5193},{"x":69.3879,"i":"a5","y":384.1603},{"x":139.3879,"i":"a6","y":366.8397,"l":"Mg"},{"x":59.3879,"i":"a7","y":366.8397},{"x":159.3879,"i":"a8","y":366.8397,"l":"Br"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":4,"i":"b1","o":2},{"b":4,"e":7,"i":"b2"},{"b":7,"e":5,"i":"b3","o":2},{"b":5,"e":2,"i":"b4"},{"b":2,"e":0,"i":"b5","o":2},{"b":0,"e":3,"i":"b6"},{"b":3,"e":6,"i":"b7"},{"b":6,"e":8,"i":"b8"}]},{"a":[{"x":216.0898,"i":"a9","y":373.5129},{"x":233.4102,"i":"a10","y":363.5129,"l":"O"}],"b":[{"b":0,"e":1,"i":"b9"}]},{"a":[{"x":392.2501,"i":"a11","y":366.0639},{"x":412.2501,"i":"a12","y":366.0639},{"x":382.2501,"i":"a13","y":383.3845},{"x":382.2501,"i":"a14","y":348.7434},{"x":362.2501,"i":"a15","y":383.3845},{"x":362.2501,"i":"a16","y":348.7434},{"x":352.2501,"i":"a17","y":366.0639}],"b":[{"b":0,"e":3,"i":"b10"},{"b":3,"e":5,"i":"b11","o":2},{"b":5,"e":6,"i":"b12"},{"b":6,"e":4,"i":"b13","o":2},{"b":4,"e":2,"i":"b14"},{"b":2,"e":0,"i":"b15","o":2},{"b":0,"e":1,"i":"b16"}]},{"a":[{"x":488.652,"i":"a18","y":370.9452,"l":"Mg"},{"x":508.652,"i":"a19","y":370.9452,"l":"O"},{"x":468.652,"i":"a20","y":370.9452,"l":"Br"},{"x":518.6519,"i":"a21","y":353.6248}],"b":[{"b":0,"e":2,"i":"b17"},{"b":0,"e":1,"i":"b18"},{"b":1,"e":3,"i":"b19"}]}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.balanceReaction({'molecules':content.molecules,'shapes':content.shapes}, {}, function(result, message) {
-		equal('1C<sub>7</sub>H<sub>7</sub>BrMg + 1CH<sub>4</sub>O = 1C<sub>7</sub>H<sub>8</sub> + 1CH<sub>3</sub>BrMgO', result);
-		ok(!message);
-		done();
-	});
-});
-
-test('Check balanceReaction equation', function(assert) {
-	expect(2);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.balanceReaction('Al + HCl = AlCl3 + H2', {}, function(result, message) {
-		equal('2Al + 6HCl = 2AlCl<sub>3</sub> + 3H<sub>2</sub>', result);
-		ok(!message);
-		done();
-	});
-});
-
-test('Check maximumCommonSubstructure connected', function(assert) {
-	expect(1);
-	let m1 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":769.5104,"i":"a0","y":508.6458,"l":"O"},{"x":769.5104,"i":"a1","y":478.6458},{"x":795.4905,"i":"a2","y":463.6458},{"x":743.5305,"i":"a3","y":463.6458},{"x":795.4905,"i":"a4","y":433.6458},{"x":743.5305,"i":"a5","y":433.6458},{"x":769.5104,"i":"a6","y":418.6458},{"x":769.5104,"i":"a7","y":388.6458,"l":"N"},{"x":795.4905,"i":"a8","y":373.6458},{"x":795.4905,"i":"a9","y":343.6458},{"x":821.4734,"i":"a10","y":388.6458,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":2,"e":1,"i":"b1","o":2},{"b":3,"e":1,"i":"b2"},{"b":4,"e":2,"i":"b3"},{"b":5,"e":3,"i":"b4","o":2},{"b":6,"e":4,"i":"b5","o":2},{"b":6,"e":5,"i":"b6"},{"b":7,"e":6,"i":"b7"},{"b":7,"e":8,"i":"b8"},{"b":8,"e":9,"i":"b9"},{"b":10,"e":8,"i":"b10","o":2}]});
-	let m2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":734.0388,"i":"a0","y":226.1461,"l":"O"},{"x":760.0218,"i":"a1","y":241.1461},{"x":708.0588,"i":"a2","y":241.1461},{"x":786.0018,"i":"a3","y":226.1461},{"x":760.0218,"i":"a4","y":271.1461},{"x":708.0588,"i":"a5","y":271.1461,"l":"O"},{"x":682.0788,"i":"a6","y":226.1461},{"x":811.9818,"i":"a7","y":241.1461},{"x":786.0018,"i":"a8","y":196.1461},{"x":786.0018,"i":"a9","y":286.1461},{"x":811.9818,"i":"a10","y":271.1461},{"x":760.0218,"i":"a11","y":181.1461,"l":"O"},{"x":811.9818,"i":"a12","y":181.1461,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":1,"e":4,"i":"b2","o":2},{"b":1,"e":3,"i":"b3"},{"b":5,"e":2,"i":"b4","o":2},{"b":2,"e":6,"i":"b5"},{"b":4,"e":9,"i":"b6"},{"b":3,"e":7,"i":"b7","o":2},{"b":3,"e":8,"i":"b8"},{"b":9,"e":10,"i":"b9","o":2},{"b":7,"e":10,"i":"b10"},{"b":11,"e":8,"i":"b11","o":2},{"b":12,"e":8,"i":"b12"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.maximumCommonSubstructure(m1, m2, {disconnected:false}, function(map) {
-		let result = map;
-		equal(7, Object.getOwnPropertyNames(result).length, 'Check 7 mappings');
-		done();
-	});
-});
-
-test('Check maximumCommonSubstructure disconnected', function(assert) {
-	expect(1);
-	let m1 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":769.5104,"i":"a0","y":508.6458,"l":"O"},{"x":769.5104,"i":"a1","y":478.6458},{"x":795.4905,"i":"a2","y":463.6458},{"x":743.5305,"i":"a3","y":463.6458},{"x":795.4905,"i":"a4","y":433.6458},{"x":743.5305,"i":"a5","y":433.6458},{"x":769.5104,"i":"a6","y":418.6458},{"x":769.5104,"i":"a7","y":388.6458,"l":"N"},{"x":795.4905,"i":"a8","y":373.6458},{"x":795.4905,"i":"a9","y":343.6458},{"x":821.4734,"i":"a10","y":388.6458,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":2,"e":1,"i":"b1","o":2},{"b":3,"e":1,"i":"b2"},{"b":4,"e":2,"i":"b3"},{"b":5,"e":3,"i":"b4","o":2},{"b":6,"e":4,"i":"b5","o":2},{"b":6,"e":5,"i":"b6"},{"b":7,"e":6,"i":"b7"},{"b":7,"e":8,"i":"b8"},{"b":8,"e":9,"i":"b9"},{"b":10,"e":8,"i":"b10","o":2}]});
-	let m2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":734.0388,"i":"a0","y":226.1461,"l":"O"},{"x":760.0218,"i":"a1","y":241.1461},{"x":708.0588,"i":"a2","y":241.1461},{"x":786.0018,"i":"a3","y":226.1461},{"x":760.0218,"i":"a4","y":271.1461},{"x":708.0588,"i":"a5","y":271.1461,"l":"O"},{"x":682.0788,"i":"a6","y":226.1461},{"x":811.9818,"i":"a7","y":241.1461},{"x":786.0018,"i":"a8","y":196.1461},{"x":786.0018,"i":"a9","y":286.1461},{"x":811.9818,"i":"a10","y":271.1461},{"x":760.0218,"i":"a11","y":181.1461,"l":"O"},{"x":811.9818,"i":"a12","y":181.1461,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":1,"e":4,"i":"b2","o":2},{"b":1,"e":3,"i":"b3"},{"b":5,"e":2,"i":"b4","o":2},{"b":2,"e":6,"i":"b5"},{"b":4,"e":9,"i":"b6"},{"b":3,"e":7,"i":"b7","o":2},{"b":3,"e":8,"i":"b8"},{"b":9,"e":10,"i":"b9","o":2},{"b":7,"e":10,"i":"b10"},{"b":11,"e":8,"i":"b11","o":2},{"b":12,"e":8,"i":"b12"}]});
-	const done = assert.async();
-	ChemDoodle.iChemLabs.maximumCommonSubstructure(m1, m2, {disconnected:true}, function(map) {
-		let result = map;
-		equal(9, Object.getOwnPropertyNames(result).length, 'Check 9 mappings');
-		done();
-	});
-});
-
-test('Check readWLN', function(assert) {
+test('Check resolve 0 reactants 2 products', function(){
 	expect(5);
-	const done = assert.async();
-	ChemDoodle.iChemLabs.readWLN('QY2&2', {}, function(content) {
-		let rcontent = content;
-		equal(1, rcontent.molecules.length);
-		equal(0, rcontent.shapes.length);
-		let result = rcontent.molecules[0];
-		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
-		equal(6, result.atoms.length, 'Check the number of atoms');
-		equal(5, result.bonds.length, 'Check the number of bonds');
-		done();
-	});
+	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
+ 
+	let mol1 = new ChemDoodle.structures.Molecule();
+	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 90, 0, 0));
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 100, 0, 0));
+	
+	let r = new ChemDoodle.structures.Reaction();
+	let reaction = r.resolve(arrow, [mol1, mol2]);
+	
+	ok(reaction, 'Resolve function returned an object');
+    equal(0, reaction.reactants.length, 'Check reactants length');
+    equal(2, reaction.products.length, 'Check products length');
+    ok(reaction.products[0]===mol1, 'Check product 1');
+    ok(reaction.products[1]===mol2, 'Check product 2');
 });
+module('Bond');
 
-test('Check fileToImage', function(assert) {
-	// not possible to check file upload, so just check the function is defined
+test('Check Bond class exists', function(){
 	expect(1);
-	ok(ChemDoodle.iChemLabs.fileToImage, 'Function exists.');
+    ok(ChemDoodle.structures.Bond, 'ChemDoodle.structures.Bond class exists');
 });
 
-test('Check cir', function(assert) {
-	// not possible to check file upload, so just check the function is defined
+test('Check parameter a1/a2 constructor', function(){
+	let a1 = new ChemDoodle.structures.Atom();
+	let a2 = new ChemDoodle.structures.Atom();
+	let b = new ChemDoodle.structures.Bond(a1, a2);
+	expect(3);
+    equal(a1, b.a1, 'Check a1');
+    equal(a2, b.a2, 'Check a2');
+    equal(1, b.bondOrder, 'Check bond order');
+});
+
+test('Check parameter a1/a2/order constructor', function(){
+	let a1 = new ChemDoodle.structures.Atom();
+	let a2 = new ChemDoodle.structures.Atom();
+	let b = new ChemDoodle.structures.Bond(a1, a2, 2);
+	expect(3);
+    equal(a1, b.a1, 'Check a1');
+    equal(a2, b.a2, 'Check a2');
+    equal(2, b.bondOrder, 'Check bond order');
+});
+
+test('Check parameter a1/a2/order constructor where order is 0', function(){
+	let a1 = new ChemDoodle.structures.Atom();
+	let a2 = new ChemDoodle.structures.Atom();
+	let b = new ChemDoodle.structures.Bond(a1, a2, 0);
+	expect(3);
+    equal(a1, b.a1, 'Check a1');
+    equal(a2, b.a2, 'Check a2');
+    equal(0, b.bondOrder, 'Check bond order');
+});
+
+test('Check contains function', function(){
+	let a1 = new ChemDoodle.structures.Atom();
+	let a2 = new ChemDoodle.structures.Atom();
+	let a3 = new ChemDoodle.structures.Atom();
+	let b = new ChemDoodle.structures.Bond(a1, a2);
+	expect(3);
+	ok(b.contains(a1), 'Check contains a1');
+	ok(b.contains(a2), 'Check contains a2');
+	ok(!b.contains(a3), 'Check not contains a3');
+});
+	
+test('Check getNeighbor function', function(){
+	let a1 = new ChemDoodle.structures.Atom();
+	let a2 = new ChemDoodle.structures.Atom();
+	let a3 = new ChemDoodle.structures.Atom();
+	let b = new ChemDoodle.structures.Bond(a1, a2);
+	expect(3);
+	equal(a2, b.getNeighbor(a1), 'Check get neighbor of a1');
+	equal(a1, b.getNeighbor(a2), 'Check get neighbor of a2');
+	equal(undefined, b.getNeighbor(a3), 'Check no neighbor found for a3, undefined returned');
+});
+
+test('Check getCenter function', function(){
+	expect(2);
+	let center = new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom('C', -2, 2), new ChemDoodle.structures.Atom('C', 10, 10)).getCenter();
+	equal(4, center.x, 'Check center x');
+	equal(6, center.y, 'Check center y');
+});
+
+test('Check getLength function', function(){
 	expect(1);
-	ok(ChemDoodle.iChemLabs.cir, 'Function exists.');
+	equal(5, new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom('C', 3, 4)).getLength(), 'Check length');
 });
 
-test('Check elementalAnalaysis', function(assert) {
-	expect(8);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	const done = assert.async();
-	ChemDoodle.iChemLabs.elementalAnalysis(mol, {}, function(content) {
-		let result = content;
-		ok(result, 'Check result is not undefined');
-		ok(!result.error, 'Check there is no error');
-		equal('CH<sub>4</sub>', result.molecular_formula, 'Check the molecular formula');
-		equal('16.04 amu', result.molecular_mass, 'Check the molecular mass');
-		equal('16.03 amu', result.monoisotopic_mass, 'Check the monoisotopic mass');
-		equal('C-74.87; H-25.13', result.composition, 'Check the composition');
-		equal('16.03 (100.000%), 17.03 (1.082%), 17.04 (0.046%)', result.peaks, 'Check the peaks');
-		ok(result.jcamp.length>10, 'Check jcamp exists with content');
-		done();
-	});
-});
-
-test('Check elementalAnalaysis unknown isotope', function(assert) {
-	expect(8);
-	let mol = new ChemDoodle.structures.Molecule();
-	mol.atoms[0] = new ChemDoodle.structures.Atom();
-	mol.atoms[0].mass = 99;
-	const done = assert.async();
-	ChemDoodle.iChemLabs.elementalAnalysis(mol, {}, function(content) {
-		let result = content;
-		ok(result, 'Check result is not undefined');
-		equal('No data for isotope(s): 99C', result.error, 'Verify error has the correct message');
-		equal('<sup>99</sup>CH<sub>4</sub>', result.molecular_formula, 'Check the molecular formula');
-		equal(undefined, result.molecular_mass, 'Check the molecular mass');
-		equal(undefined, result.monoisotopic_mass, 'Check the monoisotopic mass');
-		equal(undefined, result.composition, 'Check the composition');
-		equal(undefined, result.peaks, 'Check the peaks');
-		equal(undefined, result.jcamp, 'Check the jcamp spectrum is undefined');
-		done();
-	});
+test('Check getLength3D function', function(){
+	expect(1);
+	equal(Math.sqrt(50), new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom('C', 3, 4, 5)).getLength3D(), 'Check length');
 });
 module('Molecule');
 
@@ -5653,838 +5157,6 @@ test('Check getElementColor function', function(){
 	equal('#33FF33', a.getElementColor(false, true, 'test', 2));
 	equal('#33FF33', a.getElementColor(false, true, 'test', 3));
 });
-module('Ring');
-
-test('Check Ring class exists', function() {
-	expect(1);
-	ok(ChemDoodle.structures.Ring, 'ChemDoodle.structures.Ring class exists');
-});
-
-test('Check default constructor', function() {
-	expect(2);
-	let ring = new ChemDoodle.structures.Ring();
-	equal(0, ring.atoms.length, 'Check empty atoms');
-	equal(0, ring.bonds.length, 'Check empty bonds');
-});
-
-test('Check getCenter function', function() {
-	expect(4);
-	let mol = ChemDoodle.readMOL(thiophene);
-	mol.check();
-	mol.check(true);
-	let center = mol.rings[0].getCenter();
-	equal(0, center.x, 'Check center x');
-	equal(0, center.y, 'Check center y');
-	for ( let i = 0; i < mol.atoms.length; i++) {
-		mol.atoms[i].x += 6;
-		mol.atoms[i].y += 10;
-	}
-	mol.check();
-	mol.check(true);
-	center = mol.rings[0].getCenter();
-	equal(6, center.x, 'Check center x');
-	equal(10, center.y, 'Check center y');
-});
-
-test('Check ownership', function() {
-	expect(10);
-	let mol = ChemDoodle.readMOL(thiophene);
-	mol.check();
-	mol.check(true);
-	let r = mol.rings[0];
-	for ( let i = 0; i < r.bonds.length; i++) {
-		// qunit logging is buggy, doesn't do just a ===, so this runs an
-		// infinite loop because Rings are cyclic
-		ok(r === r.bonds[i].ring, 'Check ring owns bond');
-	}
-	mol.bonds.pop();
-	mol.check();
-	mol.check(true);
-	equal(0, mol.rings.length);
-	for ( let i = 0; i < mol.bonds.length; i++) {
-		equal(undefined, mol.bonds[i].ring, 'Check no rings owns bond');
-	}
-});
-module('Query');
-
-test('Check Query class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.Query, 'ChemDoodle.structures.Query class exists');
-});
-
-test('Check default constructor for atom', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	expect(1);
-    equal(ChemDoodle.structures.Query.TYPE_ATOM, q.type, 'Check type');
-});
-
-test('Check default constructor for bond', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	expect(1);
-    equal(ChemDoodle.structures.Query.TYPE_BOND, q.type, 'Check type');
-});
-
-test('Check write empty atom', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	expect(1);
-    equal('[a]', q.toString(), 'Check output');
-});
-
-test('Check write atom identity', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.elements.v.push('C', 'Fe', 'x');
-	expect(1);
-    equal('[C,Fe,x]', q.toString(), 'Check output');
-});
-
-test('Check write atom identity not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.elements.v.push('C', 'Fe', 'x');
-	q.elements.not = true;
-	expect(1);
-    equal('![C,Fe,x]', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute aromatic', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.aromatic = {v:true};
-	expect(1);
-    equal('[a](A)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute aromatic not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.aromatic = {v:true, not:true};
-	expect(1);
-    equal('[a](!A)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute charge', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.charge = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](C=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute charge not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.charge = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!C=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute hydrogens', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.hydrogens = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](H=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute hydrogens not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.hydrogens = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!H=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute ringCount', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.ringCount = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](R=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute ringCount not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.ringCount = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!R=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute saturation', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.saturation = {v:true};
-	expect(1);
-    equal('[a](S)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute saturation', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.saturation = {v:true, not:true};
-	expect(1);
-    equal('[a](!S)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute connectivity', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.connectivity = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](X=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute connectivitynot', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.connectivity = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!X=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute connectivityNoH', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.connectivityNoH = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](x=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute connectivityNoH not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.connectivityNoH = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!x=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute chirality', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.chirality = {v:'R'};
-	expect(1);
-    equal('[a](@=R)', q.toString(), 'Check output');
-});
-
-test('Check write atom attribute chirality not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.chirality = {v:'R', not:true};
-	expect(1);
-    equal('[a](!@=R)', q.toString(), 'Check output');
-});
-
-test('Check write atom identity and attribute variables', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_ATOM);
-	q.connectivityNoH = {v:[{x:1,y:2},{x:5}]};
-	q.chirality = {v:'R'};
-	q.saturation = {v:true};
-	q.elements.v.push('C', 'Fe', 'x');
-	expect(1);
-    equal('[C,Fe,x](@=R,S,x=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write empty bond', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	expect(1);
-    equal('[a]', q.toString(), 'Check output');
-});
-
-test('Check write bond identity', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.orders.v.push('1', 'h', '3');
-	expect(1);
-    equal('[1,h,3]', q.toString(), 'Check output');
-});
-
-test('Check write bond identity not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.orders.v.push('1', 'h', '3');
-	q.orders.not = true;
-	expect(1);
-    equal('![1,h,3]', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute aromatic', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.aromatic = {v:true};
-	expect(1);
-    equal('[a](A)', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute aromatic not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.aromatic = {v:true, not:true};
-	expect(1);
-    equal('[a](!A)', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute ringCount', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.ringCount = {v:[{x:1,y:2},{x:5}]};
-	expect(1);
-    equal('[a](R=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute ringCount not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.ringCount = {v:[{x:1,y:2},{x:5}], not:true};
-	expect(1);
-    equal('[a](!R=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute chirality', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.stereo = {v:'E'};
-	expect(1);
-    equal('[a](@=E)', q.toString(), 'Check output');
-});
-
-test('Check write bond attribute chirality not', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.stereo = {v:'E', not:true};
-	expect(1);
-    equal('[a](!@=E)', q.toString(), 'Check output');
-});
-
-test('Check write bond identity and attribute variables', function(){
-	let q = new ChemDoodle.structures.Query(ChemDoodle.structures.Query.TYPE_BOND);
-	q.ringCount = {v:[{x:1,y:2},{x:5}]};
-	q.stereo = {v:'E'};
-	q.aromatic = true;
-	q.orders.v.push('1', 'h', '3');
-	expect(1);
-    equal('[1,h,3](@=E,A,R=1-2,5)', q.toString(), 'Check output');
-});
-
-test('Check parseRange single value', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('3');
-	expect(3);
-    equal(1, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(3, r0.x, 'Check x');
-    equal(undefined, r0.y, 'Check y');
-});
-
-test('Check parseRange single value negative', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('-3');
-	expect(3);
-    equal(1, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(-3, r0.x, 'Check x');
-    equal(undefined, r0.y, 'Check y');
-});
-
-
-test('Check parseRange wide', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('1-2, 5, 7-9');
-	expect(7);
-    equal(3, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(1, r0.x, 'Check x');
-    equal(2, r0.y, 'Check y');
-    let r1 = rs[1];
-    equal(5, r1.x, 'Check x');
-    equal(undefined, r1.y, 'Check y');
-    let r2 = rs[2];
-    equal(7, r2.x, 'Check x');
-    equal(9, r2.y, 'Check y');
-});
-
-
-test('Check parseRange split through 0', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('-1,1');
-	expect(5);
-    equal(2, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(-1, r0.x, 'Check x');
-    equal(undefined, r0.y, 'Check y');
-    let r1 = rs[1];
-    equal(1, r1.x, 'Check x');
-    equal(undefined, r1.y, 'Check y');
-});
-
-
-test('Check parseRange split through 0', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('-1-1');
-	expect(3);
-    equal(1, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(-1, r0.x, 'Check x');
-    equal(1, r0.y, 'Check y');
-});
-
-
-test('Check parseRange all negative', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('-2--1');
-	expect(3);
-    equal(1, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(-2, r0.x, 'Check x');
-    equal(-1, r0.y, 'Check y');
-});
-
-
-test('Check parseRange reverse', function(){
-	let rs = new ChemDoodle.structures.Query(0).parseRange('3-1');
-	expect(3);
-    equal(1, rs.length, 'Check length');
-    let r0 = rs[0];
-    equal(1, r0.x, 'Check x');
-    equal(3, r0.y, 'Check y');
-});
-
-module('Bond');
-
-test('Check Bond class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.Bond, 'ChemDoodle.structures.Bond class exists');
-});
-
-test('Check parameter a1/a2 constructor', function(){
-	let a1 = new ChemDoodle.structures.Atom();
-	let a2 = new ChemDoodle.structures.Atom();
-	let b = new ChemDoodle.structures.Bond(a1, a2);
-	expect(3);
-    equal(a1, b.a1, 'Check a1');
-    equal(a2, b.a2, 'Check a2');
-    equal(1, b.bondOrder, 'Check bond order');
-});
-
-test('Check parameter a1/a2/order constructor', function(){
-	let a1 = new ChemDoodle.structures.Atom();
-	let a2 = new ChemDoodle.structures.Atom();
-	let b = new ChemDoodle.structures.Bond(a1, a2, 2);
-	expect(3);
-    equal(a1, b.a1, 'Check a1');
-    equal(a2, b.a2, 'Check a2');
-    equal(2, b.bondOrder, 'Check bond order');
-});
-
-test('Check parameter a1/a2/order constructor where order is 0', function(){
-	let a1 = new ChemDoodle.structures.Atom();
-	let a2 = new ChemDoodle.structures.Atom();
-	let b = new ChemDoodle.structures.Bond(a1, a2, 0);
-	expect(3);
-    equal(a1, b.a1, 'Check a1');
-    equal(a2, b.a2, 'Check a2');
-    equal(0, b.bondOrder, 'Check bond order');
-});
-
-test('Check contains function', function(){
-	let a1 = new ChemDoodle.structures.Atom();
-	let a2 = new ChemDoodle.structures.Atom();
-	let a3 = new ChemDoodle.structures.Atom();
-	let b = new ChemDoodle.structures.Bond(a1, a2);
-	expect(3);
-	ok(b.contains(a1), 'Check contains a1');
-	ok(b.contains(a2), 'Check contains a2');
-	ok(!b.contains(a3), 'Check not contains a3');
-});
-	
-test('Check getNeighbor function', function(){
-	let a1 = new ChemDoodle.structures.Atom();
-	let a2 = new ChemDoodle.structures.Atom();
-	let a3 = new ChemDoodle.structures.Atom();
-	let b = new ChemDoodle.structures.Bond(a1, a2);
-	expect(3);
-	equal(a2, b.getNeighbor(a1), 'Check get neighbor of a1');
-	equal(a1, b.getNeighbor(a2), 'Check get neighbor of a2');
-	equal(undefined, b.getNeighbor(a3), 'Check no neighbor found for a3, undefined returned');
-});
-
-test('Check getCenter function', function(){
-	expect(2);
-	let center = new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom('C', -2, 2), new ChemDoodle.structures.Atom('C', 10, 10)).getCenter();
-	equal(4, center.x, 'Check center x');
-	equal(6, center.y, 'Check center y');
-});
-
-test('Check getLength function', function(){
-	expect(1);
-	equal(5, new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom('C', 3, 4)).getLength(), 'Check length');
-});
-
-test('Check getLength3D function', function(){
-	expect(1);
-	equal(Math.sqrt(50), new ChemDoodle.structures.Bond(new ChemDoodle.structures.Atom(), new ChemDoodle.structures.Atom('C', 3, 4, 5)).getLength3D(), 'Check length');
-});
-module('Residue');
-
-test('Check Residue class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.Residue, 'ChemDoodle.structures.Residue class exists');
-});
-module('Pill');
-
-test('Check Pill class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Pill, 'ChemDoodle.structures.d3.Pill class exists');
-});
-
-test('Check Pill class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Pill.prototype.bindBuffers, 'ChemDoodle.structures.d3.Pill class extends _Mesh');
-});
-module('UnitCell');
-
-test('Check UnitCell class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.UnitCell, 'ChemDoodle.structures.d3.UnitCell class exists');
-});
-
-test('Check UnitCell class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.UnitCell.prototype.bindBuffers, 'ChemDoodle.structures.d3.UnitCell class extends _Mesh');
-});
-
-test('Check default UnitCell offset', function(){
-	expect(4);
-	let uc = new ChemDoodle.structures.d3.UnitCell([1, 1, 1], [Math.PI/2, Math.PI/2, Math.PI/2]);
-	equal(3, uc.offset.length, 'Check offset length');
-    equal(0, uc.offset[0], 'Check offset x');
-    equal(0, uc.offset[1], 'Check offset y');
-    equal(0, uc.offset[2], 'Check offset z');
-});
-module('Tube');
-
-test('Check Tube class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Tube, 'ChemDoodle.structures.d3.Tube class exists');
-});
-
-test('Check Tube class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Tube.prototype.bindBuffers, 'ChemDoodle.structures.d3.Tube class extends _Mesh');
-});
-module('Mesh');
-
-test('Check Mesh class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3._Mesh, 'ChemDoodle.structures.d3._Mesh class exists');
-});
-module('Quad');
-
-test('Check Quad class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Quad, 'ChemDoodle.structures.d3.Quad class exists');
-});
-
-test('Check Quad class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Quad.prototype.bindBuffers, 'ChemDoodle.structures.d3.Quad class extends _Mesh');
-});
-module('Shape');
-
-test('Check Shape class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Shape, 'ChemDoodle.structures.d3.Shape class exists');
-});
-
-test('Check Shape class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Shape.prototype.bindBuffers, 'ChemDoodle.structures.d3.Shape class extends _Mesh');
-});
-module('Cylinder');
-
-test('Check Cylinder class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Cylinder, 'ChemDoodle.structures.d3.Cylinder class exists');
-});
-
-test('Check Cylinder class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Cylinder.prototype.bindBuffers, 'ChemDoodle.structures.d3.Cylinder class extends _Mesh');
-});
-module('Compass');
-
-test('Check Compass class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Compass, 'ChemDoodle.structures.d3.Compass class exists');
-});
-module('Arrow');
-
-test('Check Arrow class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Arrow, 'ChemDoodle.structures.d3.Arrow class exists');
-});
-
-test('Check Arrow class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Arrow.prototype.bindBuffers, 'ChemDoodle.structures.d3.Arrow class extends _Mesh');
-});
-module('Line');
-
-test('Check Line class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Line, 'ChemDoodle.structures.d3.Line class exists');
-});
-
-test('Check Line class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Line.prototype.bindBuffers, 'ChemDoodle.structures.d3.Line class extends _Mesh');
-});
-module('SSAO');
-
-test('Check SSAO class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.SSAO, 'ChemDoodle.structures.d3.SSAO class exists');
-});
-module('Renderbuffer');
-
-test('Check Renderbuffer class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Renderbuffer, 'ChemDoodle.structures.d3.Renderbuffer class exists');
-});
-module('Texture');
-
-test('Check Texture class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Texture, 'ChemDoodle.structures.d3.Texture class exists');
-});
-module('FrameBuffer');
-
-test('Check Framebuffer class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Framebuffer, 'ChemDoodle.structures.d3.Framebuffer class exists');
-});
-module('Camera');
-
-test('Check Camera class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Camera, 'ChemDoodle.structures.d3.Camera class exists');
-});
-module('Box');
-
-test('Check Box class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Box, 'ChemDoodle.structures.d3.Box class exists');
-});
-
-test('Check Box class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Box.prototype.bindBuffers, 'ChemDoodle.structures.d3.Box class extends _Mesh');
-});
-module('Light');
-
-test('Check Light class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Light, 'ChemDoodle.structures.d3.Light class exists');
-});
-module('Fog');
-
-test('Check Fog class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Fog, 'ChemDoodle.structures.d3.Fog class exists');
-});
-module('Surface');
-
-test('Check VDWSurface class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.VDWSurface, 'ChemDoodle.structures.d3.VDWSurface class exists');
-});
-
-test('Check VDWSurface class extends _Surface', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.VDWSurface.prototype.build, 'ChemDoodle.structures.d3.VDWSurface class extends _Surface');
-});
-
-test('Check VDWSurface class has a calculate function', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.VDWSurface.prototype.calculate, 'ChemDoodle.structures.d3.VDWSurface class has a calculate function');
-});
-module('Surface');
-
-test('Check SASSurface class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.SASSurface, 'ChemDoodle.structures.d3.SASSurface class exists');
-});
-
-test('Check SASSurface class extends _Surface', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.SASSurface.prototype.build, 'ChemDoodle.structures.d3.SASSurface class extends _Surface');
-});
-
-test('Check SASSurface class has a calculate function', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.SASSurface.prototype.calculate, 'ChemDoodle.structures.d3.SASSurface class has a calculate function');
-});
-module('Surface');
-
-test('Check _Surface class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3._Surface, 'ChemDoodle.structures.d3._Surface class exists');
-});
-
-test('Check _Surface class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3._Surface.prototype.bindBuffers, 'ChemDoodle.structures.d3._Surface class extends _Mesh');
-});
-module('Surface');
-
-test('Check SESSurface class exists', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.SESSurface, 'ChemDoodle.structures.d3.SESSurface class exists');
-});
-
-test('Check SESSurface class extends _Surface', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.SESSurface.prototype.build, 'ChemDoodle.structures.d3.SESSurface class extends _Surface');
-});
-
-test('Check SESSurface class has a calculate function', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.SESSurface.prototype.calculate, 'ChemDoodle.structures.d3.SESSurface class has a calculate function');
-});
-module('Material');
-
-test('Check Material class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Material, 'ChemDoodle.structures.d3.Material class exists');
-});
-module('PipePlank');
-
-test('Check PipePlank class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.PipePlank, 'ChemDoodle.structures.d3.PipePlank class exists');
-});
-
-test('Check PipePlank class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.PipePlank.prototype.bindBuffers, 'ChemDoodle.structures.d3.PipePlank class extends _Mesh');
-});
-module('Sphere');
-
-test('Check Sphere class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Sphere, 'ChemDoodle.structures.d3.Sphere class exists');
-});
-
-test('Check Sphere class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Sphere.prototype.bindBuffers, 'ChemDoodle.structures.d3.Sphere class extends _Mesh');
-});
-module('Ribbon');
-
-test('Check Ribbon class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Ribbon, 'ChemDoodle.structures.d3.Ribbon class exists');
-});
-
-test('Check Ribbon class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Ribbon.prototype.bindBuffers, 'ChemDoodle.structures.d3.Ribbon class extends _Mesh');
-});
-module('PositionShader');
-
-test('Check PositionShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.PositionShader, 'ChemDoodle.structures.d3.PositionShader class exists');
-});
-module('LightingShader');
-
-test('Check LightingShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.LightingShader, 'ChemDoodle.structures.d3.LightingShader class exists');
-});
-module('DepthShader');
-
-test('Check DepthShader class exists', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-	    // proprietary only
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.DepthShader, 'ChemDoodle.structures.d3.DepthShader class exists');
-});
-module('LabelShader');
-
-test('Check LabelShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.LabelShader, 'ChemDoodle.structures.d3.LabelShader class exists');
-});
-module('SSAOBlurShader');
-
-test('Check SSAOBlurShader class exists', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-	    // proprietary only
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.SSAOBlurShader, 'ChemDoodle.structures.d3.SSAOBlurShader class exists');
-});
-module('PhongShader');
-
-test('Check PhongShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.PhongShader, 'ChemDoodle.structures.d3.PhongShader class exists');
-});
-module('QuadShader');
-
-test('Check QuadShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.QuadShader, 'ChemDoodle.structures.d3.QuadShader class exists');
-});
-module('NormalShader');
-
-test('Check NormalShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.NormalShader, 'ChemDoodle.structures.d3.NormalShader class exists');
-});
-module('OutlineShader');
-
-test('Check OutlineShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.OutlineShader, 'ChemDoodle.structures.d3.OutlineShader class exists');
-});
-module('SSAOShader');
-
-test('Check SSAOShader class exists', function(){
-	if(!ChemDoodle.structures.CondensedLabel){
-	    // proprietary only
-		return expect(0);
-	}
-	expect(1);
-    ok(ChemDoodle.structures.d3.SSAOShader, 'ChemDoodle.structures.d3.SSAOShader class exists');
-});
-module('PickShader');
-
-test('Check PickShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.PickShader, 'ChemDoodle.structures.d3.PickShader class exists');
-});
-module('FXAAShader');
-
-test('Check FXAAShader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.FXAAShader, 'ChemDoodle.structures.d3.FXAAShader class exists');
-});
-module('Shader');
-
-test('Check _Shader class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3._Shader, 'ChemDoodle.structures.d3._Shader class exists');
-});
-module('Star');
-
-test('Check Star class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Star, 'ChemDoodle.structures.d3.Star class exists');
-});
-
-test('Check Star class extends _Mesh', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d3.Star.prototype.bindBuffers, 'ChemDoodle.structures.d3.Star class extends _Mesh');
-});
-module('Pusher');
-
-test('Check Pusher class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d2.Pusher, 'ChemDoodle.structures.d2.Pusher class exists');
-});
-
-test('Check Pusher class extends _Shape', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d2.Pusher.prototype.getBounds, 'ChemDoodle.structures.d2.Pusher class extends _Shape');
-});
-module('Shape');
-
-test('Check Shape class exists', function(){
-	expect(1);
-    ok(ChemDoodle.structures.d2._Shape, 'ChemDoodle.structures.d2._Shape class exists');
-});
 module('Line');
 
 test('Check Line class exists', function(){
@@ -6550,6 +5222,261 @@ test('Check getBounds', function() {
 	equal(3, b.maxX, 'Check maxX');
 	equal(4, b.maxY, 'Check maxY');
 });
+module('Pusher');
+
+test('Check Pusher class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d2.Pusher, 'ChemDoodle.structures.d2.Pusher class exists');
+});
+
+test('Check Pusher class extends _Shape', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d2.Pusher.prototype.getBounds, 'ChemDoodle.structures.d2.Pusher class extends _Shape');
+});
+
+test('Check Get Control Distance 1', function(){
+	expect(1);
+	let o1 = new ChemDoodle.structures.Atom('C', 0, 0, 0);
+	let o2 = new ChemDoodle.structures.Atom('C', 3, 3, 0);
+	equal(35, ChemDoodle.structures.d2.Pusher.getControlDistance(o1, o2));
+});
+
+test('Check Get Control Distance 2', function(){
+	expect(4);
+	let a0 = new ChemDoodle.structures.Atom('F', 0, -1, 0);
+	let a1 = new ChemDoodle.structures.Atom('C', 0, 0, 0);
+	let a2 = new ChemDoodle.structures.Atom('F', 0, 1, 0);
+	let a3 = new ChemDoodle.structures.Atom('O', 1, 0, 0);
+	let b0 = new ChemDoodle.structures.Bond(a1, a0, 1);
+	let b1 = new ChemDoodle.structures.Bond(a1, a2, 1);
+	let b2 = new ChemDoodle.structures.Bond(a1, a3, 2);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3);
+	m.bonds.push(b0, b1, b2);
+	m.setupMetaData();
+	equal(30, ChemDoodle.structures.d2.Pusher.getControlDistance(a0, a1));
+	equal(30, ChemDoodle.structures.d2.Pusher.getControlDistance(a0, b2));
+	a0.y = -200;
+	a2.y = 200;
+	a3.x = 200;
+	equal(200, ChemDoodle.structures.d2.Pusher.getControlDistance(a0, a1));
+	equal(100*Math.sqrt(2)/3, ChemDoodle.structures.d2.Pusher.getControlDistance(b0, b2));
+});
+
+test('Check Get Control Distance 3', function(){
+	expect(1);
+	let a0 = new ChemDoodle.structures.Atom('F', 0, -1, 0);
+	let a1 = new ChemDoodle.structures.Atom('C', 0,0,0);
+	let a2 = new ChemDoodle.structures.Atom('F', 0,1,0);
+	let a3 = new ChemDoodle.structures.Atom('F', -1,0,0);
+	let a4 = new ChemDoodle.structures.Atom('C', 200,0,0);
+	let a5 = new ChemDoodle.structures.Atom('F', 201,0,0);
+	let a6 = new ChemDoodle.structures.Atom('F', 200,-1,0);
+	let a7 = new ChemDoodle.structures.Atom('F', 200,1,0);
+	let b0 = new ChemDoodle.structures.Bond(a0,a1,1);
+	let b1 = new ChemDoodle.structures.Bond(a1,a2,1);
+	let b2 = new ChemDoodle.structures.Bond(a1,a3,1);
+	let b3 = new ChemDoodle.structures.Bond(a1,a4,1);
+	let b4 = new ChemDoodle.structures.Bond(a4,a5,1);
+	let b5 = new ChemDoodle.structures.Bond(a4,a6,1);
+	let b6 = new ChemDoodle.structures.Bond(a4,a7,1);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3, a4, a5, a6, a7);
+	m.bonds.push(b0, b1, b2, b3, b4, b5, b6);
+	m.setupMetaData();
+	equal(200/3, ChemDoodle.structures.d2.Pusher.getControlDistance(a1, a4));
+});
+
+test('Check Get Possible Angles Same Point', function(){
+	expect(12);
+	let a0 = new ChemDoodle.structures.Atom('C', 0,0,0);
+	let a1 = new ChemDoodle.structures.Atom('C', 0,0,0);
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a0, a1, 2);
+	ok(Array.isArray(angles));
+	equal(2, angles.length);
+	ok(Array.isArray(angles[0]));
+	ok(Array.isArray(angles[1]));
+	equal(3, angles[0].length);
+	equal(3, angles[1].length);
+	equal(0, angles[0][0]);
+	equal(Math.PI/6, angles[0][1]);
+	equal(11*Math.PI/6, angles[0][2]);
+	equal(Math.PI, angles[1][0]);
+	equal(7*Math.PI/6, angles[1][1]);
+	equal(5*Math.PI/6, angles[1][2]);
+});
+
+test('Check Get Possible Angles 1', function(){
+	expect(12);
+	let a0 = new ChemDoodle.structures.Atom('C', 0,0,0);
+	let a1 = new ChemDoodle.structures.Atom('C', 1,-1,0);
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a0,a1,2);
+	ok(Array.isArray(angles));
+	equal(2, angles.length);
+	ok(Array.isArray(angles[0]));
+	ok(Array.isArray(angles[1]));
+	equal(3, angles[0].length);
+	equal(3, angles[1].length);
+	closeEnough(Math.PI/4, angles[0][0], .00001);
+	closeEnough(5*Math.PI/12, angles[0][1], .00001);
+	closeEnough(Math.PI/12, angles[0][2], .00001);
+	closeEnough(5*Math.PI/4, angles[1][0], .00001);
+	closeEnough(17*Math.PI/12, angles[1][1], .00001);
+	closeEnough(13*Math.PI/12, angles[1][2], .00001);
+});
+
+test('Check Get Possible Angles 2', function(){
+	expect(20);
+	let a0 = new ChemDoodle.structures.Atom('F',0,-2,0);
+	let a1 = new ChemDoodle.structures.Atom('C',0,0,0);
+	let a2 = new ChemDoodle.structures.Atom('F',0,2,0);
+	let a3 = new ChemDoodle.structures.Atom('F',-1,1,0);
+	let a4 = new ChemDoodle.structures.Atom('F',1,1,0);
+	let b0 = new ChemDoodle.structures.Bond(a0,a1,1);
+	let b1 = new ChemDoodle.structures.Bond(a2,a1,1);
+	let b2 = new ChemDoodle.structures.Bond(a3,a1,1);
+	let b3 = new ChemDoodle.structures.Bond(a4,a1,1);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3, a4);
+	m.bonds.push(b0, b1, b2, b3);
+	m.setupMetaData();
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a1, a3, 2);
+	equal(2, angles.length);
+	equal(4, angles[0].length);
+	closeEnough(7*Math.PI/8, angles[0][0], .00001);
+	closeEnough(11*Math.PI/8, angles[0][1], .00001);
+	closeEnough(13*Math.PI/8, angles[0][2], .00001);
+	closeEnough(Math.PI/8, angles[0][3], .00001);
+	equal(3, angles[1].length);
+	closeEnough(5*Math.PI/4, angles[1][0], .00001);
+	closeEnough(3*Math.PI/4, angles[1][1], .00001);
+	closeEnough(7*Math.PI/4, angles[1][2], .00001);
+	angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a1, a4, 2);
+	equal(3, angles[1].length);
+	closeEnough(7*Math.PI/4, angles[1][0], .00001);
+	closeEnough(5*Math.PI/4, angles[1][1], .00001);
+	closeEnough(Math.PI/4, angles[1][2], .00001);
+	angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(b0, b2, 2);
+	equal(2, angles[0].length);
+	equal(2, angles[1].length);
+	closeEnough(2*Math.PI, angles[0][0], .00001);
+	closeEnough(Math.PI, angles[0][1], .00001);
+	closeEnough(3*Math.PI/4, angles[1][0], .00001);
+	closeEnough(7*Math.PI/4, angles[1][1], .00001);
+});
+
+test('Check Get Possible Angles 3', function(){
+	expect(13);
+	let a0 = new ChemDoodle.structures.Atom('F',-1,1,0);
+	let a1 = new ChemDoodle.structures.Atom('N',0,0,0);
+	let a2 = new ChemDoodle.structures.Atom('F',0,2,0);
+	let a3 = new ChemDoodle.structures.Atom('F',1,1,0);
+	let b0 = new ChemDoodle.structures.Bond(a0,a1,1);
+	let b1 = new ChemDoodle.structures.Bond(a1,a2,1);
+	let b2 = new ChemDoodle.structures.Bond(a1,a3,1);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3);
+	m.bonds.push(b0, b1, b2);
+	m.setupMetaData();
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a1, a3, 2);
+	equal(2, angles.length);
+	equal(5, angles[0].length);
+	closeEnough(11*Math.PI/8, angles[0][0], .00001);
+	closeEnough(13*Math.PI/8, angles[0][1], .00001);
+	closeEnough(Math.PI/2, angles[0][2], .00001);
+	closeEnough(Math.PI/8, angles[0][3], .00001);
+	closeEnough(7*Math.PI/8, angles[0][4], .00001);
+	a0.x = -2;
+	a0.y = 0;
+	a3.x = 2;
+	a3.y = 0;
+	m.setupMetaData();
+	angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a1, a3, 2);
+	equal(5, angles[0].length);
+	closeEnough(Math.PI/2, angles[0][0], .00001);
+	closeEnough(5*Math.PI/4, angles[0][1], .00001);
+	closeEnough(7*Math.PI/4, angles[0][2], .00001);
+	closeEnough(Math.PI/3, angles[0][3], .00001);
+	closeEnough(2*Math.PI/3, angles[0][4], .00001);
+});
+
+test('Check Get Possible Angles 4', function(){
+	expect(8);
+	let a0 = new ChemDoodle.structures.Atom('O',-1,0,0);
+	let a1 = new ChemDoodle.structures.Atom('C',0,0,0);
+	let a2 = new ChemDoodle.structures.Atom('O',1,0,0);
+	let b0 = new ChemDoodle.structures.Bond(a0,a1,2);
+	let b1 = new ChemDoodle.structures.Bond(a1,a2,2);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2);
+	m.bonds.push(b0, b1);
+	m.setupMetaData();
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a1,a0,2);
+	equal(2, angles.length);
+	equal(6, angles[0].length);
+	closeEnough(Math.PI/2, angles[0][0], .00001);
+	closeEnough(2*Math.PI/3, angles[0][1], .00001);
+	closeEnough(Math.PI/3, angles[0][2], .00001);
+	closeEnough(3*Math.PI/2, angles[0][3], .00001);
+	closeEnough(5*Math.PI/3, angles[0][4], .00001);
+	closeEnough(4*Math.PI/3, angles[0][5], .00001);
+});
+
+test('Check Get Possible Angles 5', function(){
+	expect(3);
+	let a0 = new ChemDoodle.structures.Atom('F', -1, -1, 0);
+	let a1 = new ChemDoodle.structures.Atom('C', 0, 0, 0);
+	let a2 = new ChemDoodle.structures.Atom('F', -1, 1, 0);
+	let a3 = new ChemDoodle.structures.Atom('O', 1, 0, 0);
+	let b0 = new ChemDoodle.structures.Bond(a1, a0, 1);
+	let b1 = new ChemDoodle.structures.Bond(a1, a2, 1);
+	let b2 = new ChemDoodle.structures.Bond(a1, a3, 2);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3);
+	m.bonds.push(b0, b1, b2);
+	m.setupMetaData();
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a0,a1,2);
+	equal(2, angles.length);
+	equal(1, angles[1].length);
+	closeEnough(Math.PI, angles[1][0], .00001);
+});
+
+test('Check Get Possible Angles 6', function(){
+	expect(19);
+	let a0 = new ChemDoodle.structures.Atom('F',-1,0,0);
+	let a1 = new ChemDoodle.structures.Atom('O',0,0,0);
+	let a2 = new ChemDoodle.structures.Atom('O',0,1,0);
+	let a3 = new ChemDoodle.structures.Atom('F',0,2,0);
+	let b0 = new ChemDoodle.structures.Bond(a0,a1,1);
+	let b1 = new ChemDoodle.structures.Bond(a1,a2,1);
+	let b2 = new ChemDoodle.structures.Bond(a2,a3,1);
+	let m = new ChemDoodle.structures.Molecule();
+	m.atoms.push(a0, a1, a2, a3);
+	m.bonds.push(b0, b1, b2);
+	m.setupMetaData();
+	let angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(a0,a2,2);
+	equal(2, angles.length);
+	equal(3, angles[0].length);
+	closeEnough(Math.PI, angles[0][0], .00001);
+	closeEnough(Math.PI/2, angles[0][1], .00001);
+	closeEnough(Math.PI/2*3, angles[0][2], .00001);
+	equal(6, angles[1].length);
+	closeEnough(Math.PI, angles[1][0], .00001);
+	closeEnough(Math.PI/6*7, angles[1][1], .00001);
+	closeEnough(Math.PI/6*5, angles[1][2], .00001);
+	closeEnough(Math.PI*2, angles[1][3], .00001);
+	closeEnough(Math.PI/6, angles[1][4], .00001);
+	closeEnough(Math.PI+Math.PI/6*5, angles[1][5], .00001);
+	angles = ChemDoodle.structures.d2.Pusher.getPossibleAngles(b0,b2,2);
+	equal(2, angles.length);
+	equal(2, angles[0].length);
+	closeEnough(Math.PI/2, angles[0][0], .00001);
+	closeEnough(Math.PI/2*3, angles[0][1], .00001);
+	equal(2, angles[1].length);
+	closeEnough(Math.PI*2, angles[1][0], .00001);
+	closeEnough(Math.PI, angles[1][1], .00001);
+});
+
 module('Bracket');
 
 test('Check Bracket class exists', function(){
@@ -6615,6 +5542,12 @@ test('Check getBounds', function() {
 	equal(3, b.maxX, 'Check maxX');
 	equal(4, b.maxY, 'Check maxY');
 });
+module('Shape');
+
+test('Check Shape class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d2._Shape, 'ChemDoodle.structures.d2._Shape class exists');
+});
 module('RepeatUnit');
 
 test('Check RepeatUnit class exists', function(){
@@ -6659,322 +5592,477 @@ test('Check Pusher class extends _Shape', function(){
 	expect(1);
     ok(ChemDoodle.structures.d2.AtomMapping.prototype.getBounds, 'ChemDoodle.structures.d2.AtomMapping class extends _Shape');
 });
-module('Styles');
+module('Point');
 
-test('Check Styles class exists', function() {
+test('Check Point class exists', function(){
 	expect(1);
-	ok(ChemDoodle.structures.Styles, 'ChemDoodle.structures.Styles class exists');
+    ok(ChemDoodle.structures.Point, 'ChemDoodle.structures.Point class exists');
 });
 
-test('Check modification doesn\'t affect previous instances', function() {
-	expect(6);
-	let save = ChemDoodle.DEFAULT_STYLES.lightDirection_3D;
-	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = [2];
-	let styles = new ChemDoodle.structures.Styles();
-	ok(1, styles.lightDirection_3D.length, 'Length is correct');
-	ok(2, styles.lightDirection_3D[0], 'Value is correct');
-	ChemDoodle.DEFAULT_STYLES.lightDirection_3D[0] = [-3];
-	ok(1, styles.lightDirection_3D.length, 'Length is correct');
-	ok(2, styles.lightDirection_3D[0], 'Value is correct');
-	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = [1,2,3,4];
-	ok(1, styles.lightDirection_3D.length, 'Length is correct');
-	ok(2, styles.lightDirection_3D[0], 'Value is correct');
-	ChemDoodle.DEFAULT_STYLES.lightDirection_3D = save;
-});
-
-test('Check creation creates copies of objects', function() {
-	let styles = new ChemDoodle.structures.Styles();
-	expect(4);
-	ok(styles.lightDirection_3D !== ChemDoodle.DEFAULT_STYLES.lightDirection_3D, 'Check lightDirection_3D is a copy');
-	ok(styles.atoms_font_families_2D !== ChemDoodle.DEFAULT_STYLES.atoms_font_families_2D, 'Check atoms_font_families_2D is a copy');
-	ok(styles.macro_rainbowColors !== ChemDoodle.DEFAULT_STYLES.macro_rainbowColors, 'Check macro_rainbowColors is a copy');
-	ok(styles.text_font_families !== ChemDoodle.DEFAULT_STYLES.text_font_families, 'Check text_font_families is a copy');
-});
-
-test('Check copy creates copies of objects', function() {
-	let styles1 = new ChemDoodle.structures.Styles();
-	styles1.colorHover = 'orange';
-	let styles2 = styles1.copy();
-	expect(8);
-	ok(styles1.lightDirection_3D !== styles2.lightDirection_3D, 'Check lightDirection_3D is a copy');
-	ok(styles1.atoms_font_families_2D !== styles2.atoms_font_families_2D, 'Check atoms_font_families_2D is a copy');
-	ok(styles1.macro_rainbowColors !== styles2.macro_rainbowColors, 'Check macro_rainbowColors is a copy');
-	ok(styles1.text_font_families !== styles2.text_font_families, 'Check text_font_families is a copy');
-	equal('orange', styles2.colorHover, 'Check colorHover is copied');
-	// change a spec
-	styles2.colorSelect = 'gold';
-	equal('#0060B2', styles1.colorSelect, 'Check colorSelect is default');
-	// reverse
-	styles1.colorError = 'black';
-	equal('#c10000', styles2.colorError, 'Check colorError is default');
-	// check function is still a function
-	ok(styles2.set3DRepresentation instanceof Function);
-});
-
-test('Check set3DRepresentation with Wireframe works on copy', function() {
-	expect(4);
-	let styles = new ChemDoodle.structures.Styles().copy();
-	styles.set3DRepresentation('Wireframe');
-	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use VDWDiameters for atoms');
-	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
-	equal(.15, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
-	equal(ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, styles.bonds_materialAmbientColor_3D, 'Check bond material ambient is the same as the default atom material ambient color');
-});
-
-test('Check creation absorbs defaults', function() {
-	let styles = new ChemDoodle.structures.Styles();
-	expect(181);
-	// canvas properties
-	equal(styles.backgroundColor, ChemDoodle.DEFAULT_STYLES.backgroundColor, 'Check backgroundColor');
-	equal(styles.scale, ChemDoodle.DEFAULT_STYLES.scale, 'Check scale');
-	equal(styles.rotateAngle, ChemDoodle.DEFAULT_STYLES.rotateAngle, 'Check rotateAngle');
-	equal(styles.bondLength_2D, ChemDoodle.DEFAULT_STYLES.bondLength_2D, 'Check bondLength_2D');
-	equal(styles.angstromsPerBondLength, ChemDoodle.DEFAULT_STYLES.angstromsPerBondLength, 'Check angstromsPerBondLength');
-	deepEqual(styles.lightDirection_3D, ChemDoodle.DEFAULT_STYLES.lightDirection_3D, 'Check lightDirection_3D');
-	equal(styles.lightDiffuseColor_3D, ChemDoodle.DEFAULT_STYLES.lightDiffuseColor_3D, 'Check lightDiffuseColor_3D');
-	equal(styles.lightSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.lightSpecularColor_3D, 'Check lightSpecularColor_3D');
-	equal(styles.projectionPerspective_3D, ChemDoodle.DEFAULT_STYLES.projectionPerspective_3D, 'Check projectionPerspective_3D');
-	equal(styles.projectionPerspectiveVerticalFieldOfView_3D, ChemDoodle.DEFAULT_STYLES.projectionPerspectiveVerticalFieldOfView_3D, 'Check projectionPerspectiveVerticalFieldOfView_3D');
-	equal(styles.projectionOrthoWidth_3D, ChemDoodle.DEFAULT_STYLES.projectionOrthoWidth_3D, 'Check projectionOrthoWidth_3D');
-	equal(styles.projectionWidthHeightRatio_3D, ChemDoodle.DEFAULT_STYLES.projectionWidthHeightRatio_3D, 'Check projectionWidthHeightRatio_3D');
-	equal(styles.projectionFrontCulling_3D, ChemDoodle.DEFAULT_STYLES.projectionFrontCulling_3D, 'Check projectionFrontCulling_3D');
-	equal(styles.projectionBackCulling_3D, ChemDoodle.DEFAULT_STYLES.projectionBackCulling_3D, 'Check projectionBackCulling_3D');
-	equal(styles.backFaceCulling_3D, ChemDoodle.DEFAULT_STYLES.backFaceCulling_3D, 'Check backFaceCulling_3D');
-	equal(styles.fog_mode_3D, ChemDoodle.DEFAULT_STYLES.fog_mode_3D, 'Check fog_mode_3D');
-	equal(styles.fog_color_3D, ChemDoodle.DEFAULT_STYLES.fog_color_3D, 'Check fog_color_3D');
-	equal(styles.fog_start_3D, ChemDoodle.DEFAULT_STYLES.fog_start_3D, 'Check fog_start_3D');
-	equal(styles.fog_end_3D, ChemDoodle.DEFAULT_STYLES.fog_end_3D, 'Check fog_end_3D');
-	equal(styles.fog_density_3D, ChemDoodle.DEFAULT_STYLES.fog_density_3D, 'Check fog_density_3D');
-	equal(styles.shadow_3D, ChemDoodle.DEFAULT_STYLES.shadow_3D, 'Check shadow_3D');
-	equal(styles.shadow_intensity_3D, ChemDoodle.DEFAULT_STYLES.shadow_intensity_3D, 'Check shadow_intensity_3D');
-	equal(styles.flat_color_3D, ChemDoodle.DEFAULT_STYLES.flat_color_3D, 'Check flat_color_3D');
-	equal(styles.antialias_3D, ChemDoodle.DEFAULT_STYLES.antialias_3D, 'Check antialias_3D');
-	equal(styles.gammaCorrection_3D, ChemDoodle.DEFAULT_STYLES.gammaCorrection_3D, 'Check gammaCorrection_3D');
-	equal(styles.colorHover, ChemDoodle.DEFAULT_STYLES.colorHover, 'Check colorHover');
-	equal(styles.colorSelect, ChemDoodle.DEFAULT_STYLES.colorSelect, 'Check colorSelect');
-	equal(styles.colorError, ChemDoodle.DEFAULT_STYLES.colorError, 'Check colorError');
-	equal(styles.colorPreview, ChemDoodle.DEFAULT_STYLES.colorPreview, 'Check colorPreview');
-	
-	// 3D shaders
-	equal(styles.ssao_3D, ChemDoodle.DEFAULT_STYLES.ssao_3D, 'Check ssao_3D');
-	equal(styles.ssao_kernel_radius, ChemDoodle.DEFAULT_STYLES.ssao_kernel_radius, 'Check ssao_kernel_radius');
-	equal(styles.ssao_kernel_samples, ChemDoodle.DEFAULT_STYLES.ssao_kernel_samples, 'Check ssao_kernel_samples');
-	equal(styles.ssao_power, ChemDoodle.DEFAULT_STYLES.ssao_power, 'Check ssao_power');
-	equal(styles.outline_3D, ChemDoodle.DEFAULT_STYLES.outline_3D, 'Check outline_3D');
-	equal(styles.outline_normal_threshold, ChemDoodle.DEFAULT_STYLES.outline_normal_threshold, 'Check outline_normal_threshold');
-	equal(styles.outline_depth_threshold, ChemDoodle.DEFAULT_STYLES.outline_depth_threshold, 'Check outline_depth_threshold');
-	equal(styles.outline_thickness, ChemDoodle.DEFAULT_STYLES.outline_thickness, 'Check outline_thickness');
-	equal(styles.fxaa_edgeThreshold, ChemDoodle.DEFAULT_STYLES.fxaa_edgeThreshold, 'Check fxaa_edgeThreshold');
-	equal(styles.fxaa_edgeThresholdMin, ChemDoodle.DEFAULT_STYLES.fxaa_edgeThresholdMin, 'Check fxaa_edgeThresholdMin');
-	equal(styles.fxaa_searchSteps, ChemDoodle.DEFAULT_STYLES.fxaa_searchSteps, 'Check fxaa_searchSteps');
-	equal(styles.fxaa_searchThreshold, ChemDoodle.DEFAULT_STYLES.fxaa_searchThreshold, 'Check fxaa_searchThreshold');
-	equal(styles.fxaa_subpixCap, ChemDoodle.DEFAULT_STYLES.fxaa_subpixCap, 'Check fxaa_subpixCap');
-	equal(styles.fxaa_subpixTrim, ChemDoodle.DEFAULT_STYLES.fxaa_subpixTrim, 'Check fxaa_subpixTrim');
-
-	// atom properties
-	equal(styles.atoms_display, ChemDoodle.DEFAULT_STYLES.atoms_display, 'Check atoms_display');
-	equal(styles.atoms_color, ChemDoodle.DEFAULT_STYLES.atoms_color, 'Check atoms_color');
-	equal(styles.atoms_font_size_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_size_2D, 'Check atoms_font_size_2D');
-	deepEqual(styles.atoms_font_families_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_families_2D, 'Check atoms_font_families_2D');
-	equal(styles.atoms_font_bold_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_bold_2D, 'Check atoms_font_bold_2D');
-	equal(styles.atoms_font_italic_2D, ChemDoodle.DEFAULT_STYLES.atoms_font_italic_2D, 'Check atoms_font_italic_2D');
-	equal(styles.atoms_circles_2D, ChemDoodle.DEFAULT_STYLES.atoms_circles_2D, 'Check atoms_circles_2D');
-	equal(styles.atoms_circleDiameter_2D, ChemDoodle.DEFAULT_STYLES.atoms_circleDiameter_2D, 'Check atoms_circleDiameter_2D');
-	equal(styles.atoms_circleBorderWidth_2D, ChemDoodle.DEFAULT_STYLES.atoms_circleBorderWidth_2D, 'Check atoms_circleBorderWidth_2D');
-	equal(styles.atoms_lonePairDistance_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairDistance_2D, 'Check atoms_lonePairDistance_2D');
-	equal(styles.atoms_lonePairSpread_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairSpread_2D, 'Check atoms_lonePairSpread_2D');
-	equal(styles.atoms_lonePairDiameter_2D, ChemDoodle.DEFAULT_STYLES.atoms_lonePairDiameter_2D, 'Check atoms_lonePairDiameter_2D');
-	equal(styles.atoms_useJMOLColors, ChemDoodle.DEFAULT_STYLES.atoms_useJMOLColors, 'Check atoms_useJMOLColors');
-	equal(styles.atoms_usePYMOLColors, ChemDoodle.DEFAULT_STYLES.atoms_usePYMOLColors, 'Check atoms_usePYMOLColors');
-	equal(styles.atoms_resolution_3D, ChemDoodle.DEFAULT_STYLES.atoms_resolution_3D, 'Check atoms_resolution_3D');
-	equal(styles.atoms_sphereDiameter_3D, ChemDoodle.DEFAULT_STYLES.atoms_sphereDiameter_3D, 'Check atoms_sphereDiameter_3D');
-	equal(styles.atoms_useVDWDiameters_3D, ChemDoodle.DEFAULT_STYLES.atoms_useVDWDiameters_3D, 'Check atoms_useVDWDiameters_3D');
-	equal(styles.atoms_vdwMultiplier_3D, ChemDoodle.DEFAULT_STYLES.atoms_vdwMultiplier_3D, 'Check atoms_vdwMultiplier_3D');
-	equal(styles.atoms_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, 'Check atoms_materialAmbientColor_3D');
-	equal(styles.atoms_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialSpecularColor_3D, 'Check atoms_materialSpecularColor_3D');
-	equal(styles.atoms_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.atoms_materialShininess_3D, 'Check atoms_materialShininess_3D');
-	equal(styles.atoms_implicitHydrogens_2D, ChemDoodle.DEFAULT_STYLES.atoms_implicitHydrogens_2D, 'Check atoms_implicitHydrogens_2D');
-	equal(styles.atoms_displayTerminalCarbonLabels_2D, ChemDoodle.DEFAULT_STYLES.atoms_displayTerminalCarbonLabels_2D, 'Check atoms_displayTerminalCarbonLabels_2D');
-	equal(styles.atoms_showHiddenCarbons_2D, ChemDoodle.DEFAULT_STYLES.atoms_showHiddenCarbons_2D, 'Check atoms_showHiddenCarbons_2D');
-	equal(styles.atoms_showAttributedCarbons_2D, ChemDoodle.DEFAULT_STYLES.atoms_showAttributedCarbons_2D, 'Check atoms_showAttributedCarbons_2D');
-	equal(styles.atoms_displayAllCarbonLabels_2D, ChemDoodle.DEFAULT_STYLES.atoms_displayAllCarbonLabels_2D, 'Check atoms_displayAllCarbonLabels_2D');
-	equal(styles.atoms_nonBondedAsStars_3D, ChemDoodle.DEFAULT_STYLES.atoms_nonBondedAsStars_3D, 'Check atoms_nonBondedAsStars_3D');
-	equal(styles.atoms_displayLabels_3D, ChemDoodle.DEFAULT_STYLES.atoms_displayLabels_3D, 'Check atoms_displayLabels_3D');
-	equal(styles.atoms_HBlack_2D, ChemDoodle.DEFAULT_STYLES.atoms_HBlack_2D, 'Check atoms_HBlack_2D');
-
-	// bond properties
-	equal(styles.bonds_display, ChemDoodle.DEFAULT_STYLES.bonds_display, 'Check bonds_display');
-	equal(styles.bonds_color, ChemDoodle.DEFAULT_STYLES.bonds_color, 'Check bonds_color');
-	equal(styles.bonds_width_2D, ChemDoodle.DEFAULT_STYLES.bonds_width_2D, 'Check bonds_width_2D');
-	equal(styles.bonds_useAbsoluteSaturationWidths_2D, ChemDoodle.DEFAULT_STYLES.bonds_useAbsoluteSaturationWidths_2D, 'Check bonds_useAbsoluteSaturationWidths_2D');
-	equal(styles.bonds_saturationWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationWidth_2D, 'Check bonds_saturationWidth_2D');
-	equal(styles.bonds_saturationWidthAbs_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationWidthAbs_2D, 'Check bonds_saturationWidthAbs_2D');
-	equal(styles.bonds_ends_2D, ChemDoodle.DEFAULT_STYLES.bonds_ends_2D, 'Check bonds_ends_2D');
-	equal(styles.bonds_splitColor, ChemDoodle.DEFAULT_STYLES.bonds_splitColor, 'Check bonds_splitColor');
-	equal(styles.bonds_colorGradient, ChemDoodle.DEFAULT_STYLES.bonds_colorGradient, 'Check bonds_colorGradient');
-	equal(styles.bonds_saturationAngle_2D, ChemDoodle.DEFAULT_STYLES.bonds_saturationAngle_2D, 'Check bonds_saturationAngle_2D');
-	equal(styles.bonds_symmetrical_2D, ChemDoodle.DEFAULT_STYLES.bonds_symmetrical_2D, 'Check bonds_symmetrical_2D');
-	equal(styles.bonds_clearOverlaps_2D, ChemDoodle.DEFAULT_STYLES.bonds_clearOverlaps_2D, 'Check bonds_clearOverlaps_2D');
-	equal(styles.bonds_overlapClearWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_overlapClearWidth_2D, 'Check bonds_overlapClearWidth_2D');
-	equal(styles.bonds_atomLabelBuffer_2D, ChemDoodle.DEFAULT_STYLES.bonds_atomLabelBuffer_2D, 'Check bonds_atomLabelBuffer_2D');
-	equal(styles.bonds_wedgeThickness_2D, ChemDoodle.DEFAULT_STYLES.bonds_wedgeThickness_2D, 'Check bonds_wedgeThickness_2D');
-	equal(styles.bonds_wavyLength_2D, ChemDoodle.DEFAULT_STYLES.bonds_wavyLength_2D, 'Check bonds_wavyLength_2D');
-	equal(styles.bonds_hashWidth_2D, ChemDoodle.DEFAULT_STYLES.bonds_hashWidth_2D, 'Check bonds_hashWidth_2D');
-	equal(styles.bonds_hashSpacing_2D, ChemDoodle.DEFAULT_STYLES.bonds_hashSpacing_2D, 'Check bonds_hashSpacing_2D');
-	equal(styles.bonds_dotSize_2D, ChemDoodle.DEFAULT_STYLES.bonds_dotSize_2D, 'Check bonds_dotSize_2D');
-	equal(styles.bonds_lewisStyle_2D, ChemDoodle.DEFAULT_STYLES.bonds_lewisStyle_2D, 'Check bonds_lewisStyle_2D');
-	equal(styles.bonds_showBondOrders_3D, ChemDoodle.DEFAULT_STYLES.bonds_showBondOrders_3D, 'Check bonds_showBondOrders_3D');
-	equal(styles.bonds_resolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_resolution_3D, 'Check bonds_resolution_3D');
-	equal(styles.bonds_renderAsLines_3D, ChemDoodle.DEFAULT_STYLES.bonds_renderAsLines_3D, 'Check bonds_renderAsLines_3D');
-	equal(styles.bonds_cylinderDiameter_3D, ChemDoodle.DEFAULT_STYLES.bonds_cylinderDiameter_3D, 'Check bonds_cylinderDiameter_3D');
-	equal(styles.bonds_pillHeight_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillHeight_3D, 'Check bonds_pillHeight_3D');
-	equal(styles.bonds_pillLatitudeResolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillLatitudeResolution_3D, 'Check bonds_pillLatitudeResolution_3D');
-	equal(styles.bonds_pillLongitudeResolution_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillLongitudeResolution_3D, 'Check bonds_pillLongitudeResolution_3D');
-	equal(styles.bonds_pillSpacing_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillSpacing_3D, 'Check bonds_pillSpacing_3D');
-	equal(styles.bonds_pillDiameter_3D, ChemDoodle.DEFAULT_STYLES.bonds_pillDiameter_3D, 'Check bonds_pillDiameter_3D');
-	equal(styles.bonds_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialAmbientColor_3D, 'Check bonds_materialAmbientColor_3D');
-	equal(styles.bonds_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialSpecularColor_3D, 'Check bonds_materialSpecularColor_3D');
-	equal(styles.bonds_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.bonds_materialShininess_3D, 'Check bonds_materialShininess_3D');
-	
-	// macromolecular properties
-	equal(styles.proteins_displayRibbon, ChemDoodle.DEFAULT_STYLES.proteins_displayRibbon, 'Check proteins_displayRibbon');
-	equal(styles.proteins_displayBackbone, ChemDoodle.DEFAULT_STYLES.proteins_displayBackbone, 'Check proteins_displayBackbone');
-	equal(styles.proteins_backboneThickness, ChemDoodle.DEFAULT_STYLES.proteins_backboneThickness, 'Check proteins_backboneThickness');
-	equal(styles.proteins_backboneColor, ChemDoodle.DEFAULT_STYLES.proteins_backboneColor, 'Check proteins_backboneColor');
-	equal(styles.proteins_ribbonCartoonize, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonize, 'Check proteins_ribbonCartoonize');
-	equal(styles.proteins_residueColor, ChemDoodle.DEFAULT_STYLES.proteins_residueColor, 'Check proteins_residueColor');
-	equal(styles.proteins_primaryColor, ChemDoodle.DEFAULT_STYLES.proteins_primaryColor, 'Check proteins_primaryColor');
-	equal(styles.proteins_secondaryColor, ChemDoodle.DEFAULT_STYLES.proteins_secondaryColor, 'Check proteins_secondaryColor');
-	equal(styles.proteins_ribbonCartoonHelixPrimaryColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonHelixPrimaryColor, 'Check proteins_ribbonCartoonHelixPrimaryColor');
-	equal(styles.proteins_ribbonCartoonHelixSecondaryColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonHelixSecondaryColor, 'Check proteins_ribbonCartoonHelixSecondaryColor');
-	equal(styles.proteins_tubeColor, ChemDoodle.DEFAULT_STYLES.proteins_tubeColor, 'Check proteins_tubeColor');
-	equal(styles.proteins_tubeResolution_3D, ChemDoodle.DEFAULT_STYLES.proteins_tubeResolution_3D, 'Check proteins_tubeResolution_3D');
-	equal(styles.proteins_displayPipePlank, ChemDoodle.DEFAULT_STYLES.proteins_displayPipePlank, 'Check proteins_displayPipePlank');
-	equal(styles.proteins_ribbonThickness, ChemDoodle.DEFAULT_STYLES.proteins_ribbonThickness, 'Check proteins_ribbonThickness');
-	equal(styles.proteins_ribbonCartoonSheetColor, ChemDoodle.DEFAULT_STYLES.proteins_ribbonCartoonSheetColor, 'Check proteins_ribbonCartoonSheetColor');
-	equal(styles.proteins_tubeThickness, ChemDoodle.DEFAULT_STYLES.proteins_tubeThickness, 'Check proteins_tubeThickness');
-	equal(styles.proteins_plankSheetWidth, ChemDoodle.DEFAULT_STYLES.proteins_plankSheetWidth, 'Check proteins_plankSheetWidth');
-	equal(styles.proteins_cylinderHelixDiameter, ChemDoodle.DEFAULT_STYLES.proteins_cylinderHelixDiameter, 'Check proteins_cylinderHelixDiameter');
-	equal(styles.proteins_verticalResolution, ChemDoodle.DEFAULT_STYLES.proteins_verticalResolution, 'Check proteins_verticalResolution');
-	equal(styles.proteins_horizontalResolution, ChemDoodle.DEFAULT_STYLES.proteins_horizontalResolution, 'Check proteins_horizontalResolution');
-	equal(styles.proteins_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialAmbientColor_3D, 'Check proteins_materialAmbientColor_3D');
-	equal(styles.proteins_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialSpecularColor_3D, 'Check proteins_materialSpecularColor_3D');
-	equal(styles.proteins_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.proteins_materialShininess_3D, 'Check proteins_materialShininess_3D');
-	equal(styles.macro_displayAtoms, ChemDoodle.DEFAULT_STYLES.macro_displayAtoms, 'Check macro_displayAtoms');
-	equal(styles.macro_displayBonds, ChemDoodle.DEFAULT_STYLES.macro_displayBonds, 'Check macro_displayBonds');
-	equal(styles.macro_atomToLigandDistance, ChemDoodle.DEFAULT_STYLES.macro_atomToLigandDistance, 'Check macro_atomToLigandDistance');
-	equal(styles.nucleics_display, ChemDoodle.DEFAULT_STYLES.nucleics_display, 'Check nucleics_display');
-	equal(styles.nucleics_tubeColor, ChemDoodle.DEFAULT_STYLES.nucleics_tubeColor, 'Check nucleics_tubeColor');
-	equal(styles.nucleics_baseColor, ChemDoodle.DEFAULT_STYLES.nucleics_baseColor, 'Check nucleics_baseColor');
-	equal(styles.nucleics_residueColor, ChemDoodle.DEFAULT_STYLES.nucleics_residueColor, 'Check nucleics_residueColor');
-	equal(styles.nucleics_tubeThickness, ChemDoodle.DEFAULT_STYLES.nucleics_tubeThickness, 'Check nucleics_tubeThickness');
-	equal(styles.nucleics_tubeResolution_3D, ChemDoodle.DEFAULT_STYLES.nucleics_tubeResolution_3D, 'Check nucleics_tubeResolution_3D');
-	equal(styles.nucleics_verticalResolution, ChemDoodle.DEFAULT_STYLES.nucleics_verticalResolution, 'Check nucleics_verticalResolution');
-	equal(styles.nucleics_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialAmbientColor_3D, 'Check nucleics_materialAmbientColor_3D');
-	equal(styles.nucleics_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialSpecularColor_3D, 'Check nucleics_materialSpecularColor_3D');
-	equal(styles.nucleics_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.nucleics_materialShininess_3D, 'Check nucleics_materialShininess_3D');
-	equal(styles.macro_showWater, ChemDoodle.DEFAULT_STYLES.macro_showWater, 'Check macro_showWater');
-	equal(styles.macro_colorByChain, ChemDoodle.DEFAULT_STYLES.macro_colorByChain, 'Check macro_colorByChain');
-	deepEqual(styles.macro_rainbowColors, ChemDoodle.DEFAULT_STYLES.macro_rainbowColors, 'Check macro_rainbowColors');
-	
-	// surface properties
-	equal(styles.surfaces_display, ChemDoodle.DEFAULT_STYLES.surfaces_display, 'Check surfaces_display');
-	equal(styles.surfaces_alpha, ChemDoodle.DEFAULT_STYLES.surfaces_alpha, 'Check surfaces_alpha');
-	equal(styles.surfaces_style, ChemDoodle.DEFAULT_STYLES.surfaces_style, 'Check surfaces_style');
-	equal(styles.surfaces_color, ChemDoodle.DEFAULT_STYLES.surfaces_color, 'Check surfaces_color');
-	equal(styles.surfaces_materialAmbientColor_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialAmbientColor_3D, 'Check surfaces_materialAmbientColor_3D');
-	equal(styles.surfaces_materialSpecularColor_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialSpecularColor_3D, 'Check surfaces_materialSpecularColor_3D');
-	equal(styles.surfaces_materialShininess_3D, ChemDoodle.DEFAULT_STYLES.surfaces_materialShininess_3D, 'Check surfaces_materialShininess_3D');
-	
-	// spectrum properties
-	equal(styles.plots_color, ChemDoodle.DEFAULT_STYLES.plots_color, 'Check plots_color');
-	equal(styles.plots_width, ChemDoodle.DEFAULT_STYLES.plots_width, 'Check plots_width');
-	equal(styles.plots_showIntegration, ChemDoodle.DEFAULT_STYLES.plots_showIntegration, 'Check plots_showIntegration');
-	equal(styles.plots_integrationColor, ChemDoodle.DEFAULT_STYLES.plots_integrationColor, 'Check plots_integrationColor');
-	equal(styles.plots_integrationLineWidth, ChemDoodle.DEFAULT_STYLES.plots_integrationLineWidth, 'Check plots_integrationLineWidth');
-	equal(styles.plots_showGrid, ChemDoodle.DEFAULT_STYLES.plots_showGrid, 'Check plots_showGrid');
-	equal(styles.plots_gridColor, ChemDoodle.DEFAULT_STYLES.plots_gridColor, 'Check plots_gridColor');
-	equal(styles.plots_gridLineWidth, ChemDoodle.DEFAULT_STYLES.plots_gridLineWidth, 'Check plots_gridLineWidth');
-	equal(styles.plots_showYAxis, ChemDoodle.DEFAULT_STYLES.plots_showYAxis, 'Check plots_showYAxis');
-	equal(styles.plots_flipXAxis, ChemDoodle.DEFAULT_STYLES.plots_flipXAxis, 'Check plots_flipXAxis');
-	
-	// shape properties
-	equal(styles.text_font_size, ChemDoodle.DEFAULT_STYLES.text_font_size, 'Check text_font_size');
-	deepEqual(styles.text_font_families, ChemDoodle.DEFAULT_STYLES.text_font_families, 'Check text_font_families');
-	equal(styles.text_font_bold, ChemDoodle.DEFAULT_STYLES.text_font_bold, 'Check text_font_bold');
-	equal(styles.text_font_italic, ChemDoodle.DEFAULT_STYLES.text_font_italic, 'Check text_font_italic');
-	equal(styles.text_font_stroke_3D, ChemDoodle.DEFAULT_STYLES.text_font_stroke_3D, 'Check text_font_stroke_3D');
-	equal(styles.text_color, ChemDoodle.DEFAULT_STYLES.text_color, 'Check text_color');
-	equal(styles.shapes_color, ChemDoodle.DEFAULT_STYLES.shapes_color, 'Check shapes_color');
-	equal(styles.shapes_lineWidth, ChemDoodle.DEFAULT_STYLES.shapes_lineWidth, 'Check shapes_lineWidth');
-	equal(styles.shapes_pointSize, ChemDoodle.DEFAULT_STYLES.shapes_pointSize, 'Check shapes_pointSize');
-	equal(styles.shapes_arrowLength_2D, ChemDoodle.DEFAULT_STYLES.shapes_arrowLength_2D, 'Check shapes_arrowLength_2D');
-	equal(styles.compass_display, ChemDoodle.DEFAULT_STYLES.compass_display, 'Check compass_display');
-	equal(styles.compass_axisXColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisXColor_3D, 'Check compass_axisXColor_3D');
-	equal(styles.compass_axisYColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisYColor_3D, 'Check compass_axisYColor_3D');
-	equal(styles.compass_axisZColor_3D, ChemDoodle.DEFAULT_STYLES.compass_axisZColor_3D, 'Check compass_axisZColor_3D');
-	equal(styles.compass_size_3D, ChemDoodle.DEFAULT_STYLES.compass_size_3D, 'Check compass_size_3D');
-	equal(styles.compass_resolution_3D, ChemDoodle.DEFAULT_STYLES.compass_resolution_3D, 'Check compass_resolution_3D');
-	equal(styles.compass_displayText_3D, ChemDoodle.DEFAULT_STYLES.compass_displayText_3D, 'Check compass_displayText_3D');
-	equal(styles.compass_type_3D, ChemDoodle.DEFAULT_STYLES.compass_type_3D, 'Check compass_type_3D');
-	equal(styles.measurement_update_3D, ChemDoodle.DEFAULT_STYLES.measurement_update_3D, 'Check measurement_update_3D');
-	equal(styles.measurement_angleBands_3D, ChemDoodle.DEFAULT_STYLES.measurement_angleBands_3D, 'Check measurement_angleBands_3D');
-	equal(styles.measurement_displayText_3D, ChemDoodle.DEFAULT_STYLES.measurement_displayText_3D, 'Check measurement_displayText_3D');
-});
-
-test('Check set3DRepresentation with Ball and Stick', function() {
-	expect(4);
-	let styles = new ChemDoodle.structures.Styles();
-	styles.set3DRepresentation('Ball and Stick');
-	equal(.3, styles.atoms_vdwMultiplier_3D, 'Check vdw multiplier');
-	ok(styles.bonds_splitColor == false, 'Check bonds_splitColor is false');
-	equal(.3, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
-	ok(styles.bonds_materialAmbientColor_3D == ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, 'Check bond material ambient color is default');
-});
-
-test('Check set3DRepresentation with van der Waals Spheres', function() {
+test('Check default constructor', function(){
+	let p = new ChemDoodle.structures.Point();
 	expect(2);
-	let styles = new ChemDoodle.structures.Styles();
-	styles.set3DRepresentation('van der Waals Spheres');
-	ok(styles.bonds_display == false, 'Check that bonds are not displayed');
-	equal(1, styles.atoms_vdwMultiplier_3D, 'Check vdwMultiplier is 1');
+    equal(0, p.x, 'Check x');
+	equal(0, p.y, 'Check y');
 });
 
-test('Check set3DRepresentation with Stick', function() {
+test('Check parameter constructor', function(){
+	let p = new ChemDoodle.structures.Point(13, 17);
+	expect(2);
+    equal(13, p.x, 'Check x');
+	equal(17, p.y, 'Check y');
+});
+
+test('Check structure is instantiable', function(){
+	let p1 = new ChemDoodle.structures.Point(13, 17);
+	let p2 = new ChemDoodle.structures.Point(14, 18);
+	expect(8);
+    equal(13, p1.x, 'Check first x');
+	equal(17, p1.y, 'Check first y');
+    equal(14, p2.x, 'Check second x');
+	equal(18, p2.y, 'Check second y');
+	p1.x = 12;
+	p1.y = 16;
+    equal(12, p1.x, 'Check first x');
+	equal(16, p1.y, 'Check first y');
+    equal(14, p2.x, 'Check second x');
+	equal(18, p2.y, 'Check second y');
+});
+
+test('Check addition function', function(){
+	let p1 = new ChemDoodle.structures.Point(13, 17);
+	let p2 = new ChemDoodle.structures.Point(-9, 44);
+	expect(4);
+	p1.add(p2);
+    equal(4, p1.x, 'Check p1.x');
+	equal(61, p1.y, 'Check p1.y');
+	p2.add(p1);
+    equal(-5, p2.x, 'Check p2.x');
+	equal(105, p2.y, 'Check p2.y');
+});
+
+test('Check subtraction function', function(){
+	let p1 = new ChemDoodle.structures.Point(13, 17);
+	let p2 = new ChemDoodle.structures.Point(-9, 44);
+	expect(4);
+	p1.sub(p2);
+    equal(22, p1.x, 'Check p1.x');
+	equal(-27, p1.y, 'Check p1.y');
+	p2.sub(p1);
+    equal(-31, p2.x, 'Check p2.x');
+	equal(71, p2.y, 'Check p2.y');
+});
+
+test('Check distance function', function(){
+	expect(4);
+    equal(0, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(0,0)), 'Check overlapping');
+    equal(5, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(3,4)), 'Check 3-4-5');
+    equal(Math.sqrt(2), new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(1,1)), 'Check 1-1-sqrt(2)');
+    equal(10, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(0,10)), 'Check linear');
+});
+
+test('Check angle function', function(){
 	expect(5);
-	let styles = new ChemDoodle.structures.Styles();
-	styles.set3DRepresentation('Stick');
-	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use VDWDiameters for atoms');
-	ok(styles.bonds_showBondOrders_3D == false, 'Dont show bond orders');
-	equal(.8, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter'); 
-	equal(.8, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
-	equal(styles.bonds_materialAmbientColor_3D, styles.atoms_materialAmbientColor_3D, 'Check that bond and atom material ambient colors are equal');
+    equal(0, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,0)), 'Check overlapping');
+    equal(0, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(1,0)), 'Check 0');
+	// y is upside down to account for the inverted canvas
+    equal(Math.PI/2, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,-1)), 'Check 90');
+    equal(Math.PI, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(-1,0)), 'Check 180');
+    equal(3*Math.PI/2, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,1)), 'Check 270');
 });
+module('Line');
 
-test('Check set3DRepresentation with Wireframe', function() {
-	expect(4);
-	let styles = new ChemDoodle.structures.Styles();
-	styles.set3DRepresentation('Wireframe');
-	ok(styles.atoms_useVDWDiameters_3D == false, 'Dont use WDWDiameters for atoms');
-	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter');
-	equal(.15, styles.atoms_sphereDiameter_3D, 'Check atom sphere diameter');
-	equal(ChemDoodle.DEFAULT_STYLES.atoms_materialAmbientColor_3D, styles.bonds_materialAmbientColor_3D, 'Check bond material ambient is the same as the default atom material ambient color');
-});
-
-test('Check set3DRepresentation with Line', function() {
-	expect(4);
-	let styles = new ChemDoodle.structures.Styles();
-	styles.set3DRepresentation('Line');
-	ok(styles.atoms_display == false, 'Dont display atoms');
-	ok(styles.bonds_renderAsLines_3D, 'Render bonds as lines');
-	equal(1, styles.bonds_width_2D, 'Check bond width');
-	equal(.05, styles.bonds_cylinderDiameter_3D, 'Check bond cylinder diameter.');
-});
-module('Queue');
-
-test('Check Queue class exists', function(){
+test('Check Line class exists', function(){
 	expect(1);
-    ok(ChemDoodle.structures.Queue, 'ChemDoodle.structures.Queue class exists');
+    ok(ChemDoodle.structures.d3.Line, 'ChemDoodle.structures.d3.Line class exists');
+});
+
+test('Check Line class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Line.prototype.bindBuffers, 'ChemDoodle.structures.d3.Line class extends _Mesh');
+});
+module('Cylinder');
+
+test('Check Cylinder class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Cylinder, 'ChemDoodle.structures.d3.Cylinder class exists');
+});
+
+test('Check Cylinder class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Cylinder.prototype.bindBuffers, 'ChemDoodle.structures.d3.Cylinder class extends _Mesh');
+});
+module('Sphere');
+
+test('Check Sphere class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Sphere, 'ChemDoodle.structures.d3.Sphere class exists');
+});
+
+test('Check Sphere class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Sphere.prototype.bindBuffers, 'ChemDoodle.structures.d3.Sphere class extends _Mesh');
+});
+module('Box');
+
+test('Check Box class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Box, 'ChemDoodle.structures.d3.Box class exists');
+});
+
+test('Check Box class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Box.prototype.bindBuffers, 'ChemDoodle.structures.d3.Box class extends _Mesh');
+});
+module('Shape');
+
+test('Check Shape class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Shape, 'ChemDoodle.structures.d3.Shape class exists');
+});
+
+test('Check Shape class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Shape.prototype.bindBuffers, 'ChemDoodle.structures.d3.Shape class extends _Mesh');
+});
+module('UnitCell');
+
+test('Check UnitCell class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.UnitCell, 'ChemDoodle.structures.d3.UnitCell class exists');
+});
+
+test('Check UnitCell class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.UnitCell.prototype.bindBuffers, 'ChemDoodle.structures.d3.UnitCell class extends _Mesh');
+});
+
+test('Check default UnitCell offset', function(){
+	expect(4);
+	let uc = new ChemDoodle.structures.d3.UnitCell([1, 1, 1], [Math.PI/2, Math.PI/2, Math.PI/2]);
+	equal(3, uc.offset.length, 'Check offset length');
+    equal(0, uc.offset[0], 'Check offset x');
+    equal(0, uc.offset[1], 'Check offset y');
+    equal(0, uc.offset[2], 'Check offset z');
+});
+module('Quad');
+
+test('Check Quad class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Quad, 'ChemDoodle.structures.d3.Quad class exists');
+});
+
+test('Check Quad class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Quad.prototype.bindBuffers, 'ChemDoodle.structures.d3.Quad class extends _Mesh');
+});
+module('Star');
+
+test('Check Star class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Star, 'ChemDoodle.structures.d3.Star class exists');
+});
+
+test('Check Star class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Star.prototype.bindBuffers, 'ChemDoodle.structures.d3.Star class extends _Mesh');
+});
+module('Arrow');
+
+test('Check Arrow class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Arrow, 'ChemDoodle.structures.d3.Arrow class exists');
+});
+
+test('Check Arrow class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Arrow.prototype.bindBuffers, 'ChemDoodle.structures.d3.Arrow class extends _Mesh');
+});
+module('Material');
+
+test('Check Material class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Material, 'ChemDoodle.structures.d3.Material class exists');
+});
+module('Light');
+
+test('Check Light class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Light, 'ChemDoodle.structures.d3.Light class exists');
+});
+module('Pill');
+
+test('Check Pill class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Pill, 'ChemDoodle.structures.d3.Pill class exists');
+});
+
+test('Check Pill class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Pill.prototype.bindBuffers, 'ChemDoodle.structures.d3.Pill class extends _Mesh');
+});
+module('PipePlank');
+
+test('Check PipePlank class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.PipePlank, 'ChemDoodle.structures.d3.PipePlank class exists');
+});
+
+test('Check PipePlank class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.PipePlank.prototype.bindBuffers, 'ChemDoodle.structures.d3.PipePlank class extends _Mesh');
+});
+module('Ribbon');
+
+test('Check Ribbon class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Ribbon, 'ChemDoodle.structures.d3.Ribbon class exists');
+});
+
+test('Check Ribbon class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Ribbon.prototype.bindBuffers, 'ChemDoodle.structures.d3.Ribbon class extends _Mesh');
+});
+module('Fog');
+
+test('Check Fog class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Fog, 'ChemDoodle.structures.d3.Fog class exists');
+});
+module('Mesh');
+
+test('Check Mesh class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3._Mesh, 'ChemDoodle.structures.d3._Mesh class exists');
+});
+module('Surface');
+
+test('Check SESSurface class exists', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.SESSurface, 'ChemDoodle.structures.d3.SESSurface class exists');
+});
+
+test('Check SESSurface class extends _Surface', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.SESSurface.prototype.build, 'ChemDoodle.structures.d3.SESSurface class extends _Surface');
+});
+
+test('Check SESSurface class has a calculate function', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.SESSurface.prototype.calculate, 'ChemDoodle.structures.d3.SESSurface class has a calculate function');
+});
+module('Surface');
+
+test('Check SASSurface class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SASSurface, 'ChemDoodle.structures.d3.SASSurface class exists');
+});
+
+test('Check SASSurface class extends _Surface', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SASSurface.prototype.build, 'ChemDoodle.structures.d3.SASSurface class extends _Surface');
+});
+
+test('Check SASSurface class has a calculate function', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SASSurface.prototype.calculate, 'ChemDoodle.structures.d3.SASSurface class has a calculate function');
+});
+module('Surface');
+
+test('Check _Surface class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3._Surface, 'ChemDoodle.structures.d3._Surface class exists');
+});
+
+test('Check _Surface class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3._Surface.prototype.bindBuffers, 'ChemDoodle.structures.d3._Surface class extends _Mesh');
+});
+module('Surface');
+
+test('Check VDWSurface class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.VDWSurface, 'ChemDoodle.structures.d3.VDWSurface class exists');
+});
+
+test('Check VDWSurface class extends _Surface', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.VDWSurface.prototype.build, 'ChemDoodle.structures.d3.VDWSurface class extends _Surface');
+});
+
+test('Check VDWSurface class has a calculate function', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.VDWSurface.prototype.calculate, 'ChemDoodle.structures.d3.VDWSurface class has a calculate function');
+});
+module('Texture');
+
+test('Check Texture class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Texture, 'ChemDoodle.structures.d3.Texture class exists');
+});
+module('FrameBuffer');
+
+test('Check Framebuffer class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Framebuffer, 'ChemDoodle.structures.d3.Framebuffer class exists');
+});
+module('SSAO');
+
+test('Check SSAO class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SSAO, 'ChemDoodle.structures.d3.SSAO class exists');
+});
+module('Renderbuffer');
+
+test('Check Renderbuffer class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Renderbuffer, 'ChemDoodle.structures.d3.Renderbuffer class exists');
+});
+module('Camera');
+
+test('Check Camera class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Camera, 'ChemDoodle.structures.d3.Camera class exists');
+});
+module('Compass');
+
+test('Check Compass class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Compass, 'ChemDoodle.structures.d3.Compass class exists');
+});
+module('FXAAShader');
+
+test('Check FXAAShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.FXAAShader, 'ChemDoodle.structures.d3.FXAAShader class exists');
+});
+module('SMAAWeightsShader');
+
+test('Check SMAAWeightsShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SMAAWeightsShader, 'ChemDoodle.structures.d3.SMAAWeightsShader class exists');
+});
+module('LightingShader');
+
+test('Check LightingShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.LightingShader, 'ChemDoodle.structures.d3.LightingShader class exists');
+});
+module('OutlineShader');
+
+test('Check OutlineShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.OutlineShader, 'ChemDoodle.structures.d3.OutlineShader class exists');
+});
+module('PickShader');
+
+test('Check PickShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.PickShader, 'ChemDoodle.structures.d3.PickShader class exists');
+});
+module('Shader');
+
+test('Check _Shader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3._Shader, 'ChemDoodle.structures.d3._Shader class exists');
+});
+module('LabelShader');
+
+test('Check LabelShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.LabelShader, 'ChemDoodle.structures.d3.LabelShader class exists');
+});
+module('SSAOBlurShader');
+
+test('Check SSAOBlurShader class exists', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+	    // proprietary only
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.SSAOBlurShader, 'ChemDoodle.structures.d3.SSAOBlurShader class exists');
+});
+module('DepthShader');
+
+test('Check DepthShader class exists', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+	    // proprietary only
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.DepthShader, 'ChemDoodle.structures.d3.DepthShader class exists');
+});
+module('NormalShader');
+
+test('Check NormalShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.NormalShader, 'ChemDoodle.structures.d3.NormalShader class exists');
+});
+module('PhongShader');
+
+test('Check PhongShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.PhongShader, 'ChemDoodle.structures.d3.PhongShader class exists');
+});
+module('SMAAEdgesShader');
+
+test('Check SMAAEdgesShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SMAAEdgesShader, 'ChemDoodle.structures.d3.SMAAEdgesShader class exists');
+});
+module('SMAABlendShader');
+
+test('Check SMAABlendShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.SMAABlendShader, 'ChemDoodle.structures.d3.SMAABlendShader class exists');
+});
+module('PositionShader');
+
+test('Check PositionShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.PositionShader, 'ChemDoodle.structures.d3.PositionShader class exists');
+});
+module('SSAOShader');
+
+test('Check SSAOShader class exists', function(){
+	if(!ChemDoodle.structures.CondensedLabel){
+	    // proprietary only
+		return expect(0);
+	}
+	expect(1);
+    ok(ChemDoodle.structures.d3.SSAOShader, 'ChemDoodle.structures.d3.SSAOShader class exists');
+});
+module('QuadShader');
+
+test('Check QuadShader class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.QuadShader, 'ChemDoodle.structures.d3.QuadShader class exists');
+});
+module('Tube');
+
+test('Check Tube class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Tube, 'ChemDoodle.structures.d3.Tube class exists');
+});
+
+test('Check Tube class extends _Mesh', function(){
+	expect(1);
+    ok(ChemDoodle.structures.d3.Tube.prototype.bindBuffers, 'ChemDoodle.structures.d3.Tube class extends _Mesh');
+});
+module('Spectrum');
+
+test('Check Spectrum class exists', function(){
+	expect(1);
+    ok(ChemDoodle.structures.Spectrum, 'ChemDoodle.structures.Spectrum class exists');
 });
 module('CondensedLabel');
 
@@ -7252,76 +6340,17 @@ test('Check unknown set', function(){
     equal('Pr', cl.tokens[1], 'Second token is Pr');
     ok(cl.unknown, 'unknown is set');
 });
-module('Reaction');
+module('Residue');
 
-test('Check Reaction class exists', function() {
+test('Check Residue class exists', function(){
 	expect(1);
-	ok(ChemDoodle.structures.Reaction, 'ChemDoodle.structures.Reaction class exists');
+    ok(ChemDoodle.structures.Residue, 'ChemDoodle.structures.Residue class exists');
 });
+module('Queue');
 
-test('Check resolve 1 reactant 1 product', function(){
-	expect(5);
-	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
- 
-	let mol1 = new ChemDoodle.structures.Molecule();
-	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 0, 0, 0));
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 100, 0, 0));
-	
-	let r = new ChemDoodle.structures.Reaction();
-	let reaction = r.resolve(arrow, [mol1, mol2]);
-	
-	ok(reaction, 'Resolve function returned an object');
-    equal(1, reaction.reactants.length, 'Check reactants length');
-    equal(1, reaction.products.length, 'Check products length');
-    ok(reaction.reactants[0]===mol1, 'Check reactant 1');
-    ok(reaction.products[0]===mol2, 'Check product 1');
-});
-
-
-test('Check resolve 2 reactants 0 products', function(){
-	expect(5);
-	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
- 
-	let mol1 = new ChemDoodle.structures.Molecule();
-	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 0, 0, 0));
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 10, 0, 0));
-	
-	let r = new ChemDoodle.structures.Reaction();
-	let reaction = r.resolve(arrow, [mol1, mol2]);
-	
-	ok(reaction, 'Resolve function returned an object');
-    equal(2, reaction.reactants.length, 'Check reactants length');
-    equal(0, reaction.products.length, 'Check products length');
-    ok(reaction.reactants[0]===mol1, 'Check reactant 1');
-    ok(reaction.reactants[1]===mol2, 'Check reactant 2');
-});
-
-
-test('Check resolve 0 reactants 2 products', function(){
-	expect(5);
-	let arrow = new ChemDoodle.structures.d2.Line(new ChemDoodle.structures.Point(45,0), new ChemDoodle.structures.Point(55, 0));
- 
-	let mol1 = new ChemDoodle.structures.Molecule();
-	mol1.atoms.push(new ChemDoodle.structures.Atom('C', 90, 0, 0));
-	let mol2 = new ChemDoodle.structures.Molecule();
-	mol2.atoms.push(new ChemDoodle.structures.Atom('C', 100, 0, 0));
-	
-	let r = new ChemDoodle.structures.Reaction();
-	let reaction = r.resolve(arrow, [mol1, mol2]);
-	
-	ok(reaction, 'Resolve function returned an object');
-    equal(0, reaction.reactants.length, 'Check reactants length');
-    equal(2, reaction.products.length, 'Check products length');
-    ok(reaction.products[0]===mol1, 'Check product 1');
-    ok(reaction.products[1]===mol2, 'Check product 2');
-});
-module('Spectrum');
-
-test('Check Spectrum class exists', function(){
+test('Check Queue class exists', function(){
 	expect(1);
-    ok(ChemDoodle.structures.Spectrum, 'ChemDoodle.structures.Spectrum class exists');
+    ok(ChemDoodle.structures.Queue, 'ChemDoodle.structures.Queue class exists');
 });
 module('Spectrum');
 
@@ -7334,81 +6363,1416 @@ test('Check Plate.Spot class exists', function(){
 	expect(1);
     ok(ChemDoodle.structures.Plate.Spot, 'ChemDoodle.structures.Plate.Spot class exists');
 });
-module('Point');
+module('Ring');
 
-test('Check Point class exists', function(){
+test('Check Ring class exists', function() {
 	expect(1);
-    ok(ChemDoodle.structures.Point, 'ChemDoodle.structures.Point class exists');
+	ok(ChemDoodle.structures.Ring, 'ChemDoodle.structures.Ring class exists');
 });
 
-test('Check default constructor', function(){
-	let p = new ChemDoodle.structures.Point();
+test('Check default constructor', function() {
 	expect(2);
-    equal(0, p.x, 'Check x');
-	equal(0, p.y, 'Check y');
+	let ring = new ChemDoodle.structures.Ring();
+	equal(0, ring.atoms.length, 'Check empty atoms');
+	equal(0, ring.bonds.length, 'Check empty bonds');
 });
 
-test('Check parameter constructor', function(){
-	let p = new ChemDoodle.structures.Point(13, 17);
+test('Check getCenter function', function() {
+	expect(4);
+	let mol = ChemDoodle.readMOL(thiophene);
+	mol.check();
+	mol.check(true);
+	let center = mol.rings[0].getCenter();
+	equal(0, center.x, 'Check center x');
+	equal(0, center.y, 'Check center y');
+	for ( let i = 0; i < mol.atoms.length; i++) {
+		mol.atoms[i].x += 6;
+		mol.atoms[i].y += 10;
+	}
+	mol.check();
+	mol.check(true);
+	center = mol.rings[0].getCenter();
+	equal(6, center.x, 'Check center x');
+	equal(10, center.y, 'Check center y');
+});
+
+test('Check ownership', function() {
+	expect(10);
+	let mol = ChemDoodle.readMOL(thiophene);
+	mol.check();
+	mol.check(true);
+	let r = mol.rings[0];
+	for ( let i = 0; i < r.bonds.length; i++) {
+		// qunit logging is buggy, doesn't do just a ===, so this runs an
+		// infinite loop because Rings are cyclic
+		ok(r === r.bonds[i].ring, 'Check ring owns bond');
+	}
+	mol.bonds.pop();
+	mol.check();
+	mol.check(true);
+	equal(0, mol.rings.length);
+	for ( let i = 0; i < mol.bonds.length; i++) {
+		equal(undefined, mol.bonds[i].ring, 'Check no rings owns bond');
+	}
+});
+module('BondDeducer');
+
+test('Check BondDeducer class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.BondDeducer, 'ChemDoodle.informatics.BondDeducer class exists');
+});
+
+test('Check BondDeducer has no effect on empty molecule', function(){
+	expect(4);
+	let mol = new ChemDoodle.structures.Molecule();
+    equal(0, mol.atoms.length, 'Check atoms before');
+	equal(0, mol.bonds.length, 'Check bonds before');
+	new ChemDoodle.informatics.BondDeducer().deduceCovalentBonds(mol);
+    equal(0, mol.atoms.length, 'Check atoms after');
+	equal(0, mol.bonds.length, 'Check bonds after');
+});
+
+test('Check BondDeducer is successful on large PDB file', function(){
+	expect(4);
+	let mol = ChemDoodle.readPDB(oneBNA);
+    equal(566, mol.atoms.length, 'Check atoms before');
+	mol.bonds = [];
+	equal(0, mol.bonds.length, 'Check bonds before');
+	let deducer = new ChemDoodle.informatics.BondDeducer();
+	deducer.deduceCovalentBonds(mol, 1);
+    equal(566, mol.atoms.length, 'Check atoms after');
+	equal(544, mol.bonds.length, 'Check bonds after');
+});
+
+test('Check margin has effect when deducing bonds', function(){
+	expect(1);
+	let mol = ChemDoodle.readPDB(oneBNA);
+	mol.bonds = [];
+	let deducer = new ChemDoodle.informatics.BondDeducer();
+	deducer.margin = 0;
+	deducer.deduceCovalentBonds(mol);
+	equal(0, mol.bonds.length, 'Check no bonds found with 0 margin');
+});
+
+test('Check margin is unique to each BondDeducer instance', function(){
+	expect(3);
+	let mol = ChemDoodle.readPDB(oneBNA);
+	mol.bonds = [];
+	let deducer = new ChemDoodle.informatics.BondDeducer();
+	deducer.margin = 0;
+	let deducer2 = new ChemDoodle.informatics.BondDeducer();
+	let deducer3 = new ChemDoodle.informatics.BondDeducer();
+	deducer2.margin = 2;
+	equal(0, deducer.margin, 'Check first BondDeducer margin');
+	equal(2, deducer2.margin, 'Check second BondDeducer margin');
+	equal(1.1, deducer3.margin, 'Check third BondDeducer margin');
+});
+
+test('Check getPointsPerAngstrom function', function(){
+	expect(1);
+    equal(ChemDoodle.DEFAULT_STYLES.bondLength_2D / ChemDoodle.DEFAULT_STYLES.angstromsPerBondLength, ChemDoodle.informatics.getPointsPerAngstrom(), 'Check calculation');
+});
+module('HydrogenDeducer');
+
+test('Check HydrogenDeducer class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.HydrogenDeducer, 'ChemDoodle.informatics.HydrogenDeducer class exists');
+});
+
+test('Check HydrogenDeducer properly handles an empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(4);
+    equal(0, mol.atoms.length, 'Check atoms before');
+	equal(0, mol.bonds.length, 'Check bonds before');
+	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
+    equal(0, mol.atoms.length, 'Check atoms after');
+	equal(0, mol.bonds.length, 'Check bonds after');
+});
+
+test('Check HydrogenDeducer properly removes hydrogens for molecular hydrogen', function(){
+	let mol = ChemDoodle.readMOL(hydrogen);
+	expect(4);
+    equal(2, mol.atoms.length, 'Check atoms before');
+	equal(1, mol.bonds.length, 'Check bonds before');
+	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
+    equal(0, mol.atoms.length, 'Check atoms after');
+	equal(0, mol.bonds.length, 'Check bonds after');
+});
+
+test('Check HydrogenDeducer properly removes hydrogens for benzene', function(){
+	let mol = ChemDoodle.readMOL(benzene);
+	expect(16);
+    equal(12, mol.atoms.length, 'Check benzene atoms before');
+	equal(12, mol.bonds.length, 'Check benzene bonds before');
+	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
+    equal(6, mol.atoms.length, 'Check benzene atoms after');
+	equal(6, mol.bonds.length, 'Check benzene bonds after');
+	for(let i = 0; i<mol.atoms.length; i++){
+		ok(mol.atoms[i].label!=='H', 'Check constituent atom is not hydrogen');
+	}
+	for(let i = 0; i<mol.bonds.length; i++){
+		ok(mol.bonds[i].a1.label!=='H'&&mol.bonds[i].a2.label!=='H', 'Check constituent bond contains no hydrogen');
+	}
+});
+
+test('Check HydrogenDeducer properly handles the same molecule twice', function(){
+	let mol = ChemDoodle.readMOL(benzene);
+	let deducer = new ChemDoodle.informatics.HydrogenDeducer();
+	deducer.removeHydrogens(mol);
+	expect(16);
+    equal(6, mol.atoms.length, 'Check benzene atoms before');
+	equal(6, mol.bonds.length, 'Check benzene bonds before');
+	deducer.removeHydrogens(mol);
+    equal(6, mol.atoms.length, 'Check benzene atoms after');
+	equal(6, mol.bonds.length, 'Check benzene bonds after');
+	for(let i = 0; i<mol.atoms.length; i++){
+		ok(mol.atoms[i].label!=='H', 'Check constituent atom is not hydrogen');
+	}
+	for(let i = 0; i<mol.bonds.length; i++){
+		ok(mol.bonds[i].a1.label!=='H'&&mol.bonds[i].a2.label!=='H', 'Check constituent bond contains no hydrogen');
+	}
+});
+
+test('Check HydrogenDeducer properly removes hydrogens but leaves stereo connected hydrogens', function(){
+	let mol = ChemDoodle.readJSON('{"m":[{"a":[{"x":201,"i":"a0","y":153},{"x":183.6795,"i":"a1","y":163},{"x":183.6795,"i":"a2","y":183},{"x":201,"i":"a3","y":193},{"x":218.3205,"i":"a4","y":183},{"x":218.3205,"i":"a5","y":163},{"x":201,"i":"a6","y":133,"l":"H"},{"x":166.359,"i":"a7","y":153,"l":"H"},{"x":166.359,"i":"a8","y":193,"l":"H"},{"x":201,"i":"a9","y":213,"l":"H"},{"x":235.641,"i":"a10","y":193,"l":"H"},{"x":235.641,"i":"a11","y":153,"l":"H"}],"b":[{"b":0,"e":1,"i":"b0","o":2},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":3,"e":4,"i":"b3"},{"b":4,"e":5,"i":"b4","o":2},{"b":5,"e":0,"i":"b5"},{"b":0,"s":"protruding","e":6,"i":"b6","o":1},{"b":1,"e":7,"i":"b7"},{"b":2,"e":8,"i":"b8"},{"b":3,"e":9,"i":"b9"},{"b":4,"s":"recessed","e":10,"i":"b10","o":1},{"b":5,"e":11,"i":"b11"}]}]}').molecules[0];
+    equal(12, mol.atoms.length, 'Check atoms before');
+	equal(12, mol.bonds.length, 'Check bonds before');
+	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol);
+    equal(8, mol.atoms.length, 'Check atoms after');
+	equal(8, mol.bonds.length, 'Check bonds after');
+});
+
+test('Check HydrogenDeducer force remove leaves stereo connected hydrogens', function(){
+	let mol = ChemDoodle.readJSON('{"m":[{"a":[{"x":201,"i":"a0","y":153},{"x":183.6795,"i":"a1","y":163},{"x":183.6795,"i":"a2","y":183},{"x":201,"i":"a3","y":193},{"x":218.3205,"i":"a4","y":183},{"x":218.3205,"i":"a5","y":163},{"x":201,"i":"a6","y":133,"l":"H"},{"x":166.359,"i":"a7","y":153,"l":"H"},{"x":166.359,"i":"a8","y":193,"l":"H"},{"x":201,"i":"a9","y":213,"l":"H"},{"x":235.641,"i":"a10","y":193,"l":"H"},{"x":235.641,"i":"a11","y":153,"l":"H"}],"b":[{"b":0,"e":1,"i":"b0","o":2},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":3,"e":4,"i":"b3"},{"b":4,"e":5,"i":"b4","o":2},{"b":5,"e":0,"i":"b5"},{"b":0,"s":"protruding","e":6,"i":"b6","o":1},{"b":1,"e":7,"i":"b7"},{"b":2,"e":8,"i":"b8"},{"b":3,"e":9,"i":"b9"},{"b":4,"s":"recessed","e":10,"i":"b10","o":1},{"b":5,"e":11,"i":"b11"}]}]}').molecules[0];
+    equal(12, mol.atoms.length, 'Check atoms before');
+	equal(12, mol.bonds.length, 'Check bonds before');
+	new ChemDoodle.informatics.HydrogenDeducer().removeHydrogens(mol, true);
+    equal(6, mol.atoms.length, 'Check atoms after');
+	equal(6, mol.bonds.length, 'Check bonds after');
+});
+module('Splitter');
+
+test('Check Splitter class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.Splitter, 'ChemDoodle.informatics.Splitter class exists');
+});
+
+test('Check correctly handles empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
+});
+
+test('Check correctly handles monatomic molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(1);
+    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
+});
+
+test('Check correctly handles two disconnected atoms', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
 	expect(2);
-    equal(13, p.x, 'Check x');
-	equal(17, p.y, 'Check y');
+    equal(2, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
 });
 
-test('Check structure is instantiable', function(){
-	let p1 = new ChemDoodle.structures.Point(13, 17);
-	let p2 = new ChemDoodle.structures.Point(14, 18);
-	expect(8);
-    equal(13, p1.x, 'Check first x');
-	equal(17, p1.y, 'Check first y');
-    equal(14, p2.x, 'Check second x');
-	equal(18, p2.y, 'Check second y');
-	p1.x = 12;
-	p1.y = 16;
-    equal(12, p1.x, 'Check first x');
-	equal(16, p1.y, 'Check first y');
-    equal(14, p2.x, 'Check second x');
-	equal(18, p2.y, 'Check second y');
+test('Check correctly handles three disconnected atoms', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	expect(3);
+    equal(3, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[1]);
+    equal(2, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+    equal(1, new ChemDoodle.informatics.Splitter().split(mol).length, 'Check split');
 });
 
-test('Check addition function', function(){
-	let p1 = new ChemDoodle.structures.Point(13, 17);
-	let p2 = new ChemDoodle.structures.Point(-9, 44);
-	expect(4);
-	p1.add(p2);
-    equal(4, p1.x, 'Check p1.x');
-	equal(61, p1.y, 'Check p1.y');
-	p2.add(p1);
-    equal(-5, p2.x, 'Check p2.x');
-	equal(105, p2.y, 'Check p2.y');
+test('Check all atoms and bonds accounted for in discrete molecule', function(){
+	let mol = ChemDoodle.readMOL(cubane);
+	expect(3);
+	let mols = new ChemDoodle.informatics.Splitter().split(mol);
+    equal(1, mols.length, 'Check split');
+    equal(8, mols[0].atoms.length, 'Check number of atoms is correct');
+    equal(12, mols[0].bonds.length, 'Check number of bonds is correct');
 });
 
-test('Check subtraction function', function(){
-	let p1 = new ChemDoodle.structures.Point(13, 17);
-	let p2 = new ChemDoodle.structures.Point(-9, 44);
-	expect(4);
-	p1.sub(p2);
-    equal(22, p1.x, 'Check p1.x');
-	equal(-27, p1.y, 'Check p1.y');
-	p2.sub(p1);
-    equal(-31, p2.x, 'Check p2.x');
-	equal(71, p2.y, 'Check p2.y');
-});
-
-test('Check distance function', function(){
-	expect(4);
-    equal(0, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(0,0)), 'Check overlapping');
-    equal(5, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(3,4)), 'Check 3-4-5');
-    equal(Math.sqrt(2), new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(1,1)), 'Check 1-1-sqrt(2)');
-    equal(10, new ChemDoodle.structures.Point(0,0).distance(new ChemDoodle.structures.Point(0,10)), 'Check linear');
-});
-
-test('Check angle function', function(){
+test('Check all atoms and bonds accounted for in two discrete molecules', function(){
+	let mol = ChemDoodle.readMOL(benzene);
+	let mol2 = ChemDoodle.readMOL(thiophene);
+	mol.atoms = mol.atoms.concat(mol2.atoms);
+	mol.bonds = mol.bonds.concat(mol2.bonds);
 	expect(5);
-    equal(0, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,0)), 'Check overlapping');
-    equal(0, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(1,0)), 'Check 0');
-	// y is upside down to account for the inverted canvas
-    equal(Math.PI/2, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,-1)), 'Check 90');
-    equal(Math.PI, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(-1,0)), 'Check 180');
-    equal(3*Math.PI/2, new ChemDoodle.structures.Point(0,0).angle(new ChemDoodle.structures.Point(0,1)), 'Check 270');
+	let mols = new ChemDoodle.informatics.Splitter().split(mol);
+    equal(2, mols.length, 'Check split found 2 molecules');
+    equal(12, mols[0].atoms.length, 'Check number of atoms is correct for first molecule');
+    equal(12, mols[0].bonds.length, 'Check number of bonds is correct for first molecule');
+    equal(5, mols[1].atoms.length, 'Check number of atoms is correct for second molecule');
+    equal(5, mols[1].bonds.length, 'Check number of bonds is correct for second molecule');
+});
+module('StructureBuilder');
+
+test('Check StructureBuilder class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.StructureBuilder, 'ChemDoodle.informatics.StructureBuilder class exists');
+});
+
+test('Check correctly copies an empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
+	expect(2);
+    equal(0, copyMol.atoms.length, 'Check copy atoms');
+	equal(0, copyMol.bonds.length, 'Check copy bonds');
+});
+
+test('Check correctly copies thiophene', function(){
+	let mol = ChemDoodle.readMOL(thiophene);
+	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
+	expect(4);
+    equal(5, copyMol.atoms.length, 'Check copy atoms');
+	equal(5, copyMol.bonds.length, 'Check copy bonds');
+	let foundS = 0;
+	let doublebonds = 0;
+	for(let i = 0; i<copyMol.atoms.length; i++){
+		if(copyMol.atoms[i].label==='S'){
+			foundS++;
+		}
+	}
+	for(let i = 0; i<copyMol.bonds.length; i++){
+		if(copyMol.bonds[i].bondOrder===2){
+			doublebonds++;
+		}
+	}
+	equal(1, foundS, 'Check copy has 1 sulfur');
+	equal(2, doublebonds, 'Check copy has 2 double bonds');
+});
+
+test('Check correctly copies stereochemistry', function(){
+	let mol = ChemDoodle.readMOL(hexane);
+	mol.bonds[0].stereo = ChemDoodle.structures.Bond.STEREO_PROTRUDING;
+	let copyMol = new ChemDoodle.informatics.StructureBuilder().copy(mol);
+	expect(2);
+    equal(ChemDoodle.structures.Bond.STEREO_PROTRUDING, copyMol.bonds[0].stereo, 'Check bond 1 stereo');
+    equal(ChemDoodle.structures.Bond.STEREO_NONE, copyMol.bonds[1].stereo, 'Check bond 2 stereo');
+});
+module('NumberOfMoleculesCounter');
+
+test('Check NumberOfMoleculesCounter class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.NumberOfMoleculesCounter, 'ChemDoodle.informatics.NumberOfMoleculesCounter class exists');
+});
+
+test('Check NumberOfMoleculesCounter class extends Counter', function(){
+	expect(1);
+    ok(new ChemDoodle.informatics.NumberOfMoleculesCounter(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._Counter, 'ChemDoodle.informatics.NumberOfMoleculesCounter class extends Counter');
+});
+
+test('Check correctly handles empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles monatomic molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(1);
+    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles two disconnected atoms', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	expect(2);
+    equal(2, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a bond');
+});
+
+test('Check correctly handles three disconnected atoms', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
+	mol.atoms[2] = new ChemDoodle.structures.Atom('O');
+	expect(3);
+    equal(3, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[1]);
+    equal(2, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a bond');
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+    equal(1, new ChemDoodle.informatics.NumberOfMoleculesCounter(mol).value, 'Check calculation after adding a second bond');
+});
+module('FrerejacqueNumberCounter');
+
+test('Check FrerejacqueNumberCounter class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.FrerejacqueNumberCounter, 'ChemDoodle.informatics.FrerejacqueNumberCounter class exists');
+});
+
+test('Check FrerejacqueNumberCounter class extends Counter', function(){
+	expect(1);
+    ok(new ChemDoodle.informatics.FrerejacqueNumberCounter(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._Counter, 'ChemDoodle.informatics.FrerejacqueNumberCounter class extends Counter');
+});
+
+test('Check correctly handles empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles monatomic molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles two disconnected atoms', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles hexane', function(){
+	let mol = ChemDoodle.readMOL(hexane);
+	expect(1);
+    equal(0, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles cyclohexane', function(){
+	let mol = ChemDoodle.readMOL(cyclohexane);
+	expect(1);
+    equal(1, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles napthalene', function(){
+	let mol = ChemDoodle.readMOL(napthalene);
+	expect(1);
+    equal(2, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+
+test('Check correctly handles cubane', function(){
+	let mol = ChemDoodle.readMOL(cubane);
+	expect(1);
+    equal(5, new ChemDoodle.informatics.FrerejacqueNumberCounter(mol).value, 'Check calculation');
+});
+module('SSSRFinder');
+
+test('Check SSSRFinder class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.SSSRFinder, 'ChemDoodle.informatics.SSSRFinder class exists');
+});
+
+test('Check correctly handles empty molecule', function() {
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(1);
+	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check no rings found');
+});
+
+test('Check correctly handles monatomic molecule', function() {
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(1);
+	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check no rings found');
+});
+
+test('Check correctly handles hexane', function() {
+	let mol = ChemDoodle.readMOL(hexane);
+	expect(1);
+	equal(0, new ChemDoodle.informatics.SSSRFinder(mol).rings.length, 'Check 0 rings found');
+});
+
+test('Check correctly handles cyclohexane', function() {
+	let mol = ChemDoodle.readMOL(cyclohexane);
+	expect(2);
+	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
+	equal(1, rings.length, 'Check 1 rings found');
+	equal(6, rings[0].atoms.length, 'Check 6-membered ring found');
+});
+
+test('Check correctly handles napthalene', function() {
+	let mol = ChemDoodle.readMOL(napthalene);
+	expect(3);
+	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
+	equal(2, rings.length, 'Check 2 rings found');
+	equal(6, rings[0].atoms.length, 'Check first 6-membered ring found');
+	equal(6, rings[1].atoms.length, 'Check second 6-membered ring found');
+});
+
+test('Check correctly handles cubane', function() {
+	let mol = ChemDoodle.readMOL(cubane);
+	expect(6);
+	let rings = new ChemDoodle.informatics.SSSRFinder(mol).rings;
+	equal(5, rings.length, 'Check 5 rings found');
+	equal(4, rings[0].atoms.length, 'Check first 4-membered ring found');
+	equal(4, rings[1].atoms.length, 'Check second 4-membered ring found');
+	equal(4, rings[2].atoms.length, 'Check third 4-membered ring found');
+	equal(4, rings[3].atoms.length, 'Check fourth 4-membered ring found');
+	equal(4, rings[4].atoms.length, 'Check fifth 4-membered ring found');
+});
+module('EulerFacetRingFinder');
+
+test('Check EulerFacetRingFinder class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics.EulerFacetRingFinder, 'ChemDoodle.informatics.EulerFacetRingFinder class exists');
+});
+
+test('Check EulerFacetRingFinder class extends RingFinder', function(){
+	expect(1);
+    ok(new ChemDoodle.informatics.EulerFacetRingFinder(new ChemDoodle.structures.Molecule()) instanceof ChemDoodle.informatics._RingFinder, 'ChemDoodle.informatics.EulerFacetRingFinder class extends RingFinder');
+});
+
+test('Check correctly handles empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check no rings found');
+});
+
+test('Check correctly handles monatomic', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(1);
+    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check no rings found');
+});
+
+test('Check correctly handles hexane', function(){
+	let mol = ChemDoodle.readMOL(hexane);
+	expect(1);
+    equal(0, new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings.length, 'Check 0 rings found');
+});
+
+test('Check correctly handles cyclohexane', function(){
+	let mol = ChemDoodle.readMOL(cyclohexane);
+	expect(2);
+	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
+    equal(1, rings.length, 'Check 1 rings found');
+	equal(6, rings[0].atoms.length, 'Check 6-membered ring found');
+});
+
+test('Check correctly handles napthalene', function(){
+	let mol = ChemDoodle.readMOL(napthalene);
+	expect(3);
+	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
+    equal(2, rings.length, 'Check 2 rings found');
+	equal(6, rings[0].atoms.length, 'Check first 6-membered ring found');
+	equal(6, rings[1].atoms.length, 'Check second 6-membered ring found');
+});
+
+test('Check correctly handles cubane', function(){
+	let mol = ChemDoodle.readMOL(cubane);
+	expect(7);
+	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
+    equal(6, rings.length, 'Check 6 rings found');
+	equal(4, rings[0].atoms.length, 'Check first 4-membered ring found');
+	equal(4, rings[1].atoms.length, 'Check second 4-membered ring found');
+	equal(4, rings[2].atoms.length, 'Check third 4-membered ring found');
+	equal(4, rings[3].atoms.length, 'Check fourth 4-membered ring found');
+	equal(4, rings[4].atoms.length, 'Check fifth 4-membered ring found');
+	equal(4, rings[5].atoms.length, 'Check sixth 4-membered ring found');
+});
+
+test('Check correctly handles c60', function(){
+	let mol = ChemDoodle.readMOL('Molecule Name\n  ChemDodl08081808032D 0   0.00000     0.00000     0\n[Insert Comment Here]\n 60 90  0  0  0  0  0  0  0  0  1 V2000\n   -3.1373    0.2154    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.6072    0.7734   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.7036    1.6818   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2926   -0.4190   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.4599    1.0349   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9979    2.5048   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.4974    1.3807   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.8246   -1.3728   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.0683   -0.7260   -0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.9818    0.0992   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.0833    2.1050   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.0855    3.0111   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.4274    1.8967   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8181    0.1652   -0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.6611   -1.1162   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9291   -2.2693   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.1563   -1.8695   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.2358    2.2191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.1387    2.7041   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.2410    3.1273    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.3229    1.0002   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.9464   -0.0699   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.6184   -1.7512   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8872   -2.8922   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2631   -2.1002   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.9127   -0.9281    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.7679    1.2652    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3059    2.7352    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.7399    2.6306   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8872    2.8922    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.9127    0.9281   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.1667   -1.1918   -0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.7399   -2.6306    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.2410   -3.1273   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.3059   -2.7351   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.3229   -1.0002    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.1667    1.1918    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2631    2.1002    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.6184    1.7512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9291    2.2693    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.1373   -0.2154   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.7679   -1.2652   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.1387   -2.7041    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0855   -3.0111    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.2358   -2.2191   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.9464    0.0699    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.4274   -1.8967    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.1563    1.8696    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.6611    1.1162    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8246    1.3728    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.9818   -0.0992    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9979   -2.5048    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.0833   -2.1050    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8181   -0.1652    0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.4974   -1.3807    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0683    0.7260    0.0002 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2926    0.4190    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.4599   -1.0349    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7036   -1.6818    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.6072   -0.7734    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0\n  2  3  2  0  0  0  0\n  2  4  1  0  0  0  0\n  2  5  1  0  0  0  0\n  3  6  1  0  0  0  0\n  3  7  1  0  0  0  0\n  4  8  2  0  0  0  0\n  4  9  1  0  0  0  0\n  5 10  2  0  0  0  0\n  5 11  1  0  0  0  0\n  6 11  1  0  0  0  0\n  6 12  2  0  0  0  0\n  7 13  2  0  0  0  0\n  7 14  1  0  0  0  0\n  8 15  1  0  0  0  0\n  8 16  1  0  0  0  0\n  9 14  1  0  0  0  0\n  9 17  2  0  0  0  0\n 10 15  1  0  0  0  0\n 10  1  1  0  0  0  0\n 11 18  2  0  0  0  0\n 12 19  1  0  0  0  0\n 12 20  1  0  0  0  0\n 13 19  1  0  0  0  0\n 13 21  1  0  0  0  0\n 14 22  2  0  0  0  0\n 15 23  2  0  0  0  0\n 16 17  1  0  0  0  0\n 16 24  2  0  0  0  0\n 17 25  1  0  0  0  0\n  1 26  2  0  0  0  0\n  1 27  1  0  0  0  0\n 18 27  1  0  0  0  0\n 18 28  1  0  0  0  0\n 19 29  2  0  0  0  0\n 20 28  1  0  0  0  0\n 20 30  2  0  0  0  0\n 21 22  1  0  0  0  0\n 21 31  2  0  0  0  0\n 22 32  1  0  0  0  0\n 23 26  1  0  0  0  0\n 23 33  1  0  0  0  0\n 24 33  1  0  0  0  0\n 24 34  1  0  0  0  0\n 25 32  2  0  0  0  0\n 25 35  1  0  0  0  0\n 26 36  1  0  0  0  0\n 27 37  2  0  0  0  0\n 28 38  2  0  0  0  0\n 29 30  1  0  0  0  0\n 29 39  1  0  0  0  0\n 30 40  1  0  0  0  0\n 31 39  1  0  0  0  0\n 31 41  1  0  0  0  0\n 32 42  1  0  0  0  0\n 33 43  2  0  0  0  0\n 34 35  2  0  0  0  0\n 34 44  1  0  0  0  0\n 35 45  1  0  0  0  0\n 36 46  2  0  0  0  0\n 36 47  1  0  0  0  0\n 37 38  1  0  0  0  0\n 37 46  1  0  0  0  0\n 38 48  1  0  0  0  0\n 39 49  2  0  0  0  0\n 40 48  2  0  0  0  0\n 40 50  1  0  0  0  0\n 41 42  2  0  0  0  0\n 41 51  1  0  0  0  0\n 42 45  1  0  0  0  0\n 43 44  1  0  0  0  0\n 43 47  1  0  0  0  0\n 44 52  2  0  0  0  0\n 45 53  2  0  0  0  0\n 46 54  1  0  0  0  0\n 47 55  2  0  0  0  0\n 48 56  1  0  0  0  0\n 49 50  1  0  0  0  0\n 49 51  1  0  0  0  0\n 50 57  2  0  0  0  0\n 51 58  2  0  0  0  0\n 52 53  1  0  0  0  0\n 52 59  1  0  0  0  0\n 53 58  1  0  0  0  0\n 54 55  1  0  0  0  0\n 54 56  2  0  0  0  0\n 55 59  1  0  0  0  0\n 56 57  1  0  0  0  0\n 57 60  1  0  0  0  0\n 58 60  1  0  0  0  0\n 59 60  2  0  0  0  0\nM  END', 20);
+	expect(1);
+	let rings = new ChemDoodle.informatics.EulerFacetRingFinder(mol).rings;
+    equal(32, rings.length, 'Check 6 rings found');
+});
+module('RingFinder');
+
+test('Check abstract RingFinder class exists', function() {
+	expect(1);
+	ok(ChemDoodle.informatics._RingFinder, 'ChemDoodle.informatics._RingFinder class exists');
+});
+
+test('Check RingFinder correctly reduces an empty molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	expect(2);
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(0, rf.atoms.length, 'Check no atoms found');
+    equal(0, rf.bonds.length, 'Check no bonds found');
+});
+
+test('Check RingFinder correctly reduces a monotomic molecule', function(){
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	expect(2);
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(0, rf.atoms.length, 'Check no atoms found');
+    equal(0, rf.bonds.length, 'Check no bonds found');
+});
+
+test('Check RingFinder correctly reduces hexane', function(){
+	let mol = ChemDoodle.readMOL(hexane);
+	expect(2);
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(0, rf.atoms.length, 'Check no atoms found');
+    equal(0, rf.bonds.length, 'Check no bonds found');
+});
+
+test('Check RingFinder correctly reduces an empty cyclohexane', function(){
+	let mol = ChemDoodle.readMOL(cyclohexane);
+	expect(4);
+	equal(18, mol.atoms.length, 'Check has 18 atoms');
+	equal(18, mol.bonds.length, 'Check has 18 bonds');
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(6, rf.atoms.length, 'Check 6 atoms found');
+    equal(6, rf.bonds.length, 'Check 6 bonds found');
+});
+
+test('Check RingFinder correctly reduces an empty napthalene', function(){
+	let mol = ChemDoodle.readMOL(napthalene);
+	expect(2);
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(10, rf.atoms.length, 'Check 10 atoms found');
+    equal(11, rf.bonds.length, 'Check 11 bonds found');
+});
+
+test('Check RingFinder correctly reduces cubane', function(){
+	let mol = ChemDoodle.readMOL(cubane);
+	expect(2);
+	let rf = new ChemDoodle.informatics._RingFinder();
+	rf.setMolecule(mol);
+    equal(8, rf.atoms.length, 'Check 8 atoms found');
+    equal(12, rf.bonds.length, 'Check 12 bonds found');
+});
+module('iChemLabs');
+
+test('Check url is valid', function() {
+	expect(2);
+	ok(ChemDoodle.iChemLabs.SERVER_URL.startsWith('http://') || ChemDoodle.iChemLabs.SERVER_URL.startsWith('https://') || ChemDoodle.iChemLabs.SERVER_URL==='/cdcloud.php', 'SERVER_URL correctly uses http or https protocol');
+	// break up the string so CWCBuilder doesn't replace it
+	notEqual(ChemDoodle.iChemLabs.SERVER_URL, '__SERVER_URL_'+'_', 'Check server url is set');
+});
+
+test('Check use HTTPS', function() {
+	expect(1);
+	let save = ChemDoodle.iChemLabs.SERVER_URL;
+	// this is no longer a function as SERVER_URL is now always HTTPS
+	//ChemDoodle.iChemLabs.useHTTPS();
+	ok(ChemDoodle.iChemLabs.SERVER_URL.indexOf('https') === 0 || ChemDoodle.iChemLabs.SERVER_URL==='/cdcloud.php', 'SERVER_URL correctly uses https protocol');
+	ChemDoodle.iChemLabs.SERVER_URL = save;
+});
+
+test('Check INFO', function() {
+	expect(6);
+	ok(ChemDoodle.iChemLabs.INFO.userAgent, 'User agent is not undefined.');
+	ok(ChemDoodle.iChemLabs.INFO.platform, 'Platform is not undefined.');
+	ok(ChemDoodle.iChemLabs.INFO.v_cwc, 'v_cwc is not undefined.');
+	equal(ChemDoodle.getVersion(), ChemDoodle.iChemLabs.INFO.v_cwc, 'v_cwc is correct.');
+	ok(!ChemDoodle.iChemLabs.INFO.v_jQuery, 'v_jQuery is undefined.');
+	ok(!ChemDoodle.iChemLabs.INFO.v_jQuery_ui, 'v_jQuery_ui is undefined.');
+});
+
+test('Check optimize 2D', function(assert) {
+	expect(3);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.optimize(mol, {
+		dimension : 2
+	}, function() {
+		equal(2, mol.atoms.length, 'Check the number of atoms');
+		equal(1, mol.bonds.length, 'Check the number of bonds');
+		ok(Math.abs(20 - mol.atoms[0].distance(mol.atoms[1])) < .0001, 'Check bond distance');
+		done();
+	});
+});
+
+/*test('Check optimize 3D', function(assert) {
+	expect(3);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.optimize(mol, {
+		dimension : 3
+	}, function(returned) {
+		let result = returned;
+		// atoms and bonds are more because hydrogens should have been added
+		equal(8, result.atoms.length, 'Check the number of atoms');
+		equal(7, result.bonds.length, 'Check the number of bonds');
+		let c1, c2;
+		for ( let i = 0, ii = result.atoms.length; i < ii; i++) {
+			let a = result.atoms[i];
+			if (a.label === 'C') {
+				if (c1) {
+					c2 = a;
+				} else {
+					c1 = a;
+				}
+			}
+		}
+		equal(1.53, c1.distance(c2), 'Check bond distance');
+		done();
+	});
+});*/
+
+test('Check readSMILES', function(assert) {
+	expect(5);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.readSMILES('CCC', {}, function(returned) {
+		let result = returned;
+		equal(1, result.molecules.length);
+		equal(0, result.shapes.length);
+		let m = result.molecules[0];
+		ok(m instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(3, m.atoms.length, 'Check the number of atoms');
+		equal(2, m.bonds.length, 'Check the number of bonds');
+		done();
+	});
+});
+
+test('Check readSMILES kekulizes', function(assert) {
+	expect(5);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.readSMILES('c1ccccc1', {'kekulize':true}, function(returned) {
+		let result = returned;
+		let m = result.molecules[0];
+		ok(m instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(6, m.atoms.length, 'Check the number of atoms');
+		equal(6, m.bonds.length, 'Check the number of bonds');
+		let singleCount = 0;
+		let doubleCount = 0;
+		for ( let i = 0, ii = m.bonds.length; i < ii; i++) {
+			let bO = m.bonds[i].bondOrder;
+			if (bO === 1) {
+				singleCount++;
+			} else if (bO === 2) {
+				doubleCount++;
+			}
+		}
+		equal(3, singleCount);
+		equal(3, doubleCount);
+		done();
+	});
+});
+
+test('Check writeSMILES', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.writeSMILES([mol], [], {}, function(returned) {
+		let result = returned;
+		equal('CC', result, 'Check SMILES string is correct');
+		done();
+	});
+});
+
+test('Check saveFile', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.saveFile(mol, {
+		ext : 'icl'
+	}, function(returned) {
+		let result = returned;
+		let protocol = result.substring(0, 7);
+		ok(protocol=='http://'||protocol=='https:/', 'Check url begins correctly');
+		equal('.icl', result.substring(result.length - 4), 'Check url ends correctly');
+		done();
+	});
+});
+
+test('Check getMoleculeFromDatabase 2D from PubChem', function(assert) {
+	expect(3);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getMoleculeFromDatabase('caffeine', {
+		database : 'pubchem'
+	}, function(returned) {
+		let result = returned;
+		equal(14, result.atoms.length, 'Check the number of atoms');
+		equal(15, result.bonds.length, 'Check the number of bonds');
+		ok(Math.abs(20 - result.atoms[0].distance(result.atoms[1])) < .01, 'Check the bond length');
+		done();
+	});
+});
+
+test('Check getMoleculeFromDatabase 2D from ChemSpider', function(assert) {
+	expect(3);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getMoleculeFromDatabase('caffeine', {
+		database : 'chemspider'
+	}, function(returned) {
+		let result = returned;
+		equal(14, result.atoms.length, 'Check the number of atoms');
+		equal(15, result.bonds.length, 'Check the number of bonds');
+		ok(result.atoms[0].distance(result.atoms[1])>10, 'Check the bond length');
+		done();
+	});
+});
+
+test('Check getMoleculeFromDatabase 3D from PubChem', function(assert) {
+	expect(3);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getMoleculeFromDatabase('methane', {
+		database : 'pubchem',
+		dimension : 3
+	}, function(returned) {
+		let result = returned;
+		equal(5, result.atoms.length, 'Check the number of atoms');
+		equal(4, result.bonds.length, 'Check the number of bonds');
+		ok(result.bonds[0].a1.distance(result.bonds[0].a2)<1, 'Check the bond length');
+		done();
+	});
+});
+
+test('Check getMoleculeFromContent 2D from SLN', function(assert) {
+	expect(2);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getMoleculeFromContent('CH3CH2CH3', {
+		format : 'sln'
+	}, function(returned) {
+		let result = returned;
+		equal(3, result.atoms.length, 'Check the number of atoms');
+		equal(2, result.bonds.length, 'Check the number of bonds');
+		done();
+	});
+});
+
+test('Check calculate', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.calculate(mol, {
+		descriptors : [ 'mf', 'mw' ]
+	}, function(returned) {
+		let result = returned;
+		equal('CH4', result.mf, 'Check molecular formula');
+		equal(16.04252, result.mw, 'Check molecular mass');
+		done();
+	});
+});
+
+test('Check simulate1HNMR', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.simulate1HNMR(mol, {}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
+		equal(531, result.data.length, 'Check the number of points in the plot');
+		done();
+	});
+});
+
+test('Check simulate13CNMR', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.simulate13CNMR(mol, {}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
+		equal(531, result.data.length, 'Check the number of points in the plot');
+		done();
+	});
+});
+
+test('Check simulateMassParentPeak', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.simulateMassParentPeak(mol, {}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Spectrum, 'Check that the returned object is the correct class');
+		equal(3, result.data.length, 'Check the number of points in the plot');
+		done();
+	});
+});
+
+test('Check getOptimizedPDBStructure', function(assert) {
+	expect(6);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getOptimizedPDBStructure('1CRN', {
+		withAtoms : true
+	}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		ok(result.fromJSON, 'Check that molecule is correctly tagged as coming from JSON');
+		equal(0, result.atoms.length, 'Check the number of atoms');
+		equal(0, result.bonds.length, 'Check the number of bonds');
+		ok(result.chains, 'Check that chains are present');
+		equal(1, result.chains.length, 'Check the number of chains');
+		done();
+	});
+});
+
+test('Check getOptimizedPDBStructure with hetatoms', function(assert) {
+	expect(6);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getOptimizedPDBStructure('3N4B', {
+		withAtoms : true
+	}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		ok(result.fromJSON, 'Check that molecule is correctly tagged as coming from JSON');
+		equal(304, result.atoms.length, 'Check the number of atoms');
+		equal(46, result.bonds.length, 'Check the number of bonds');
+		ok(result.chains, 'Check that chains are present');
+		equal(1, result.chains.length, 'Check the number of chains');
+		done();
+	});
+});
+
+test('Check kekulize', function(assert) {
+	expect(5);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.kekulize(mol, {}, function(returned) {
+		let result = returned;
+		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(3, result.atoms.length, 'Check the number of atoms');
+		equal(2, result.bonds.length, 'Check the number of bonds');
+		equal(2, result.bonds[0].bondOrder, 'Check first bond order');
+		equal(1, result.bonds[1].bondOrder, 'Check second bond order');
+		done();
+	});
+});
+
+test('Check isGraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.atoms[2] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isGraphIsomorphism(mol, mol2, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check isGraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isGraphIsomorphism(mol, mol2, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check isSubgraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.atoms[2] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol, mol2, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check isSubgraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol, mol2, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check isSupergraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.atoms[2] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	mol2.bonds[1] = new ChemDoodle.structures.Bond(mol2.atoms[1], mol2.atoms[2]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check isSupergraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check query isGraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	mol.atoms[3] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	mol.bonds[2] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[3], 2);
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isGraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check query isGraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.atoms[2] = new ChemDoodle.structures.Atom();
+	mol.atoms[3] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	mol.bonds[1] = new ChemDoodle.structures.Bond(mol.atoms[1], mol.atoms[2]);
+	mol.bonds[2] = new ChemDoodle.structures.Bond(mol.atoms[2], mol.atoms[3]);
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isGraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check query isSubgraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":140,"i":"a0","y":218},{"x":157.3205,"i":"a1","y":208},{"x":174.641,"i":"a2","y":218},{"x":191.9615,"i":"a3","y":208},{"x":122.6795,"i":"a4","y":208}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2","o":2},{"b":0,"e":4,"i":"b3"}]});
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check query isSubgraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":140,"i":"a0","y":218},{"x":157.3205,"i":"a1","y":208},{"x":174.641,"i":"a2","y":218},{"x":191.9615,"i":"a3","y":208},{"x":122.6795,"i":"a4","y":208}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":2,"e":3,"i":"b2"},{"b":0,"e":4,"i":"b3"}]});
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSubgraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check query isSupergraphIsomorphism true', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1], 2);
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(result, 'Check value is true');
+		done();
+	});
+});
+
+test('Check query isSupergraphIsomorphism false', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom();
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1], 3);
+	let mol2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":219,"i":"a0","y":214},{"x":236.3205,"i":"a1","y":204},{"x":253.641,"i":"a2","y":214},{"x":270.9615,"i":"a3","y":204}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"q":{"bs":{"v":["2"]}},"b":2,"e":3,"i":"b2"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.isSupergraphIsomorphism(mol2, mol, {}, function(returned) {
+		let result = returned;
+		ok(!result, 'Check value is false');
+		done();
+	});
+});
+
+test('Check getSimilarityMeasure', function(assert) {
+	expect(1);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[1] = new ChemDoodle.structures.Atom('N');
+	mol.bonds[0] = new ChemDoodle.structures.Bond(mol.atoms[0], mol.atoms[1]);
+	let mol2 = new ChemDoodle.structures.Molecule();
+	mol2.atoms[0] = new ChemDoodle.structures.Atom();
+	mol2.atoms[1] = new ChemDoodle.structures.Atom();
+	mol2.bonds[0] = new ChemDoodle.structures.Bond(mol2.atoms[0], mol2.atoms[1]);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getSimilarityMeasure(mol, mol2, {}, function(returned) {
+		let result = returned;
+		ok(Math.abs(1/2-result)<.001, 'Check value');
+		done();
+	});
+});
+
+test('Check readIUPACName', function(assert) {
+	expect(5);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.readIUPACName('acetonitrile', {}, function(mols, warning) {
+		equal(1, mols.length);
+		ok(warning===undefined);
+		let result = mols[0];
+		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(3, result.atoms.length, 'Check the number of atoms');
+		equal(2, result.bonds.length, 'Check the number of bonds');
+		done();
+	});
+});
+
+test('Check readIUPACName warning', function(assert) {
+	expect(4);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.readIUPACName('test', {}, function(mols, warning) {
+		equal(0, mols.length);
+		ok(warning!==undefined);
+		ok(warning.length>10);
+		ok(warning.indexOf('test')>0);
+		done();
+	});
+});
+
+test('Check generateImage', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.generateImage(mol, {
+		ext : 'png'
+	}, function(returned) {
+		let result = returned;
+		let protocol = result.substring(0, 7);
+		ok(protocol=='http://'||protocol=='https:/', 'Check url begins correctly');
+		equal('.png', result.substring(result.length - 4), 'Check url ends correctly');
+		done();
+	});
+});
+
+test('Check getZeoliteFromIZA', function(assert) {
+	expect(4);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.getZeoliteFromIZA('LTA', {}, function(returned) {
+		let result = returned;
+		ok(result.molecule instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(72, result.molecule.atoms.length, 'Check the number of atoms');
+		equal(72, result.molecule.bonds.length, 'Check the number of bonds');
+		ok(result.unitCell instanceof ChemDoodle.structures.d3.UnitCell, 'Check that unit cell is present');
+		done();
+	});
+});
+
+test('Check generateIUPACName', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.generateIUPACName(mol, {}, function(traditional, pin) {
+		equal('Methane', traditional, 'Check the traditional name is Methane');
+		equal('methane', pin, 'Check the PIN is methane');
+		done();
+	});
+});
+
+test('Check createLewisDotStructure', function(assert) {
+	expect(2);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.createLewisDotStructure(mol, {}, function(returned) {
+		let result = returned;
+		equal(5, result.atoms.length, 'Check 5 atoms');
+		equal(4, result.bonds.length, 'Check 4 bonds');
+		done();
+	});
+});
+
+test('Check matchMechanism match', function(assert) {
+	expect(2);
+	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
+	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}];
+	const done = assert.async();
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
+		let result = returned.value;
+		equal(1, result.length, 'Check 1 result');
+		equal(1, result[0], 'Check result is a match');
+		done();
+	});
+});
+
+test('Check matchMechanism match stereo', function(assert) {
+	expect(4);
+	let arrow = {"m":[{"a":[{"x":237.5,"y":180.84375,"i":"a0"},{"x":237.5,"y":160.84375,"i":"a1"},{"x":220.1794919243112,"y":190.84375,"i":"a2","l":"O"},{"x":254.82050807568876,"y":190.84375,"i":"a3","l":"N"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":0,"e":3,"i":"b2","s":"protruding"}]},{"a":[{"x":184.5,"y":140.84375,"i":"a4","l":"Cl"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a4","o2":"a0","e":2}]};
+	let targets = [{"m":[{"a":[{"x":237.5,"y":180.84375,"i":"a0"},{"x":237.5,"y":160.84375,"i":"a1"},{"x":220.1794919243112,"y":190.84375,"i":"a2","l":"O"},{"x":254.82050807568876,"y":190.84375,"i":"a3","l":"N"}],"b":[{"b":0,"e":1,"i":"b0","s":"protruding"},{"b":0,"e":2,"i":"b1"},{"b":0,"e":3,"i":"b2"}]},{"a":[{"x":184.5,"y":140.84375,"i":"a4","l":"Cl"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a4","o2":"a0","e":2}]}];
+	const done1 = assert.async();
+	const done2 = assert.async();
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
+		let result = returned.value;
+		equal(1, result.length, 'Check 1 result');
+		equal(0, result[0], 'Check result is a match');
+		done1();
+	});
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {enforceStereo:true}, function(returned) {
+		let result = returned.value;
+		equal(1, result.length, 'Check 1 result');
+		equal(1, result[0], 'Check result is a match');
+		done2();
+	});
+});
+
+test('Check matchMechanism partial match', function(assert) {
+	expect(2);
+	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[]};
+	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}];
+	const done = assert.async();
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
+		let result = returned.value;
+		equal(1, result.length, 'Check 1 result');
+		equal(2, result[0], 'Check result is a partial match');
+		done();
+	});
+});
+
+test('Check matchMechanism not match', function(assert) {
+	expect(2);
+	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
+	let targets = [{"m":[{"a":[{"x":125.5,"y":122,"i":"a0"},{"x":142.82050807568876,"y":112,"i":"a1"},{"x":160.14101615137753,"y":122,"i":"a2"},{"x":177.4615242270663,"y":112,"i":"a3"},{"x":194.78203230275506,"y":122,"i":"a4","l":"O"},{"x":177.4615242270663,"y":92,"i":"a5","l":"O"},{"x":212.10254037844382,"y":112,"i":"a6"},{"x":229.42304845413258,"y":122,"i":"a7"},{"x":142.82050807568876,"y":92,"i":"a8","l":"O","c":-1}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1","o":2},{"b":2,"e":3,"i":"b2"},{"b":3,"e":4,"i":"b3"},{"b":3,"e":5,"i":"b4","o":2},{"b":4,"e":6,"i":"b5"},{"b":6,"e":7,"i":"b6"},{"b":1,"e":8,"i":"b7"}]},{"a":[{"x":159.5,"y":148,"i":"a9"},{"x":179.5,"y":148,"i":"a10"},{"x":169.5,"y":165.32050807568876,"i":"a11","l":"O"}],"b":[{"b":0,"e":1,"i":"b8"},{"b":0,"e":2,"i":"b9"},{"b":2,"e":1,"i":"b10"}]},{"a":[{"x":143.5,"y":59,"i":"a12","l":"Na","c":1}]}],"s":[{"i":"s0","t":"Pusher","o1":"a8","o2":"b7","e":2},{"i":"s1","t":"Pusher","o1":"b1","o2":"a9","e":2},{"i":"s2","t":"Pusher","o1":"b9","o2":"a11","e":2}]}];
+	const done = assert.async();
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
+		let result = returned.value;
+		equal(1, result.length, 'Check 1 result');
+		equal(0, result[0], 'Check result is not a match');
+		done();
+	});
+});
+
+test('Check matchMechanism multiple', function(assert) {
+	expect(3);
+	let arrow = {"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]};
+	let targets = [{"m":[{"a":[{"x":92,"y":154,"i":"a0"},{"x":109.32050807568878,"y":144,"i":"a1"},{"x":126.64101615137754,"y":154,"i":"a2","l":"O","c":-1},{"x":109.32050807568878,"y":124,"i":"a3","l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1"},{"b":1,"e":3,"i":"b2","o":2}]},{"a":[{"x":176,"y":154,"i":"a4","l":"H"},{"x":196,"y":154,"i":"a5","l":"O"},{"x":216,"y":154,"i":"a6","l":"S"},{"x":216,"y":134,"i":"a7","l":"O"},{"x":216,"y":174,"i":"a8","l":"O"},{"x":236,"y":154,"i":"a9","l":"O"}],"b":[{"b":0,"e":1,"i":"b3"},{"b":1,"e":2,"i":"b4"},{"b":2,"e":3,"i":"b5","o":2},{"b":2,"e":4,"i":"b6","o":2},{"b":2,"e":5,"i":"b7"}]}],"s":[{"i":"s0","t":"Pusher","o1":"a2","o2":"a4","e":2}]}, {"m":[{"a":[{"x":125.5,"y":122,"i":"a0"},{"x":142.82050807568876,"y":112,"i":"a1"},{"x":160.14101615137753,"y":122,"i":"a2"},{"x":177.4615242270663,"y":112,"i":"a3"},{"x":194.78203230275506,"y":122,"i":"a4","l":"O"},{"x":177.4615242270663,"y":92,"i":"a5","l":"O"},{"x":212.10254037844382,"y":112,"i":"a6"},{"x":229.42304845413258,"y":122,"i":"a7"},{"x":142.82050807568876,"y":92,"i":"a8","l":"O","c":-1}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":2,"i":"b1","o":2},{"b":2,"e":3,"i":"b2"},{"b":3,"e":4,"i":"b3"},{"b":3,"e":5,"i":"b4","o":2},{"b":4,"e":6,"i":"b5"},{"b":6,"e":7,"i":"b6"},{"b":1,"e":8,"i":"b7"}]},{"a":[{"x":159.5,"y":148,"i":"a9"},{"x":179.5,"y":148,"i":"a10"},{"x":169.5,"y":165.32050807568876,"i":"a11","l":"O"}],"b":[{"b":0,"e":1,"i":"b8"},{"b":0,"e":2,"i":"b9"},{"b":2,"e":1,"i":"b10"}]},{"a":[{"x":143.5,"y":59,"i":"a12","l":"Na","c":1}]}],"s":[{"i":"s0","t":"Pusher","o1":"a8","o2":"b7","e":2},{"i":"s1","t":"Pusher","o1":"b1","o2":"a9","e":2},{"i":"s2","t":"Pusher","o1":"b9","o2":"a11","e":2}]}];
+	const done = assert.async();
+	ChemDoodle.iChemLabs.mechanismMatch(arrow, targets, {}, function(returned) {
+		let result = returned.value;
+		equal(2, result.length, 'Check 2 results');
+		equal(1, result[0], 'Check first result is a match');
+		equal(0, result[1], 'Check second result is not a match');
+		done();
+	});
+});
+
+test('Check version', function(assert) {
+	expect(3);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.version({}, function(returned) {
+		let result = returned;
+		ok(result.length>0, 'Check result is not empty');
+		equal(-1, result.indexOf('__CHEMDOODLE_CLOUD_VERSION__'), 'Check cloud version placeholder is set');
+		equal(-1, result.indexOf('__CHEMDOODLE_JAR_REVISION__'), 'Check chemdoodle jar version placeholder is set');
+		done();
+	});
+});
+
+test('Check resolveCIP', function(assert) {
+	expect(26);
+	let mol = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":247.2768,"i":"a0","y":405.5226},{"x":229.9563,"i":"a1","y":395.5226,"l":"N"},{"x":264.5973,"i":"a2","y":395.5226},{"x":247.2768,"i":"a3","y":425.5226},{"x":212.6357,"i":"a4","y":405.5226},{"x":281.9178,"i":"a5","y":405.5226},{"x":254.5973,"i":"a6","y":378.2021,"l":"H"},{"x":274.5973,"i":"a7","y":378.2021,"l":"O"},{"x":229.9562,"i":"a8","y":435.5226},{"x":212.6357,"i":"a9","y":425.5226},{"x":299.2383,"i":"a10","y":395.5226,"l":"N"},{"x":316.5588,"i":"a11","y":405.5226}],"b":[{"b":0,"e":2,"i":"b0"},{"b":0,"e":1,"i":"b1","o":2},{"b":1,"e":4,"i":"b2"},{"b":4,"e":9,"i":"b3","o":2},{"b":9,"e":8,"i":"b4"},{"b":8,"e":3,"i":"b5","o":2},{"b":3,"e":0,"i":"b6"},{"b":2,"e":5,"i":"b7"},{"b":5,"e":10,"i":"b8","o":2},{"b":10,"e":11,"i":"b9"},{"b":2,"s":"protruding","e":7,"i":"b10","o":1},{"b":2,"s":"recessed","e":6,"i":"b11","o":1}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.resolveCIP(mol, {}, function(ac, bc) {
+		equal(12, ac.length);
+		for(let i = 0; i<ac.length; i++){
+			equal(i==2?'R':'', ac[i]);
+		}
+		equal(12, bc.length);
+		for(let i = 0; i<bc.length; i++){
+			equal(i==8?'E':'', bc[i]);
+		}
+		done();
+	});
+});
+
+test('Check balanceReaction reaction', function(assert) {
+	expect(2);
+	let content = new ChemDoodle.io.JSONInterpreter().contentFrom({"s":[{"a":"synthetic","t":"Line","y1":366.064,"x1":275,"y2":366.064,"i":"s0","x2":317}],"m":[{"a":[{"x":99.3879,"i":"a0","y":366.8397},{"x":89.3879,"i":"a1","y":349.5193},{"x":89.3879,"i":"a2","y":384.1603},{"x":119.3879,"i":"a3","y":366.8397},{"x":69.3879,"i":"a4","y":349.5193},{"x":69.3879,"i":"a5","y":384.1603},{"x":139.3879,"i":"a6","y":366.8397,"l":"Mg"},{"x":59.3879,"i":"a7","y":366.8397},{"x":159.3879,"i":"a8","y":366.8397,"l":"Br"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":1,"e":4,"i":"b1","o":2},{"b":4,"e":7,"i":"b2"},{"b":7,"e":5,"i":"b3","o":2},{"b":5,"e":2,"i":"b4"},{"b":2,"e":0,"i":"b5","o":2},{"b":0,"e":3,"i":"b6"},{"b":3,"e":6,"i":"b7"},{"b":6,"e":8,"i":"b8"}]},{"a":[{"x":216.0898,"i":"a9","y":373.5129},{"x":233.4102,"i":"a10","y":363.5129,"l":"O"}],"b":[{"b":0,"e":1,"i":"b9"}]},{"a":[{"x":392.2501,"i":"a11","y":366.0639},{"x":412.2501,"i":"a12","y":366.0639},{"x":382.2501,"i":"a13","y":383.3845},{"x":382.2501,"i":"a14","y":348.7434},{"x":362.2501,"i":"a15","y":383.3845},{"x":362.2501,"i":"a16","y":348.7434},{"x":352.2501,"i":"a17","y":366.0639}],"b":[{"b":0,"e":3,"i":"b10"},{"b":3,"e":5,"i":"b11","o":2},{"b":5,"e":6,"i":"b12"},{"b":6,"e":4,"i":"b13","o":2},{"b":4,"e":2,"i":"b14"},{"b":2,"e":0,"i":"b15","o":2},{"b":0,"e":1,"i":"b16"}]},{"a":[{"x":488.652,"i":"a18","y":370.9452,"l":"Mg"},{"x":508.652,"i":"a19","y":370.9452,"l":"O"},{"x":468.652,"i":"a20","y":370.9452,"l":"Br"},{"x":518.6519,"i":"a21","y":353.6248}],"b":[{"b":0,"e":2,"i":"b17"},{"b":0,"e":1,"i":"b18"},{"b":1,"e":3,"i":"b19"}]}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.balanceReaction({'molecules':content.molecules,'shapes':content.shapes}, {}, function(result, message) {
+		equal('1C<sub>7</sub>H<sub>7</sub>BrMg + 1CH<sub>4</sub>O = 1C<sub>7</sub>H<sub>8</sub> + 1CH<sub>3</sub>BrMgO', result);
+		ok(!message);
+		done();
+	});
+});
+
+test('Check balanceReaction equation', function(assert) {
+	expect(2);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.balanceReaction('Al + HCl = AlCl3 + H2', {}, function(result, message) {
+		equal('2Al + 6HCl = 2AlCl<sub>3</sub> + 3H<sub>2</sub>', result);
+		ok(!message);
+		done();
+	});
+});
+
+test('Check maximumCommonSubstructure connected', function(assert) {
+	expect(1);
+	let m1 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":769.5104,"i":"a0","y":508.6458,"l":"O"},{"x":769.5104,"i":"a1","y":478.6458},{"x":795.4905,"i":"a2","y":463.6458},{"x":743.5305,"i":"a3","y":463.6458},{"x":795.4905,"i":"a4","y":433.6458},{"x":743.5305,"i":"a5","y":433.6458},{"x":769.5104,"i":"a6","y":418.6458},{"x":769.5104,"i":"a7","y":388.6458,"l":"N"},{"x":795.4905,"i":"a8","y":373.6458},{"x":795.4905,"i":"a9","y":343.6458},{"x":821.4734,"i":"a10","y":388.6458,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":2,"e":1,"i":"b1","o":2},{"b":3,"e":1,"i":"b2"},{"b":4,"e":2,"i":"b3"},{"b":5,"e":3,"i":"b4","o":2},{"b":6,"e":4,"i":"b5","o":2},{"b":6,"e":5,"i":"b6"},{"b":7,"e":6,"i":"b7"},{"b":7,"e":8,"i":"b8"},{"b":8,"e":9,"i":"b9"},{"b":10,"e":8,"i":"b10","o":2}]});
+	let m2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":734.0388,"i":"a0","y":226.1461,"l":"O"},{"x":760.0218,"i":"a1","y":241.1461},{"x":708.0588,"i":"a2","y":241.1461},{"x":786.0018,"i":"a3","y":226.1461},{"x":760.0218,"i":"a4","y":271.1461},{"x":708.0588,"i":"a5","y":271.1461,"l":"O"},{"x":682.0788,"i":"a6","y":226.1461},{"x":811.9818,"i":"a7","y":241.1461},{"x":786.0018,"i":"a8","y":196.1461},{"x":786.0018,"i":"a9","y":286.1461},{"x":811.9818,"i":"a10","y":271.1461},{"x":760.0218,"i":"a11","y":181.1461,"l":"O"},{"x":811.9818,"i":"a12","y":181.1461,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":1,"e":4,"i":"b2","o":2},{"b":1,"e":3,"i":"b3"},{"b":5,"e":2,"i":"b4","o":2},{"b":2,"e":6,"i":"b5"},{"b":4,"e":9,"i":"b6"},{"b":3,"e":7,"i":"b7","o":2},{"b":3,"e":8,"i":"b8"},{"b":9,"e":10,"i":"b9","o":2},{"b":7,"e":10,"i":"b10"},{"b":11,"e":8,"i":"b11","o":2},{"b":12,"e":8,"i":"b12"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.maximumCommonSubstructure(m1, m2, {disconnected:false}, function(map) {
+		let result = map;
+		equal(7, Object.getOwnPropertyNames(result).length, 'Check 7 mappings');
+		done();
+	});
+});
+
+test('Check maximumCommonSubstructure disconnected', function(assert) {
+	expect(1);
+	let m1 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":769.5104,"i":"a0","y":508.6458,"l":"O"},{"x":769.5104,"i":"a1","y":478.6458},{"x":795.4905,"i":"a2","y":463.6458},{"x":743.5305,"i":"a3","y":463.6458},{"x":795.4905,"i":"a4","y":433.6458},{"x":743.5305,"i":"a5","y":433.6458},{"x":769.5104,"i":"a6","y":418.6458},{"x":769.5104,"i":"a7","y":388.6458,"l":"N"},{"x":795.4905,"i":"a8","y":373.6458},{"x":795.4905,"i":"a9","y":343.6458},{"x":821.4734,"i":"a10","y":388.6458,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":2,"e":1,"i":"b1","o":2},{"b":3,"e":1,"i":"b2"},{"b":4,"e":2,"i":"b3"},{"b":5,"e":3,"i":"b4","o":2},{"b":6,"e":4,"i":"b5","o":2},{"b":6,"e":5,"i":"b6"},{"b":7,"e":6,"i":"b7"},{"b":7,"e":8,"i":"b8"},{"b":8,"e":9,"i":"b9"},{"b":10,"e":8,"i":"b10","o":2}]});
+	let m2 = new ChemDoodle.io.JSONInterpreter().molFrom({"a":[{"x":734.0388,"i":"a0","y":226.1461,"l":"O"},{"x":760.0218,"i":"a1","y":241.1461},{"x":708.0588,"i":"a2","y":241.1461},{"x":786.0018,"i":"a3","y":226.1461},{"x":760.0218,"i":"a4","y":271.1461},{"x":708.0588,"i":"a5","y":271.1461,"l":"O"},{"x":682.0788,"i":"a6","y":226.1461},{"x":811.9818,"i":"a7","y":241.1461},{"x":786.0018,"i":"a8","y":196.1461},{"x":786.0018,"i":"a9","y":286.1461},{"x":811.9818,"i":"a10","y":271.1461},{"x":760.0218,"i":"a11","y":181.1461,"l":"O"},{"x":811.9818,"i":"a12","y":181.1461,"l":"O"}],"b":[{"b":0,"e":1,"i":"b0"},{"b":0,"e":2,"i":"b1"},{"b":1,"e":4,"i":"b2","o":2},{"b":1,"e":3,"i":"b3"},{"b":5,"e":2,"i":"b4","o":2},{"b":2,"e":6,"i":"b5"},{"b":4,"e":9,"i":"b6"},{"b":3,"e":7,"i":"b7","o":2},{"b":3,"e":8,"i":"b8"},{"b":9,"e":10,"i":"b9","o":2},{"b":7,"e":10,"i":"b10"},{"b":11,"e":8,"i":"b11","o":2},{"b":12,"e":8,"i":"b12"}]});
+	const done = assert.async();
+	ChemDoodle.iChemLabs.maximumCommonSubstructure(m1, m2, {disconnected:true}, function(map) {
+		let result = map;
+		equal(9, Object.getOwnPropertyNames(result).length, 'Check 9 mappings');
+		done();
+	});
+});
+
+test('Check readWLN', function(assert) {
+	expect(5);
+	const done = assert.async();
+	ChemDoodle.iChemLabs.readWLN('QY2&2', {}, function(content) {
+		let rcontent = content;
+		equal(1, rcontent.molecules.length);
+		equal(0, rcontent.shapes.length);
+		let result = rcontent.molecules[0];
+		ok(result instanceof ChemDoodle.structures.Molecule, 'Check that the returned object is the correct class');
+		equal(6, result.atoms.length, 'Check the number of atoms');
+		equal(5, result.bonds.length, 'Check the number of bonds');
+		done();
+	});
+});
+
+test('Check fileToImage', function(assert) {
+	// not possible to check file upload, so just check the function is defined
+	expect(1);
+	ok(ChemDoodle.iChemLabs.fileToImage, 'Function exists.');
+});
+
+test('Check cir', function(assert) {
+	// not possible to check file upload, so just check the function is defined
+	expect(1);
+	ok(ChemDoodle.iChemLabs.cir, 'Function exists.');
+});
+
+test('Check elementalAnalaysis', function(assert) {
+	expect(8);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	const done = assert.async();
+	ChemDoodle.iChemLabs.elementalAnalysis(mol, {}, function(content) {
+		let result = content;
+		ok(result, 'Check result is not undefined');
+		ok(!result.error, 'Check there is no error');
+		equal('CH<sub>4</sub>', result.molecular_formula, 'Check the molecular formula');
+		equal('16.04 amu', result.molecular_mass, 'Check the molecular mass');
+		equal('16.03 amu', result.monoisotopic_mass, 'Check the monoisotopic mass');
+		equal('C-74.87; H-25.13', result.composition, 'Check the composition');
+		equal('16.03 (100.000%), 17.03 (1.082%), 17.04 (0.046%)', result.peaks, 'Check the peaks');
+		ok(result.jcamp.length>10, 'Check jcamp exists with content');
+		done();
+	});
+});
+
+test('Check elementalAnalaysis unknown isotope', function(assert) {
+	expect(8);
+	let mol = new ChemDoodle.structures.Molecule();
+	mol.atoms[0] = new ChemDoodle.structures.Atom();
+	mol.atoms[0].mass = 99;
+	const done = assert.async();
+	ChemDoodle.iChemLabs.elementalAnalysis(mol, {}, function(content) {
+		let result = content;
+		ok(result, 'Check result is not undefined');
+		equal('No data for isotope(s): 99C', result.error, 'Verify error has the correct message');
+		equal('<sup>99</sup>CH<sub>4</sub>', result.molecular_formula, 'Check the molecular formula');
+		equal(undefined, result.molecular_mass, 'Check the molecular mass');
+		equal(undefined, result.monoisotopic_mass, 'Check the monoisotopic mass');
+		equal(undefined, result.composition, 'Check the composition');
+		equal(undefined, result.peaks, 'Check the peaks');
+		equal(undefined, result.jcamp, 'Check the jcamp spectrum is undefined');
+		done();
+	});
 });
