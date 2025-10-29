@@ -290,21 +290,34 @@ export class StmHelper {
                 if (mod.condition === 'N-terminus') {
                     // N-terminus: 맨 앞 아미노산 체크
                     if (!hasInternalInitiationAtStart(seqArr)) {
-                        const firstAA = seqArr.find(item => item.letter !== "");
-                        if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
-                            appliedModifications.push({mod, position: -1}); // -1 = N-terminus
-                            finalWeight += modWeight;
-                            finalMolWeight += modMolWeight;
+                        const firstAAIndex = seqArr.findIndex(item => item.letter !== "");
+                        if (firstAAIndex !== -1) {
+                            const firstAA = seqArr[firstAAIndex];
+                            if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
+                                appliedModifications.push({mod, position: firstAAIndex});
+                                finalWeight += modWeight;
+                                finalMolWeight += modMolWeight;
+                            }
                         }
                     }
                 } else if (mod.condition === 'C-terminus') {
                     // C-terminus: 맨 뒤 아미노산 체크
                     if (!hasPrematureTerminationAtEnd(seqArr)) {
-                        const lastAA = [...seqArr].reverse().find(item => item.letter !== "");
-                        if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
-                            appliedModifications.push({mod, position: -2}); // -2 = C-terminus
-                            finalWeight += modWeight;
-                            finalMolWeight += modMolWeight;
+                        // 뒤에서부터 찾기
+                        let lastAAIndex = -1;
+                        for (let i = seqArr.length - 1; i >= 0; i--) {
+                            if (seqArr[i].letter !== "") {
+                                lastAAIndex = i;
+                                break;
+                            }
+                        }
+                        if (lastAAIndex !== -1) {
+                            const lastAA = seqArr[lastAAIndex];
+                            if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
+                                appliedModifications.push({mod, position: lastAAIndex});
+                                finalWeight += modWeight;
+                                finalMolWeight += modMolWeight;
+                            }
                         }
                     }
                 } else if (mod.condition === 'Internal site') {
@@ -326,7 +339,24 @@ export class StmHelper {
                 }
             }
 
-            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
+            // Update updatedSeqArr with Single-site modifications
+            for (const {mod, position} of appliedModifications) {
+                if (position >= 0 && position < updatedSeqArr.length) {
+                    updatedSeqArr[position] = {
+                        ...updatedSeqArr[position],
+                        singleSiteModified: true,
+                        singleSiteModification: mod.structureName
+                    };
+                }
+            }
+
+            // sequenceString 생성 시 Single-site modification도 고려
+            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => {
+                if (x.singleSiteModified && x.singleSiteModification) {
+                    return x.singleSiteModification;
+                }
+                return x.letter;
+            }).join("");
 
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
@@ -710,4 +740,6 @@ interface PossibilityLetter {
     skipped?: boolean;
     crosslinked?: boolean;
     crosslinkModification?: string;
+    singleSiteModified?: boolean;
+    singleSiteModification?: string;
 }
