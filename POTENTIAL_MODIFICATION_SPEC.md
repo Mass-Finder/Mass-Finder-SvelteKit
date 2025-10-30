@@ -48,6 +48,33 @@
 
 두 개의 아미노산이 쌍으로 결합하여 변화가 일어나는 modification 타입입니다.
 
+#### 질량 계산 방식
+
+**중요**: Crosslinking의 Molecular Weight는 **최종 구조의 절대 질량**을 입력합니다.
+
+코드에서 자동으로 다음과 같이 계산합니다:
+- **계산 공식**: `최종 질량 = 원래 시퀀스 질량 - 원래 두 아미노산 질량 + 새 구조 질량`
+- **사용자 입력**: 새 구조의 절대 질량 (Potential 화면에서 ChemDoodle로 그린 구조의 질량)
+
+**예시**:
+1. **Disulfide bond** (C-C → S-S 결합)
+   - C 2개의 원래 질량: 121.154 × 2 = 242.308
+   - H2 제거 후 구조 질량: 240.292
+   - 입력값: `240.292` (절대 질량)
+   - 자동 계산: 242.308 - 240.292 = **-2.016** (감소)
+
+2. **Custom crosslinking** (C-C → dC1 구조)
+   - C 2개의 원래 질량: 121.154 × 2 = 242.308
+   - dC1 구조 질량: 42
+   - 입력값: `42` (절대 질량)
+   - 자동 계산: 242.308 - 42 = **-200.308** (감소)
+
+#### 표시 방식
+
+Crosslinking이 적용된 경우, **각 아미노산을 개별적으로** Structure Name으로 표시합니다:
+- `CC` → `dC1dC1` (두 개의 dC1로 표시)
+- `MCCAAVAV` → `MdC1dC1AAVAV`
+
 #### 예시
 - Disulfide bond: `C-C` 결합 (질량 -2.02 감소)
 
@@ -122,21 +149,36 @@
   molecularWeight: "28.01"
 }
 
-// Crosslinking 예시
+// Crosslinking 예시 1: Disulfide bond
 {
-  name: "Custom_Disulfide",
+  name: "Disulfide",
   type: "Crosslinking",
   target1: "C",
   target2: "C",
-  condition: "Adjacent",  // "Adjacent", "Adjacent (Target 1→2)", "Adjacent (Target 2→1)", "Distance"
+  condition: "Adjacent",
+  structureName: "dC",  // 각 C가 dC로 표시됨
+  moleculeJson: {...},
+  molecularFormula: "C6H10N2O2S2",
+  monoisotopicWeight: "240.292",  // H2 제거 후 구조의 절대 질량
+  molecularWeight: "240.292"
+}
+
+// Crosslinking 예시 2: Custom structure (dC1)
+{
+  name: "Custom_C_Link",
+  type: "Crosslinking",
+  target1: "C",
+  target2: "C",
+  condition: "Adjacent",
   // Distance인 경우 추가 필드
   distanceOperator: ">",  // "=", "<", ">"
   distanceValue: 1,
-  structureName: "disulfide_bond",
+  structureName: "dC1",  // 각 C가 dC1로 표시됨
   moleculeJson: {...},
   molecularFormula: "...",
-  monoisotopicWeight: "-2.02",
-  molecularWeight: "-2.02"
+  // ChemDoodle에서 계산된 최종 구조의 절대 질량을 입력
+  monoisotopicWeight: "42.0",
+  molecularWeight: "42.0"
 }
 ```
 

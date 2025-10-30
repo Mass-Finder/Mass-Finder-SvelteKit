@@ -1,4 +1,4 @@
-import { codonTableRtoS, molecularWeightMap, getIonWeight } from './amino_mapper';
+import { codonTableRtoS, aminoMap, molecularWeightMap, getIonWeight } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType, PotentialModification, SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
 
@@ -491,11 +491,40 @@ export class StmHelper {
             const newPoss: Possibility = this.deepClonePossibility(basePossibility);
 
             if (combo.length > 0) {
-                // 질량 업데이트
+                // 질량 업데이트: 각 페어마다 원래 두 아미노산을 빼고 새 구조를 더함
                 const modWeight = parseFloat(modification.monoisotopicWeight);
                 const modMolWeight = parseFloat(modification.molecularWeight);
-                newPoss.weight += modWeight * combo.length;
-                newPoss.molecularWeight += modMolWeight * combo.length;
+
+                // 각 페어에서 대체되는 원래 아미노산들의 질량 계산
+                let originalMonoWeight = 0;
+                let originalMolWeight = 0;
+
+                for (const [idx1, idx2] of combo) {
+                    const aa1 = newPoss.sequence[idx1];
+                    const aa2 = newPoss.sequence[idx2];
+
+                    // 첫 번째 아미노산 질량
+                    if (aa1.natural) {
+                        originalMonoWeight += aminoMap[aa1.letter] || 0;
+                        originalMolWeight += molecularWeightMap[aa1.letter] || 0;
+                    } else if (aa1.candidate) {
+                        originalMonoWeight += parseFloat(aa1.candidate.monoisotopicWeight);
+                        originalMolWeight += parseFloat(aa1.candidate.molecularWeight);
+                    }
+
+                    // 두 번째 아미노산 질량
+                    if (aa2.natural) {
+                        originalMonoWeight += aminoMap[aa2.letter] || 0;
+                        originalMolWeight += molecularWeightMap[aa2.letter] || 0;
+                    } else if (aa2.candidate) {
+                        originalMonoWeight += parseFloat(aa2.candidate.monoisotopicWeight);
+                        originalMolWeight += parseFloat(aa2.candidate.molecularWeight);
+                    }
+                }
+
+                // 질량 변화 = (새 구조 × 페어 개수) - 원래 아미노산들
+                newPoss.weight = newPoss.weight - originalMonoWeight + (modWeight * combo.length);
+                newPoss.molecularWeight = newPoss.molecularWeight - originalMolWeight + (modMolWeight * combo.length);
 
                 // 시퀀스 업데이트 (structure name 사용)
                 this.updateSequenceWithCrosslinking(newPoss, combo, modification.structureName);
