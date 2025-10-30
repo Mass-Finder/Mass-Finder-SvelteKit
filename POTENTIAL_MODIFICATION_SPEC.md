@@ -22,8 +22,28 @@
 
 하나의 아미노산에 변화가 일어나는 modification 타입입니다.
 
+#### 질량 계산 방식
+
+**중요**: Single-site의 Molecular Weight는 **최종 구조의 절대 질량**을 입력합니다.
+
+코드에서 자동으로 다음과 같이 계산합니다:
+- **계산 공식**: `최종 질량 = 원래 시퀀스 질량 - 원래 아미노산 질량 + 새 구조 질량`
+- **사용자 입력**: 새 구조의 절대 질량 (Potential 화면에서 ChemDoodle로 그린 구조의 질량)
+
+**예시**:
+1. **M → MP 변환** (N-terminus)
+   - M의 원래 질량: 149.208
+   - MP 구조 질량: 97
+   - 입력값: `97` (절대 질량)
+   - 자동 계산: -149.208 + 97 = **-52.208** (감소)
+
+2. **Formylation** (N-terminus, ALL)
+   - 맨 앞 아미노산을 f로 변환
+   - f 구조 질량: 28.01
+   - 입력값: `28.01` (절대 질량)
+
 #### 예시
-- `MSTINM` → `fMSTINM` (N-terminus에 f 추가)
+- `MSTINM` → `MPSTINM` (N-terminus M이 MP로 변환)
 - `MSTINM` → `MSTINMn` (C-terminus에 n 추가)
 
 #### Condition (조건)
@@ -136,15 +156,30 @@ Crosslinking이 적용된 경우, **각 아미노산을 개별적으로** Struct
 ### Potential 화면에서 저장되는 데이터 구조 (참고)
 
 ```javascript
-// Single-site 예시
+// Single-site 예시 1: M → MP 변환
 {
-  name: "Custom_Formylation",
+  name: "M_to_MP",
   type: "Single-site",
-  target: "M",  // 또는 "ALL"
-  condition: "N-terminus",  // or "C-terminus", "Internal site"
-  structureName: "formyl_group",
+  target: "M",
+  condition: "N-terminus",
+  structureName: "MP",  // M이 MP로 표시됨
+  moleculeJson: {...},
+  molecularFormula: "...",
+  // ChemDoodle에서 계산된 MP 구조의 절대 질량
+  monoisotopicWeight: "97.0",
+  molecularWeight: "97.0"
+}
+
+// Single-site 예시 2: Formylation (ALL)
+{
+  name: "Formylation",
+  type: "Single-site",
+  target: "ALL",  // 모든 아미노산에 적용
+  condition: "N-terminus",
+  structureName: "f",
   moleculeJson: {...},
   molecularFormula: "CHO",
+  // ChemDoodle에서 계산된 formyl 구조의 절대 질량
   monoisotopicWeight: "28.01",
   molecularWeight: "28.01"
 }

@@ -295,8 +295,20 @@ export class StmHelper {
                             const firstAA = seqArr[firstAAIndex];
                             if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
                                 appliedModifications.push({mod, position: firstAAIndex});
-                                finalWeight += modWeight;
-                                finalMolWeight += modMolWeight;
+
+                                // 원래 아미노산 질량을 빼고 새 구조 질량을 더함
+                                let originalMonoWeight = 0;
+                                let originalMolWeight = 0;
+                                if (firstAA.natural) {
+                                    originalMonoWeight = aminoMap[firstAA.letter] || 0;
+                                    originalMolWeight = molecularWeightMap[firstAA.letter] || 0;
+                                } else if (firstAA.candidate) {
+                                    originalMonoWeight = parseFloat(firstAA.candidate.monoisotopicWeight);
+                                    originalMolWeight = parseFloat(firstAA.candidate.molecularWeight);
+                                }
+
+                                finalWeight = finalWeight - originalMonoWeight + modWeight;
+                                finalMolWeight = finalMolWeight - originalMolWeight + modMolWeight;
                             }
                         }
                     }
@@ -315,8 +327,20 @@ export class StmHelper {
                             const lastAA = seqArr[lastAAIndex];
                             if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
                                 appliedModifications.push({mod, position: lastAAIndex});
-                                finalWeight += modWeight;
-                                finalMolWeight += modMolWeight;
+
+                                // 원래 아미노산 질량을 빼고 새 구조 질량을 더함
+                                let originalMonoWeight = 0;
+                                let originalMolWeight = 0;
+                                if (lastAA.natural) {
+                                    originalMonoWeight = aminoMap[lastAA.letter] || 0;
+                                    originalMolWeight = molecularWeightMap[lastAA.letter] || 0;
+                                } else if (lastAA.candidate) {
+                                    originalMonoWeight = parseFloat(lastAA.candidate.monoisotopicWeight);
+                                    originalMolWeight = parseFloat(lastAA.candidate.molecularWeight);
+                                }
+
+                                finalWeight = finalWeight - originalMonoWeight + modWeight;
+                                finalMolWeight = finalMolWeight - originalMolWeight + modMolWeight;
                             }
                         }
                     }
