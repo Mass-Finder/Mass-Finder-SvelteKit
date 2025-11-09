@@ -604,15 +604,15 @@ M  END`,
       />
     </div>
 
-    <!-- Load Template Button -->
-    <div class="mb-3">
-      <button class="btn btn-outline-secondary w-100" on:click={openModal}>
-        Load Template
-      </button>
-    </div>
-
-    <div class="canvas-container text-center">
-      <canvas id="sketcher" class="border border-secondary rounded shadow-sm" width="500" height="300"></canvas>
+    <div class="canvas-container">
+      <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-primary btn-load-template" on:click={openModal}>
+          Load Template
+        </button>
+      </div>
+      <div class="text-center">
+        <canvas id="sketcher" class="border border-secondary rounded shadow-sm" width="500" height="300"></canvas>
+      </div>
     </div>
   </div>
 
@@ -874,5 +874,9 @@ M  END`,
   .template-formula {
     font-size: 0.875rem;
     color: #6c757d;
+  }
+
+  .btn-load-template {
+    width: 150px;
   }
 </style>
