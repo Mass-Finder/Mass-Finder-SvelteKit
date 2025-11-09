@@ -12,6 +12,7 @@
   export let monoisotopicWeight = writable('');
   export let molecularWeight = writable('');
   export let moleculeJson = writable({});
+  export let showStructureName = true; // 기본값: Structure Name 입력 필드 표시
 
   // Modal state
   let showModal = false;
@@ -593,16 +594,18 @@ M  END`,
   <div class="mb-3">
     <label class="form-label fw-bold">Chemical Structure</label>
 
-    <!-- Structure Name Input -->
-    <div class="mb-2">
-      <input
-        type="text"
-        bind:value={structureName}
-        class="form-control"
-        placeholder="Enter structure name (required)"
-        required
-      />
-    </div>
+    <!-- Structure Name Input (조건부 렌더링) -->
+    {#if showStructureName}
+      <div class="mb-2">
+        <input
+          type="text"
+          bind:value={structureName}
+          class="form-control"
+          placeholder="Enter structure name (required)"
+          required
+        />
+      </div>
+    {/if}
 
     <div class="canvas-container">
       <div class="d-flex justify-content-end mb-2">
