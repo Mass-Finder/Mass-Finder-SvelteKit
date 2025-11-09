@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from 'svelte';
     import { writable } from 'svelte/store';
     import MolecularItem from '$lib/components/MolecularItem.svelte';
     import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
@@ -10,6 +11,10 @@
     let savedData = writable([]);
     let chemicalTitle = '';
     let chemDoodleCanvas;
+
+    onMount(() => {
+      loadSavedData();
+    });
 
     function saveData() {
       if(!checkTitleValid()) return;
@@ -81,9 +86,6 @@
         const isDuplicate = storedData.some(data => data.title === chemicalTitle);
         return isDuplicate;
     }
-
-    // Load saved data on mount
-    loadSavedData();
   </script>
 
   
