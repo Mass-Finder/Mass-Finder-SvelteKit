@@ -153,7 +153,7 @@
               >
                 <div class="accordion-body">
                   Select the amino acids used during translation.<br>
-                  Codons corresponding to unselected amino acids will either be skipped or substituted with non-canonical amino acids.
+                  Codons corresponding to unselected amino acids will either be skipping or substituted with non-canonical amino acids.
                 </div>
               </div>
             </div>

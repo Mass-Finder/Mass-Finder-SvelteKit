@@ -69,7 +69,7 @@ export class StmHelper {
                     possibilitiesForCurrent.push({
                         letter: "",
                         natural: false,
-                        skipped: true
+                        skipping: true
                     });
                 }
             }
@@ -84,7 +84,7 @@ export class StmHelper {
                 possibilitiesForCurrent.push({
                     letter: "",
                     natural: false,
-                    skipped: true
+                    skipping: true
                 });
             }
 
@@ -139,7 +139,7 @@ export class StmHelper {
             return results;
         }
 
-        // Internal initiation 확인 함수
+        // reinitiation 확인 함수
         function hasInternalInitiationAtStart(seqArr: PossibilityLetter[]): boolean {
             return seqArr.length > 0 && seqArr[0].internalInitiation === true;
         }
@@ -177,7 +177,7 @@ export class StmHelper {
         // **Skipping 및 Truncated가 적용된 결과 필터링**
         basePossibilities = basePossibilities.filter(seq => seq.filter(x => x.letter !== "").length > 0);
 
-        // **절단 가능성 추가 - Internal initiation 및 Premature termination**
+        // **절단 가능성 추가 - reinitiation 및 Premature termination**
         const truncationPossibilities: PossibilityLetter[][] = [];
         
         // ncAA가 사용된 위치들을 찾아서 절단 가능성 생성
@@ -195,12 +195,12 @@ export class StmHelper {
             }
             
             if (hasNcAAAtPosition) {
-                // Internal initiation: truncationIndex부터 시작하는 시퀀스
+                // reinitiation: truncationIndex부터 시작하는 시퀀스
                 if (truncationIndex > 0) {
                     const internalInitSeqs = generatePossibilities(truncationIndex);
                     for (const seq of internalInitSeqs) {
                         if (seq.length > 0 && seq.filter(x => x.letter !== "").length > 0) {
-                            // 첫 번째 요소에 internal initiation 마킹
+                            // 첫 번째 요소에 reinitiation 마킹
                             const markedSeq = [...seq];
                             if (markedSeq.length > 0) {
                                 markedSeq[0] = { 
@@ -265,7 +265,7 @@ export class StmHelper {
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
             
             // Formylation 조건 확인: useFormylation이 true이고 첫 번째 아미노산이 M이거나 AUG에 할당된 ncAA인 경우
-            // 그리고 Internal initiation이 없는 경우에만 적용
+            // 그리고 reinitiation이 없는 경우에만 적용
             const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
             const shouldFormylate = useFormylation && firstLetter &&
                                    !hasInternalInitiationAtStart(seqArr) &&
@@ -369,12 +369,12 @@ export class StmHelper {
             // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
             const reasons: string[] = [];
 
-            // 시퀀스 레벨 절단 확인 (Internal initiation, Premature termination)
+            // 시퀀스 레벨 절단 확인 (reinitiation, Premature termination)
             const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
             const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
 
             if (hasInternalInitiation) {
-                reasons.push("Internal initiation");
+                reasons.push("reinitiation");
             }
             if (hasPrematureTermination) {
                 reasons.push("Premature termination");
@@ -384,11 +384,11 @@ export class StmHelper {
             updatedSeqArr.forEach((item, index) => {
                 if (shouldFormylate && index === 0) return; // f는 reason에 포함하지 않음
                 if (!item.natural) {
-                    if (item.candidate && !item.skipped) {
+                    if (item.candidate && !item.skipping) {
                         reasons.push("ncAA incorporated");
                     }
-                    if (item.skipped) {
-                        reasons.push("Skipped");
+                    if (item.skipping) {
+                        reasons.push("skipping");
                     }
                 }
             });
@@ -774,7 +774,7 @@ interface PossibilityLetter {
     candidate?: any;
     internalInitiation?: boolean;
     prematureTermination?: boolean;
-    skipped?: boolean;
+    skipping?: boolean;
     crosslinked?: boolean;
     crosslinkModification?: string;
     singleSiteModified?: boolean;

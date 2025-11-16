@@ -27,7 +27,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
    - 해당 코돈이 지정된 ncAA로 번역
    - ncAA의 monoisotopic weight 적용
    
-2. **Internal initiation**: 앞쪽 절단으로 인한 부분 시퀀스
+2. **reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
    - ncAA 위치부터 시작하는 시퀀스 생성
    - N-말단 부재로 Formylation 불가능
    
@@ -63,7 +63,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
   2. 실제로 첫 번째 아미노산이 번역되어야 함
      - 자연 아미노산 M으로 번역된 경우
      - AUG에 할당된 ncAA로 번역된 경우
-  3. Internal initiation이 적용되지 않은 경우 (N-말단 존재)
+  3. reinitiation이 적용되지 않은 경우 (N-말단 존재)
   4. 사용자가 Formylation 옵션을 활성화한 경우
 
 **사용자 제어**:
@@ -151,7 +151,7 @@ let admidation = false;  // C-말단 아미드화
 
 **생성 규칙**:
 - ncAA가 할당된 모든 위치에서 절단 가능성 검토
-- **Internal initiation**: 절단 위치부터 끝까지
+- **reinitiation**: 절단 위치부터 끝까지
 - **Premature termination**: 시작부터 절단 위치까지 (절단 위치 포함)
 
 #### C. 질량 계산
@@ -188,16 +188,16 @@ finalWeight = baseWeight + formylation + admidation + adduct_weight + disulfide_
 **파일**: `src/lib/helper/stm_helper.ts:291-322`
 
 **수집 순서**:
-1. **시퀀스 레벨 절단**: Internal initiation, Premature termination
-2. **개별 아미노산 레벨**: ncAA incorporated, Skipped
+1. **시퀀스 레벨 절단**: reinitiation, Premature termination
+2. **개별 아미노산 레벨**: ncAA incorporated, skipping
 3. **기본값**: Only natural AA (변화 없는 경우)
 
 #### B. Reason 타입 정의
 - **Only natural AA**: 표준 번역, 변화 없음
 - **ncAA incorporated**: 하나 이상의 ncAA 사용
-- **Internal initiation**: 앞쪽 절단으로 인한 부분 시퀀스
+- **reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
 - **Premature termination**: 뒤쪽 절단으로 인한 부분 시퀀스  
-- **Skipped**: 코돈 건너뛰기 발생
+- **skipping**: 코돈 건너뛰기 발생
 - **Disulfide**: 디설파이드 결합 형성
 
 ### 6. 입력 검증 시스템
@@ -278,14 +278,14 @@ function checkCustomCodonTitles2() // :122-151
 #### A. Formylation 제약
 - 첫 번째 코돈이 AUG여야 함
 - 실제 번역이 발생해야 함
-- Internal initiation 시 적용 불가 (N-말단 부재)
+- reinitiation 시 적용 불가 (N-말단 부재)
 
 #### B. Admidation 제약
 - Premature termination 시 적용 불가 (C-말단 부재)
 
 #### C. 절단 조건
 - ncAA가 할당된 위치에서만 절단 발생
-- Internal initiation과 Premature termination은 상호 배타적
+- reinitiation과 Premature termination은 상호 배타적
 
 ### 11. 주요 알고리즘 파라미터
 
