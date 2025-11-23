@@ -32,7 +32,10 @@
 
 #### 저장 시 처리
 
-**Potential 화면에서 저장할 때**, ChemDoodle로 계산된 절대 질량에서 **target 아미노산의 무게를 자동으로 차감**하여 delta 값으로 저장합니다.
+**Potential 화면에서 저장할 때**의 처리 방식은 **Condition**에 따라 다릅니다:
+
+##### N-terminus와 C-terminus
+ChemDoodle로 계산된 절대 질량에서 **target 아미노산의 무게를 자동으로 차감**하여 delta 값으로 저장합니다.
 
 **저장 공식**:
 - **저장값** = ChemDoodle 계산값 - target 아미노산 무게
@@ -56,6 +59,23 @@
    - **저장값**: 28.01 - 75.03203 = **-47.02203**
    - 의미: 어떤 아미노산이든 f로 교체하면 평균적으로 47.02203 감소 (Glycine 기준)
 
+##### Side Chain
+ChemDoodle로 계산된 **절대 질량을 그대로 저장**합니다 (target 아미노산 무게 차감 없음).
+
+**저장 공식**:
+- **저장값** = ChemDoodle 계산값 (그대로)
+
+**이유**:
+- Side Chain modification은 STM 계산 시 **target 아미노산을 교체**하는 방식으로 적용됨
+- 따라서 교체될 새로운 구조의 절대 질량이 필요함
+- 계산 로직: `새 질량 = 원래 질량 - (target 무게 × 개수) + (modification 무게 × 개수)`
+
+**예시**:
+- **C → d1 변환** (Side Chain, Target: C)
+  - ChemDoodle 계산값: 165.0
+  - **저장값**: 165.0 (그대로 저장)
+  - 의미: C를 d1 구조로 완전히 교체, d1 구조의 절대 질량
+
 #### 예시
 - `MSTINM` → `MPSTINM` (N-terminus M이 MP로 변환)
 - `MSTINM` → `MSTINMn` (C-terminus에 n 추가)
@@ -76,7 +96,74 @@
   - `특정 아미노산`: 해당 아미노산이 맨 뒤에 있을 때만 적용
     - 예: Target이 `M`인 경우, `MSTINM`의 M 뒤에만 적용
 
-**주의**: Internal site 조건은 너무 많은 경우의 수를 생성하여 성능 문제를 일으킬 수 있으므로 제거되었습니다.
+##### 3.1.3 Side Chain (측쇄 변형)
+- **설명**: **전체 시퀀스**에 modification이 적용됨 (맨 앞과 맨 뒤 포함)
+- **Target 옵션**:
+  - `특정 아미노산만` 가능 (`ALL` 옵션 없음)
+  - 예: Target이 `C`인 경우, 시퀀스의 **모든 C**에 적용 가능
+
+**핵심 특징: 개수 기반 생성**
+
+Side Chain modification은 **몇 개가 변화했는지**에 따라 분자량이 달라지므로, **위치가 아닌 개수**만 중요합니다.
+
+- 같은 개수의 변화는 **위치와 상관없이 동일한 분자량**을 가짐
+- 따라서 0개, 1개, 2개, ... N개 변화한 경우를 **각각 하나씩만** 대표로 생성
+- 모든 위치 조합을 생성할 필요 없음 (성능 최적화)
+
+**예시 1: 전체 시퀀스 적용**
+```
+시퀀스: MCCCRRC
+Modification: Target C, Structure Name d1, Condition: Side Chain
+전체 C 개수: 4개 (모든 위치 포함)
+
+생성되는 결과:
+1. 0개 변화: MCCCRRC (원본)
+   - 질량: 원래 질량
+   - Note: -
+
+2. 1개 변화: Md1CCRRC (왼쪽부터 C 1개)
+   - 질량: 원래 질량 + (delta × 1)
+   - Note: d1 (x1)
+
+3. 2개 변화: Md1d1CRRC (왼쪽부터 C 2개)
+   - 질량: 원래 질량 + (delta × 2)
+   - Note: d1 (x2)
+
+4. 3개 변화: Md1d1d1RRC (왼쪽부터 C 3개)
+   - 질량: 원래 질량 + (delta × 3)
+   - Note: d1 (x3)
+
+5. 4개 변화: Md1d1d1RRd1 (모든 C)
+   - 질량: 원래 질량 + (delta × 4)
+   - Note: d1 (x4)
+```
+
+**예시 2: 맨 앞이 Target인 경우**
+```
+시퀀스: CMCCMIY
+Modification: Target C, Structure Name d1, Condition: Side Chain
+전체 C 개수: 3개 (맨 앞 C 포함)
+
+생성되는 결과:
+1. 0개 변화: CMCCMIY
+2. 1개 변화: d1MCCMIY (맨 앞 C)
+3. 2개 변화: d1Md1CMIY (앞 2개 C)
+4. 3개 변화: d1Md1d1MIY (모든 C)
+```
+
+**질량 계산 방식:**
+- **각 개수별 질량** = 원래 시퀀스 질량 - (target 무게 × 변화 개수) + (modification 무게 × 변화 개수)
+- `modification 무게`는 Potential 화면에서 저장된 절대 질량 값
+- target 아미노산을 새로운 구조로 **교체**하는 방식으로 계산
+
+**시퀀스 표시 규칙:**
+- 변화된 아미노산을 Structure Name prefix로 표시
+- 대표 시퀀스는 **왼쪽부터 순서대로** 적용한 형태로 표시
+  - 예: `Md1d1CIY` (왼쪽 C 2개가 d1로 변경)
+
+**Note(이유) 표시:**
+- 적용된 개수를 표시: `d1 (x2)` 형식
+- 0개 적용된 경우는 modification reason 표시 안 함
 
 ### 3.2 Crosslinking (교차 결합)
 
@@ -256,9 +343,97 @@ Crosslinking이 적용된 경우, **각 아미노산을 개별적으로** Struct
 #### 6.2.1 Single-site Modification
 1. `stm_helper.ts`의 `generatePossibilities` 함수 확장
 2. Single-site modification 적용 로직 구현
-   - N-terminus, C-terminus, Internal site 조건 처리
+   - **N-terminus**: 맨 앞 아미노산에 적용 (적용 O/X 2가지 결과)
+   - **C-terminus**: 맨 뒤 아미노산에 적용 (적용 O/X 2가지 결과)
+   - **Side Chain**: 전체 시퀀스의 target 아미노산에 개수별로 적용 (0개, 1개, 2개, ... N개 결과)
    - Target 필터링 로직
 3. 적용된 modification은 reasons에 추가
+
+##### Side Chain 알고리즘
+
+**1. 전체 시퀀스에서 Target 개수 계산:**
+```javascript
+function countAllTargets(sequence, targetAA) {
+  // 전체 시퀀스에서 target 아미노산 찾기 (맨 앞과 맨 뒤 포함)
+  return sequence.filter(aa => aa === targetAA).length;
+}
+```
+
+**2. 개수별 Possibility 생성:**
+```javascript
+function applySideChainModification(basePossibility, modification) {
+  const results = [];
+  const targetAA = modification.target;
+  const totalCount = countAllTargets(basePossibility.sequence, targetAA);
+
+  // 0개부터 N개까지 각각 생성
+  for (let count = 0; count <= totalCount; count++) {
+    const newPoss = clonePossibility(basePossibility);
+
+    if (count > 0) {
+      // 질량 업데이트 (REPLACE: target 무게를 빼고 modification 무게를 더함)
+      const modWeight = parseFloat(modification.monoisotopicWeight);
+      const modMolWeight = parseFloat(modification.molecularWeight);
+      const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
+      const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
+
+      newPoss.weight = newPoss.weight - (targetMonoisotopicWeight * count) + (modWeight * count);
+      newPoss.molecularWeight = newPoss.molecularWeight - (targetMolecularWeight * count) + (modMolWeight * count);
+
+      // 시퀀스 업데이트 (왼쪽부터 count개를 modification structure name으로 변경)
+      updateSequenceWithSideChain(newPoss, targetAA, modification.structureName, count);
+
+      // Reasons 업데이트
+      newPoss.reasons.push(`${modification.name} (x${count})`);
+      newPoss.reasons = newPoss.reasons.filter(r => r !== "Only natural AA");
+    }
+
+    results.push(newPoss);
+  }
+
+  return results;
+}
+```
+
+**3. 시퀀스 업데이트 (왼쪽부터 순서대로 적용):**
+```javascript
+function updateSequenceWithSideChain(possibility, targetAA, structureName, count) {
+  let applied = 0;
+
+  // 전체 시퀀스에서 왼쪽부터 count개 적용 (맨 앞과 맨 뒤 포함)
+  for (let i = 0; i < possibility.sequence.length && applied < count; i++) {
+    if (possibility.sequence[i].letter === targetAA) {
+      possibility.sequence[i].sideChainModified = true;
+      possibility.sequence[i].sideChainModification = structureName;
+      applied++;
+    }
+  }
+
+  // sequenceString 재생성 (structure name만 표시, letter는 표시 안 함)
+  possibility.sequenceString = possibility.sequence
+    .filter(item => item.letter !== "")
+    .map(item => {
+      if (item.sideChainModified && item.sideChainModification) {
+        return item.sideChainModification;  // d1만 반환
+      }
+      if (item.singleSiteModified && item.singleSiteModification) {
+        return item.singleSiteModification;
+      }
+      return item.letter;
+    })
+    .join("");
+}
+```
+
+**예시:**
+- 시퀀스: `MCCCRRC`, Target: C, Structure Name: d1
+- 전체 C 개수: 4개
+- 생성 결과:
+  - count=0: `MCCCRRC`
+  - count=1: `Md1CCRRC` (왼쪽 첫 번째 C)
+  - count=2: `Md1d1CRRC` (왼쪽 두 개 C)
+  - count=3: `Md1d1d1RRC` (왼쪽 세 개 C)
+  - count=4: `Md1d1d1RRd1` (모든 C)
 
 #### 6.2.2 Crosslinking Modification - 조합 생성 알고리즘
 
@@ -527,7 +702,7 @@ function updateSequenceWithCrosslinking(possibility, pairs, modificationName) {
 
 **표시 예시**:
 
-**Single-site (Target: M)**
+**Single-site N-terminus (Target: M)**
 ```
 Molecular Formula: C5H11NO2S
 Monoisotopic Weight: 97.000 (Calculated)
@@ -538,7 +713,7 @@ Delta Molecular Weight: -52.20800 (97.000 - 149.20800 [M])
 → This delta value will be saved
 ```
 
-**Single-site (Target: ALL)**
+**Single-site C-terminus (Target: ALL)**
 ```
 Molecular Formula: CHO
 Monoisotopic Weight: 28.010 (Calculated)
@@ -547,6 +722,15 @@ Molecular Weight: 28.010 (Calculated)
 Delta Monoisotopic Weight: -47.02203 (28.010 - 75.03203 [G])
 Delta Molecular Weight: -47.05700 (28.010 - 75.06700 [G])
 → This delta value will be saved (based on Glycine)
+```
+
+**Single-site Side Chain (Target: C)**
+```
+Molecular Formula: C6H11NO2S
+Monoisotopic Weight: 165.000 (Calculated)
+Molecular Weight: 165.000 (Calculated)
+
+→ This absolute value will be saved (No delta calculation for Side Chain)
 ```
 
 **Crosslinking (Target1: C, Target2: C)**

@@ -17,6 +17,7 @@
 
   // Delta 계산을 위한 props
   export let modificationType = 'Single-site';
+  export let singleSiteCondition = 'N-terminus'; // Added for checking condition
   export let targetAminoAcid = '';
   export let target1AminoAcid = '';
   export let target2AminoAcid = '';
@@ -73,12 +74,13 @@
     moleculeJson.set({});
   }
 
-  // Delta 값 계산 (Single-site만)
-  $: deltaMonoisotopicWeight = modificationType === 'Single-site' ? calculateDelta($monoisotopicWeight, 'monoisotopic') : null;
-  $: deltaMolecularWeight = modificationType === 'Single-site' ? calculateDelta($molecularWeight, 'molecular') : null;
+  // Delta 값 계산 (N-terminus, C-terminus만)
+  $: shouldShowDelta = modificationType === 'Single-site' && (singleSiteCondition === 'N-terminus' || singleSiteCondition === 'C-terminus');
+  $: deltaMonoisotopicWeight = shouldShowDelta ? calculateDelta($monoisotopicWeight, 'monoisotopic') : null;
+  $: deltaMolecularWeight = shouldShowDelta ? calculateDelta($molecularWeight, 'molecular') : null;
 
   function calculateDelta(calculatedWeight, weightType) {
-    if (!calculatedWeight || modificationType !== 'Single-site') return null;
+    if (!calculatedWeight || !shouldShowDelta) return null;
 
     const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
     if (!targetAA) return null;
@@ -705,10 +707,10 @@ M  END`,
         <div class="mt-2 save-notice">
           → This delta value will be saved
         </div>
-      {:else if modificationType === 'Crosslinking' && $molecularWeight}
+      {:else if (modificationType === 'Single-site' && singleSiteCondition === 'Side Chain' && $molecularWeight) || (modificationType === 'Crosslinking' && $molecularWeight)}
         <div class="mt-3 pt-3 border-top">
           <div class="mt-2 save-notice-crosslink">
-            → This absolute value will be saved (No delta calculation for Crosslinking)
+            → This absolute value will be saved (No delta calculation for {modificationType === 'Single-site' ? 'Side Chain' : 'Crosslinking'})
           </div>
         </div>
       {/if}

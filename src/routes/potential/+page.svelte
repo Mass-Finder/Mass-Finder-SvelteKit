@@ -102,8 +102,9 @@
     let savedMonoisotopicWeight;
     let savedMolecularWeight;
 
-    if (modificationType === 'Single-site') {
-      // For Single-site: subtract target amino acid weight (or Glycine for ALL)
+    if (modificationType === 'Single-site' &&
+        (singleSiteCondition === SingleSiteCondition.N_TERMINUS || singleSiteCondition === SingleSiteCondition.C_TERMINUS)) {
+      // For N-terminus and C-terminus: subtract target amino acid weight (or Glycine for ALL)
       const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
       const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
       const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
@@ -112,7 +113,7 @@
       savedMonoisotopicWeight = (parseFloat($monoisotopicWeight) - targetMonoisotopicWeight).toFixed(5);
       savedMolecularWeight = (parseFloat($molecularWeight) - targetMolecularWeight).toFixed(5);
     } else {
-      // For Crosslinking: save absolute values (no subtraction)
+      // For Side Chain and Crosslinking: save absolute values (no subtraction)
       savedMonoisotopicWeight = parseFloat($monoisotopicWeight).toFixed(5);
       savedMolecularWeight = parseFloat($molecularWeight).toFixed(5);
     }
@@ -243,6 +244,7 @@
     bind:moleculeJson
     calculateDisabled={calculateDisabled}
     modificationType={modificationType}
+    singleSiteCondition={singleSiteCondition}
     targetAminoAcid={targetAminoAcid}
     target1AminoAcid={target1AminoAcid}
     target2AminoAcid={target2AminoAcid}

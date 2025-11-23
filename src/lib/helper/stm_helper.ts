@@ -21,6 +21,11 @@ export class StmHelper {
         const singleSiteModifications = potentialModifications.filter(mod => mod.type === 'Single-site') as any[];
         const crosslinkingModifications = potentialModifications.filter(mod => mod.type === 'Crosslinking') as any[];
 
+        // Single-site를 condition별로 다시 분류
+        const nTerminusMods = singleSiteModifications.filter(mod => mod.condition === 'N-terminus');
+        const cTerminusMods = singleSiteModifications.filter(mod => mod.condition === 'C-terminus');
+        const sideChainMods = singleSiteModifications.filter(mod => mod.condition === 'Side Chain');
+
         // RNA 시퀀스를 3개씩 나누어 코돈 배열로 변환
         const codons = rnaSeq.match(/.{1,3}/g) || [];
 
@@ -280,14 +285,16 @@ export class StmHelper {
                 finalMolWeight += fWeight;
             }
 
-            // Apply Single-site Potential Modifications
+            // Apply Single-site Potential Modifications (N-terminus and C-terminus only)
+            // Note: Side Chain modifications are handled separately after ionType generation
             const appliedModifications: Array<{mod: any, position: number}> = [];
 
-            for (const mod of singleSiteModifications) {
+            // N-terminus modifications
+            for (const mod of nTerminusMods) {
                 const modWeight = parseFloat(mod.monoisotopicWeight);
                 const modMolWeight = parseFloat(mod.molecularWeight);
 
-                if (mod.condition === 'N-terminus') {
+                if (true) { // Always true for nTerminusMods
                     // N-terminus: 맨 앞 아미노산 체크
                     if (!hasInternalInitiationAtStart(seqArr)) {
                         const firstAAIndex = seqArr.findIndex(item => item.letter !== "");
@@ -312,7 +319,15 @@ export class StmHelper {
                             }
                         }
                     }
-                } else if (mod.condition === 'C-terminus') {
+                }
+            }
+
+            // C-terminus modifications
+            for (const mod of cTerminusMods) {
+                const modWeight = parseFloat(mod.monoisotopicWeight);
+                const modMolWeight = parseFloat(mod.molecularWeight);
+
+                if (true) { // Always true for cTerminusMods
                     // C-terminus: 맨 뒤 아미노산 체크
                     if (!hasPrematureTerminationAtEnd(seqArr)) {
                         // 뒤에서부터 찾기
@@ -359,6 +374,7 @@ export class StmHelper {
             }
 
             // sequenceString 생성 시 Single-site modification도 고려
+            // Note: Side Chain modification은 나중에 별도로 처리됨
             const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => {
                 if (x.singleSiteModified && x.singleSiteModification) {
                     return x.singleSiteModification;
@@ -417,10 +433,159 @@ export class StmHelper {
             }
         }
 
+        // **Side Chain modifications 처리 - 개수별 생성**
+        const possibilitiesWithSideChain = StmHelper.applySideChainModifications(possibilities, sideChainMods);
+
         // **Crosslinking modifications 처리 - 모든 조합 생성**
-        const finalPossibilities = StmHelper.applyCrosslinkingModifications(possibilities, crosslinkingModifications);
+        const finalPossibilities = StmHelper.applyCrosslinkingModifications(possibilitiesWithSideChain, crosslinkingModifications);
 
         return finalPossibilities;
+    }
+
+    /**
+     * Side Chain modifications를 개수별로 적용
+     * 0개, 1개, 2개, ... N개 변화 각각 생성
+     */
+    private static applySideChainModifications(
+        basePossibilities: Possibility[],
+        sideChainModifications: any[]
+    ): Possibility[] {
+        if (sideChainModifications.length === 0) {
+            return basePossibilities;
+        }
+
+        const allResults: Possibility[] = [];
+
+        for (const basePoss of basePossibilities) {
+            // 각 Side Chain modification에 대해 재귀적으로 적용
+            const possWithAllMods = this.applySideChainRecursive(
+                basePoss,
+                sideChainModifications,
+                0
+            );
+            allResults.push(...possWithAllMods);
+        }
+
+        return allResults;
+    }
+
+    /**
+     * Side Chain modifications를 재귀적으로 적용
+     */
+    private static applySideChainRecursive(
+        basePoss: Possibility,
+        modifications: any[],
+        modIndex: number
+    ): Possibility[] {
+        if (modIndex >= modifications.length) {
+            return [basePoss];
+        }
+
+        const currentMod = modifications[modIndex];
+
+        // 현재 modification의 모든 개수 변화 생성 (0개, 1개, 2개, ...)
+        const variants = this.generateSideChainVariants(basePoss, currentMod);
+
+        // 다음 modification도 적용
+        const results: Possibility[] = [];
+        for (const variant of variants) {
+            const nextResults = this.applySideChainRecursive(variant, modifications, modIndex + 1);
+            results.push(...nextResults);
+        }
+
+        return results;
+    }
+
+    /**
+     * 한 가지 Side Chain modification에 대한 개수별 변화 생성
+     */
+    private static generateSideChainVariants(
+        basePossibility: Possibility,
+        modification: any
+    ): Possibility[] {
+        // 1. 전체 시퀀스에서 target 아미노산 위치 찾기 (맨 앞과 맨 뒤 포함)
+        const targetIndices: number[] = [];
+
+        for (let i = 0; i < basePossibility.sequence.length; i++) {
+            const item = basePossibility.sequence[i];
+            if (item.letter === modification.target) {
+                targetIndices.push(i);
+            }
+        }
+
+        const count = targetIndices.length;
+
+        // 2. 0개부터 count개까지 각각 생성
+        const results: Possibility[] = [];
+
+        for (let applyCount = 0; applyCount <= count; applyCount++) {
+            const newPoss = this.deepClonePossibility(basePossibility);
+
+            // sequence 배열을 명시적으로 deep clone (각 item도 복사)
+            newPoss.sequence = newPoss.sequence.map(item => ({ ...item }));
+
+            if (applyCount > 0) {
+                const modWeight = parseFloat(modification.monoisotopicWeight);
+                const modMolWeight = parseFloat(modification.molecularWeight);
+
+                // Get target amino acid weight
+                const targetAA = modification.target;
+                const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
+                const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
+
+                // 왼쪽부터 applyCount개 적용
+                for (let i = 0; i < applyCount; i++) {
+                    const idx = targetIndices[i];
+
+                    // 시퀀스 마킹
+                    newPoss.sequence[idx] = {
+                        ...newPoss.sequence[idx],
+                        sideChainModified: true,
+                        sideChainModification: modification.structureName
+                    };
+                }
+
+                // 질량 업데이트 (REPLACE: 기존 타겟 질량을 빼고 새 질량을 더함)
+                // Side Chain은 absolute value로 저장되므로 target weight를 빼고 mod weight를 더해야 함
+                newPoss.weight = newPoss.weight - (targetMonoisotopicWeight * applyCount) + (modWeight * applyCount);
+                newPoss.molecularWeight = newPoss.molecularWeight - (targetMolecularWeight * applyCount) + (modMolWeight * applyCount);
+
+                // sequenceString 재생성
+                console.log(`[Side Chain Debug] Before sequenceString, targetIndices=${JSON.stringify(targetIndices)}, applyCount=${applyCount}`);
+                console.log(`[Side Chain Debug] Sequence items:`, newPoss.sequence.filter(item => item.letter !== "").map((item, idx) => ({
+                    idx,
+                    letter: item.letter,
+                    sideChainModified: item.sideChainModified,
+                    sideChainModification: item.sideChainModification
+                })));
+
+                newPoss.sequenceString = newPoss.sequence
+                    .filter(item => item.letter !== "")
+                    .map(item => {
+                        if (item.sideChainModified && item.sideChainModification) {
+                            return item.sideChainModification;
+                        }
+                        if (item.singleSiteModified && item.singleSiteModification) {
+                            return item.singleSiteModification;
+                        }
+                        if (item.crosslinked && item.crosslinkModification) {
+                            return item.crosslinkModification;
+                        }
+                        return item.letter;
+                    })
+                    .join("");
+
+                console.log(`[Side Chain Debug] applyCount=${applyCount}, sequenceString=${newPoss.sequenceString}, weight=${newPoss.weight.toFixed(3)}, modification=${modification.name}`);
+
+                // Reasons 업데이트
+                newPoss.reasons.push(`${modification.name} (x${applyCount})`);
+                newPoss.reasons = newPoss.reasons.filter(r => r !== "Only natural AA");
+            }
+
+            results.push(newPoss);
+        }
+
+        return results;
     }
 
     /**
@@ -727,12 +892,19 @@ export class StmHelper {
             return item;
         });
 
-        // sequenceString 재생성
+        // sequenceString 재생성 (모든 modification 타입 고려)
         possibility.sequenceString = possibility.sequence
             .filter(item => item.letter !== "")
             .map(item => {
+                // 우선순위: Crosslinking > Side Chain > Single-site > 기본 letter
                 if (item.crosslinked && item.crosslinkModification) {
                     return item.crosslinkModification;
+                }
+                if (item.sideChainModified && item.sideChainModification) {
+                    return item.sideChainModification;
+                }
+                if (item.singleSiteModified && item.singleSiteModification) {
+                    return item.singleSiteModification;
                 }
                 return item.letter;
             })
@@ -779,4 +951,6 @@ interface PossibilityLetter {
     crosslinkModification?: string;
     singleSiteModified?: boolean;
     singleSiteModification?: string;
+    sideChainModified?: boolean;
+    sideChainModification?: string;
 }

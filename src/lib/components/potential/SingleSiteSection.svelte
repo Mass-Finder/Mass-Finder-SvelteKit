@@ -9,9 +9,10 @@
   const dispatch = createEventDispatcher();
   let showDialog = false;
 
+  // ALL 옵션은 N-terminus와 C-terminus에서만 사용 가능
   $: showAllOption = condition === SingleSiteCondition.N_TERMINUS || condition === SingleSiteCondition.C_TERMINUS;
 
-  // Condition이 바뀌면 ALL 옵션이 없는 경우 target을 초기화
+  // Condition이 Side Chain으로 바뀌면 ALL 옵션이 없으므로 target을 초기화
   $: if (!showAllOption && targetAminoAcid === 'ALL') {
     targetAminoAcid = '';
   }
