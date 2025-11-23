@@ -30,17 +30,31 @@
 - **계산 공식**: `최종 질량 = 원래 시퀀스 질량 - 원래 아미노산 질량 + 새 구조 질량`
 - **사용자 입력**: 새 구조의 절대 질량 (Potential 화면에서 ChemDoodle로 그린 구조의 질량)
 
-**예시**:
-1. **M → MP 변환** (N-terminus)
-   - M의 원래 질량: 149.208
-   - MP 구조 질량: 97
-   - 입력값: `97` (절대 질량)
-   - 자동 계산: -149.208 + 97 = **-52.208** (감소)
+#### 저장 시 처리
 
-2. **Formylation** (N-terminus, ALL)
-   - 맨 앞 아미노산을 f로 변환
-   - f 구조 질량: 28.01
-   - 입력값: `28.01` (절대 질량)
+**Potential 화면에서 저장할 때**, ChemDoodle로 계산된 절대 질량에서 **target 아미노산의 무게를 자동으로 차감**하여 delta 값으로 저장합니다.
+
+**저장 공식**:
+- **저장값** = ChemDoodle 계산값 - target 아미노산 무게
+
+**Target 아미노산 무게 결정**:
+- Target이 **특정 아미노산**(예: M, C, A 등)인 경우: 해당 아미노산의 무게 사용
+- Target이 **ALL**인 경우: **Glycine(G)의 무게** 사용
+  - Monoisotopic Weight: 75.03203
+  - Molecular Weight: 75.06700
+
+**예시**:
+1. **M → MP 변환** (N-terminus, Target: M)
+   - ChemDoodle 계산값: 97.0
+   - M의 Monoisotopic Weight: 149.05105
+   - **저장값**: 97.0 - 149.05105 = **-52.05105**
+   - 의미: M을 MP로 교체하면 질량이 52.05105 감소
+
+2. **Formylation** (N-terminus, Target: ALL)
+   - ChemDoodle 계산값: 28.01
+   - Glycine Monoisotopic Weight: 75.03203
+   - **저장값**: 28.01 - 75.03203 = **-47.02203**
+   - 의미: 어떤 아미노산이든 f로 교체하면 평균적으로 47.02203 감소 (Glycine 기준)
 
 #### 예시
 - `MSTINM` → `MPSTINM` (N-terminus M이 MP로 변환)
@@ -76,18 +90,27 @@
 - **계산 공식**: `최종 질량 = 원래 시퀀스 질량 - 원래 두 아미노산 질량 + 새 구조 질량`
 - **사용자 입력**: 새 구조의 절대 질량 (Potential 화면에서 ChemDoodle로 그린 구조의 질량)
 
-**예시**:
-1. **Disulfide bond** (C-C → S-S 결합)
-   - C 2개의 원래 질량: 121.154 × 2 = 242.308
-   - H2 제거 후 구조 질량: 240.292
-   - 입력값: `240.292` (절대 질량)
-   - 자동 계산: 242.308 - 240.292 = **-2.016** (감소)
+#### 저장 시 처리
 
-2. **Custom crosslinking** (C-C → dC1 구조)
-   - C 2개의 원래 질량: 121.154 × 2 = 242.308
-   - dC1 구조 질량: 42
-   - 입력값: `42` (절대 질량)
-   - 자동 계산: 242.308 - 42 = **-200.308** (감소)
+**중요**: Crosslinking은 **Single-site와 달리** ChemDoodle로 계산된 **절대 질량을 그대로 저장**합니다.
+
+**저장 공식**:
+- **저장값** = ChemDoodle 계산값 (target 아미노산 무게 차감 없음)
+
+**이유**:
+- Crosslinking은 STM 계산 로직에서 이미 두 아미노산을 교체하는 방식으로 처리되므로, Potential 화면에서는 **완성된 구조의 절대 질량**을 그대로 저장
+- Single-site는 하나의 아미노산을 교체하므로 delta 값이 필요하지만, Crosslinking은 두 아미노산을 완전히 새로운 구조로 교체하므로 절대 질량이 필요
+
+**예시**:
+1. **Disulfide bond** (C-C → S-S 결합, Target1: C, Target2: C)
+   - ChemDoodle 계산값: 240.292
+   - **저장값**: 240.292 (그대로 저장)
+   - 의미: C-C가 결합한 완성된 구조의 절대 질량
+
+2. **Custom crosslinking** (C-C → dC1 구조, Target1: C, Target2: C)
+   - ChemDoodle 계산값: 42.0
+   - **저장값**: 42.0 (그대로 저장)
+   - 의미: C-C가 dC1 구조로 변환된 완성된 구조의 절대 질량
 
 #### 표시 방식
 
@@ -467,6 +490,77 @@ function updateSequenceWithCrosslinking(possibility, pairs, modificationName) {
 - ✅ 이미 구현됨: Structure name 및 molecular properties 필수 입력
 - ✅ 이미 구현됨: Target amino acid 선택 필수
 - ✅ 이미 구현됨: Distance value 최소값 검증 (≥ 1)
+
+#### 7.1.1 Single-site Modification 분자량 계산 제약사항
+
+**중요**: Single-site modification에서만 적용되는 추가 검증 규칙입니다.
+
+**Target 선택 전 분자량 계산 불가**:
+- Single-site 모드에서 Target 아미노산을 선택하기 전에는 "Calculate Molecular Properties" 버튼이 비활성화됨
+- 이유: Single-site modification은 특정 아미노산의 변형이므로, 어떤 아미노산을 대상으로 하는지 명확해야 분자량 계산이 의미를 가짐
+- Crosslinking 모드에는 이 제약이 적용되지 않음 (두 아미노산 간의 결합 구조이므로 Target 선택과 독립적으로 계산 가능)
+
+**Target 변경 시 분자량 초기화**:
+- Single-site 모드에서 Target 아미노산을 변경하면 이전에 계산된 분자량 값들이 자동으로 초기화됨
+- 초기화 대상:
+  - Molecular Formula
+  - Monoisotopic Weight
+  - Molecular Weight
+  - Molecule JSON
+- 이유: 다른 아미노산을 대상으로 하는 경우 기존 계산 결과는 더 이상 유효하지 않으므로, 사용자가 새로운 구조를 그리고 다시 계산하도록 유도
+- Crosslinking 모드에는 이 제약이 적용되지 않음
+
+**구현 위치**:
+- UI 레벨에서 제어 (ChemDoodleCanvas 컴포넌트의 계산 버튼 비활성화)
+- Target 변경 시 자동 초기화 로직 (potential/+page.svelte)
+
+#### 7.1.2 Calculate Molecular Properties 결과 표시
+
+**Calculate Molecular Properties 버튼을 클릭하면 나타나는 결과 화면**에서, 사용자가 그린 구조의 **절대 질량**뿐만 아니라 **실제로 저장될 delta 값**도 함께 표시해야 합니다.
+
+**표시 내용**:
+1. **Molecular Formula**: 그린 구조의 분자식
+2. **Monoisotopic Weight**: 그린 구조의 절대 질량 (Calculated)
+3. **Molecular Weight**: 그린 구조의 절대 분자량 (Calculated)
+4. **Delta Monoisotopic Weight**: 저장될 delta 값 (절대 질량 - target 아미노산 무게)
+5. **Delta Molecular Weight**: 저장될 delta 분자량 (절대 분자량 - target 아미노산 무게)
+
+**표시 예시**:
+
+**Single-site (Target: M)**
+```
+Molecular Formula: C5H11NO2S
+Monoisotopic Weight: 97.000 (Calculated)
+Molecular Weight: 97.000 (Calculated)
+
+Delta Monoisotopic Weight: -52.05105 (97.000 - 149.05105 [M])
+Delta Molecular Weight: -52.20800 (97.000 - 149.20800 [M])
+→ This delta value will be saved
+```
+
+**Single-site (Target: ALL)**
+```
+Molecular Formula: CHO
+Monoisotopic Weight: 28.010 (Calculated)
+Molecular Weight: 28.010 (Calculated)
+
+Delta Monoisotopic Weight: -47.02203 (28.010 - 75.03203 [G])
+Delta Molecular Weight: -47.05700 (28.010 - 75.06700 [G])
+→ This delta value will be saved (based on Glycine)
+```
+
+**Crosslinking (Target1: C, Target2: C)**
+```
+Molecular Formula: C6H10N2O2S2
+Monoisotopic Weight: 240.292 (Calculated)
+Molecular Weight: 240.292 (Calculated)
+
+→ This absolute value will be saved (No delta calculation for Crosslinking)
+```
+
+**구현 위치**:
+- ChemDoodleCanvas.svelte의 결과 표시 영역
+- Target 정보를 prop으로 받아서 delta 계산 및 표시
 
 ### 7.2 STM 화면에서의 검증
 - ✅ 이미 구현됨: 최대 4개 modification 선택 제한

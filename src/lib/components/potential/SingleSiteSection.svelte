@@ -21,9 +21,15 @@
   }
 
   function handleSelectAminoAcid(event) {
-    targetAminoAcid = event.detail.code;
+    const newTarget = event.detail.code;
+    // Target이 실제로 변경되었을 때만 이벤트 발생
+    if (newTarget !== targetAminoAcid) {
+      targetAminoAcid = newTarget;
+      dispatch('targetChange', targetAminoAcid);
+    } else {
+      targetAminoAcid = newTarget;
+    }
     showDialog = false;
-    dispatch('targetChange', targetAminoAcid);
   }
 
   function handleConditionChange() {

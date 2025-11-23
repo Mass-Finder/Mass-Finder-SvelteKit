@@ -6,6 +6,7 @@
   import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
   import ModificationItem from '$lib/components/potential/ModificationItem.svelte';
   import { SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
+  import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
 
   let modificationName = '';
   let modificationType = 'Single-site';
@@ -31,6 +32,9 @@
 
   // Saved modifications
   let savedModifications = writable([]);
+
+  // Single-site 모드에서 Target 미선택 시 계산 버튼 비활성화
+  $: calculateDisabled = modificationType === 'Single-site' && !targetAminoAcid;
 
   onMount(() => {
     loadSavedModifications();
@@ -94,6 +98,25 @@
       return;
     }
 
+    // Calculate values to save
+    let savedMonoisotopicWeight;
+    let savedMolecularWeight;
+
+    if (modificationType === 'Single-site') {
+      // For Single-site: subtract target amino acid weight (or Glycine for ALL)
+      const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
+      const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
+      const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
+
+      // Save delta values
+      savedMonoisotopicWeight = (parseFloat($monoisotopicWeight) - targetMonoisotopicWeight).toFixed(5);
+      savedMolecularWeight = (parseFloat($molecularWeight) - targetMolecularWeight).toFixed(5);
+    } else {
+      // For Crosslinking: save absolute values (no subtraction)
+      savedMonoisotopicWeight = parseFloat($monoisotopicWeight).toFixed(5);
+      savedMolecularWeight = parseFloat($molecularWeight).toFixed(5);
+    }
+
     const modificationData = {
       name: modificationName,
       type: modificationType,
@@ -115,8 +138,8 @@
       structureName: structureName,
       moleculeJson: $moleculeJson,
       molecularFormula: $molecularFormula,
-      monoisotopicWeight: $monoisotopicWeight,
-      molecularWeight: $molecularWeight
+      monoisotopicWeight: savedMonoisotopicWeight,
+      molecularWeight: savedMolecularWeight
     };
 
     // Save to localStorage
@@ -159,6 +182,13 @@
     localStorage.setItem('potentialModifications', JSON.stringify(storedData));
     savedModifications.set([...storedData]);
   }
+
+  function handleTargetChange() {
+    // Single-site 모드에서 Target 변경 시 분자량 계산 초기화
+    if (modificationType === 'Single-site' && chemDoodleCanvas) {
+      chemDoodleCanvas.resetCalculation();
+    }
+  }
 </script>
 
 <div class="container mt-5">
@@ -191,6 +221,7 @@
     <SingleSiteSection
       bind:targetAminoAcid
       bind:condition={singleSiteCondition}
+      on:targetChange={handleTargetChange}
     />
   {:else}
     <CrosslinkingSection
@@ -210,6 +241,11 @@
     bind:monoisotopicWeight
     bind:molecularWeight
     bind:moleculeJson
+    calculateDisabled={calculateDisabled}
+    modificationType={modificationType}
+    targetAminoAcid={targetAminoAcid}
+    target1AminoAcid={target1AminoAcid}
+    target2AminoAcid={target2AminoAcid}
   />
 
   <!-- Save Button -->

@@ -2,7 +2,7 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import { writable } from 'svelte/store';
   import { Molecule } from '$lib/model/atom';
-  import { shortToLongMapper } from '$lib/helper/amino_mapper';
+  import { shortToLongMapper, aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
 
   const dispatch = createEventDispatcher();
 
@@ -13,6 +13,13 @@
   export let molecularWeight = writable('');
   export let moleculeJson = writable({});
   export let showStructureName = true; // 기본값: Structure Name 입력 필드 표시
+  export let calculateDisabled = false; // 계산 버튼 비활성화 여부
+
+  // Delta 계산을 위한 props
+  export let modificationType = 'Single-site';
+  export let targetAminoAcid = '';
+  export let target1AminoAcid = '';
+  export let target2AminoAcid = '';
 
   // Modal state
   let showModal = false;
@@ -57,6 +64,36 @@
       sketcher.clear();
       sketcher.repaint();
     }
+  }
+
+  export function resetCalculation() {
+    molecularFormula.set('');
+    monoisotopicWeight.set('');
+    molecularWeight.set('');
+    moleculeJson.set({});
+  }
+
+  // Delta 값 계산 (Single-site만)
+  $: deltaMonoisotopicWeight = modificationType === 'Single-site' ? calculateDelta($monoisotopicWeight, 'monoisotopic') : null;
+  $: deltaMolecularWeight = modificationType === 'Single-site' ? calculateDelta($molecularWeight, 'molecular') : null;
+
+  function calculateDelta(calculatedWeight, weightType) {
+    if (!calculatedWeight || modificationType !== 'Single-site') return null;
+
+    const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
+    if (!targetAA) return null;
+
+    const targetWeight = weightType === 'monoisotopic'
+      ? (aminoMap[targetAA] || 0)
+      : (molecularWeightMap[targetAA] || 0);
+
+    const delta = parseFloat(calculatedWeight) - targetWeight;
+    return {
+      value: delta.toFixed(5),
+      calculatedWeight: parseFloat(calculatedWeight).toFixed(3),
+      targetWeight: targetWeight.toFixed(5),
+      targetLabel: targetAminoAcid === 'ALL' ? 'G (Glycine)' : targetAminoAcid
+    };
   }
 
   // 아미노산 MOL 구조 정의 (간단한 구조)
@@ -618,7 +655,11 @@ M  END`,
   </div>
 
   <div class="mb-3">
-    <button class="btn btn-success w-100" on:click={calculateChemical}>
+    <button
+      class="btn btn-success w-100"
+      on:click={calculateChemical}
+      disabled={calculateDisabled}
+    >
       Calculate Molecular Properties
     </button>
   </div>
@@ -632,12 +673,43 @@ M  END`,
       {/if}
       {#if $monoisotopicWeight}
         <div class="mb-2">
-          <strong>Monoisotopic Weight:</strong> {$monoisotopicWeight}
+          <strong>Monoisotopic Weight:</strong> {$monoisotopicWeight} <span class="text-muted">(Calculated)</span>
         </div>
       {/if}
       {#if $molecularWeight}
         <div class="mb-2">
-          <strong>Molecular Weight:</strong> {$molecularWeight}
+          <strong>Molecular Weight:</strong> {$molecularWeight} <span class="text-muted">(Calculated)</span>
+        </div>
+      {/if}
+
+      {#if deltaMonoisotopicWeight}
+        <div class="mt-3 pt-3 border-top">
+          <div class="mb-2 delta-result">
+            <strong>Delta Monoisotopic Weight:</strong>
+            <span class="delta-value">{deltaMonoisotopicWeight.value}</span>
+            <div class="delta-formula">
+              ({deltaMonoisotopicWeight.calculatedWeight} - {deltaMonoisotopicWeight.targetWeight} [{deltaMonoisotopicWeight.targetLabel}])
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      {#if deltaMolecularWeight}
+        <div class="mb-2 delta-result">
+          <strong>Delta Molecular Weight:</strong>
+          <span class="delta-value">{deltaMolecularWeight.value}</span>
+          <div class="delta-formula">
+            ({deltaMolecularWeight.calculatedWeight} - {deltaMolecularWeight.targetWeight} [{deltaMolecularWeight.targetLabel}])
+          </div>
+        </div>
+        <div class="mt-2 save-notice">
+          → This delta value will be saved
+        </div>
+      {:else if modificationType === 'Crosslinking' && $molecularWeight}
+        <div class="mt-3 pt-3 border-top">
+          <div class="mt-2 save-notice-crosslink">
+            → This absolute value will be saved (No delta calculation for Crosslinking)
+          </div>
         </div>
       {/if}
     </div>
@@ -754,6 +826,38 @@ M  END`,
 
   .results strong {
     color: #495057;
+  }
+
+  .delta-result {
+    background-color: #e7f3ff;
+    padding: 8px;
+    border-radius: 4px;
+  }
+
+  .delta-value {
+    color: #0056b3;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-left: 8px;
+  }
+
+  .delta-formula {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 4px;
+    font-family: monospace;
+  }
+
+  .save-notice {
+    color: #28a745;
+    font-weight: bold;
+    font-style: italic;
+  }
+
+  .save-notice-crosslink {
+    color: #17a2b8;
+    font-weight: bold;
+    font-style: italic;
   }
 
   /* Modal Styles */
