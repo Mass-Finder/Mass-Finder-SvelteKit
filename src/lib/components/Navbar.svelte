@@ -25,7 +25,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
       <!-- Brand name -->
-      <a class="navbar-brand mx-5 font-extrabold" href="/">Mass Finder</a>
+      <a class="navbar-brand mx-5 font-extrabold" href="/">X-MAS</a>
   
       <!-- Toggler/collapsible Button for mobile view -->
       <button

@@ -15,7 +15,7 @@
 </script>
   
 <svelte:head>
-	<title>Mass Finder</title>
+	<title>X-MAS</title>
 	<meta
 	  name="description"
 	  content=""

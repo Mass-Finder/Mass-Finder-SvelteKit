@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mass Finder is a specialized biochemical analysis web application for molecular weight and amino acid sequence interconversion. It serves biochemical researchers with high-performance calculations using simulated annealing algorithms and web workers.
+X-MAS is a specialized biochemical analysis web application for molecular weight and amino acid sequence interconversion. It serves biochemical researchers with high-performance calculations using simulated annealing algorithms and web workers.
 
 ## Core Features & Routes
 

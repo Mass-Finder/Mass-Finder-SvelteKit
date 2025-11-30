@@ -10,7 +10,7 @@
 <svelte:head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mass Finder</title>
+    <title>X-MAS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -125,7 +125,7 @@
     <div class="main-container rounded-4 shadow-lg p-5" style="width: 100%;">
         <div class="text-center mb-5">
             <h1 class="display-2 fw-light text-dark mb-3 position-relative" style="letter-spacing: -0.02em;">
-                Mass Finder
+                X-MAS
             </h1>
             <p class="lead text-muted mt-4 lh-base">
                 Advanced Computational Platform for Mass Spectrometry Analysis<br>

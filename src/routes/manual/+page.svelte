@@ -12,13 +12,13 @@
   </script>
   
   <svelte:head>
-    <title>Mass Finder User Guide</title>
+    <title>X-MAS User Guide</title>
   </svelte:head>
   
   <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Mass Finder User Guide</a>
+      <a class="navbar-brand" href="#">X-MAS User Guide</a>
       <button
         class="navbar-toggler"
         type="button"
@@ -55,7 +55,7 @@
     <section id="introduction" class="mb-5">
       <div class="card">
         <div class="card-body">
-          <h2 class="card-title">Welcome to Mass Finder</h2>
+          <h2 class="card-title">Welcome to X-MAS</h2>
           <p class="card-text">
             This tool was developed to facilitate mass spectrometry (MS) analysis after protein translation.
             It provides two key functions: (1) calculating the molecular mass of peptides from RNA
