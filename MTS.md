@@ -42,12 +42,12 @@ X-MAS의 MTS (Mass to Sequence) 기능은 감지된 분자량으로부터 가능
 - 참조 시퀀스 활성화 알림 표시
 
 ### 4. 포밀레이션 및 이온 부가물 처리
-**As a** 질량분석 전문가  
-**I want to** 포밀레이션과 이온 부가물을 고려한 분석을 하고 싶다  
+**As a** 질량분석 전문가
+**I want to** 포밀레이션과 이온 부가물을 고려한 분석을 하고 싶다
 **So that** 실제 질량분석 조건을 반영한 정확한 결과를 얻을 수 있다
 
 **Acceptance Criteria:**
-- 포밀레이션: yes/no/unknown 선택 가능
+- 포밀레이션: yes/no 선택 가능 (unknown 옵션 제거됨)
 - 9가지 이온 부가물 지원 (H+, Na+, K+ 등)
 - 포밀레이션은 결과 시퀀스 맨 앞에 'f'로 표시
 - 이온 무게는 최종 분자량에 추가
@@ -181,15 +181,54 @@ function checkSequenceOverlap(known, converted) {
 
 ---
 
+## SA Mode Selector (알고리즘 강도 선택)
+
+**파일**: `src/routes/mts/+page.svelte`, `src/lib/helper/mass_finder_helper.ts`
+
+**개요**: 사용자가 계산 속도와 정확도 사이의 균형을 선택할 수 있도록 3가지 모드를 제공합니다.
+
+### 모드별 파라미터
+
+| 모드 | 반복 횟수 | 초기 온도 | 냉각률 | 설명 |
+|------|-----------|-----------|--------|------|
+| **Simple** | 100 | 10000.0 | 0.99 | 빠른 계산, 기본적인 정확도 |
+| **Think** | 200 | 15000.0 | 0.995 | 중간 속도, 향상된 정확도 |
+| **Deep Think** | 300 | 20000.0 | 0.998 | 느린 계산, 최고 정확도 |
+
+**사용자 선택**:
+```svelte
+<select bind:value={saMode}>
+  <option value="simple">Simple</option>
+  <option value="think">Think</option>
+  <option value="deepThink">Deep Think</option>
+</select>
+```
+
+**알고리즘 적용**:
+```typescript
+// 선택된 모드에 따라 동적으로 파라미터 설정
+const params = getModeParams(saMode);
+const solutions = MassFinder.simulatedAnnealing(
+  targetMass,
+  params.iterations,
+  params.initialTemp,
+  params.coolingRate,
+  // ... 기타 파라미터
+);
+```
+
+---
+
 ## 시뮬레이티드 어닐링 알고리즘 로직
 
 ### 1. 초기화 조건
 ```typescript
-// 알고리즘 파라미터
+// 알고리즘 파라미터 (SA Mode에 따라 동적으로 설정)
+// Simple 모드 예시:
 const saIterations = 100;           // 반복 횟수
 const initialTemperature = 10000.0; // 초기 온도
 const coolingRate = 0.99;           // 냉각률
-const absoluteTemperature = 0.00001; // 최소 온도
+const absoluteTemperature = 0.00001; // 최소 온도 (모든 모드 공통)
 ```
 
 ### 2. 초기 솔루션 생성 로직
@@ -238,18 +277,30 @@ static randomSolution(targetMass: number) {
 
 ### 3. Neighbor Solution 생성 로직
 ```typescript
-// 조건: 70% 교체, 15% 추가, 15% 제거
+// 조건: 교체만 수행 (추가/제거 없음)
 static neighborSolution(currentSolution: string[], targetMass: number) {
-    const changeType = Math.random();
-    
-    if (changeType < 0.7) {
-        // 70% 확률로 아미노산 교체
-        // 참조 시퀀스가 있으면 60% 확률로 참조 시퀀스에서 선택
-    } else if (changeType < 0.85) {
-        // 15% 확률로 아미노산 추가 (질량 허용 시)
+    const neighbor = [...currentSolution];
+
+    if (neighbor.length === 0) return neighbor;
+
+    // 랜덤 위치 선택
+    const randomIndex = Math.floor(Math.random() * neighbor.length);
+
+    // 참조 시퀀스가 있으면 90% 확률로 참조 시퀀스에서 선택
+    if (referenceSequence && Math.random() < 0.9) {
+        // 참조 시퀀스의 해당 위치 아미노산으로 교체
+        if (randomIndex < referenceSequence.length) {
+            neighbor[randomIndex] = referenceSequence[randomIndex];
+        } else {
+            // 참조 시퀀스 범위를 벗어나면 랜덤 선택
+            neighbor[randomIndex] = selectRandomAmino();
+        }
     } else {
-        // 15% 확률로 아미노산 제거 (최소 1개 유지)
+        // 10% 확률로 완전 랜덤 아미노산 선택
+        neighbor[randomIndex] = selectRandomAmino();
     }
+
+    return neighbor;
 }
 ```
 
@@ -258,13 +309,13 @@ static neighborSolution(currentSolution: string[], targetMass: number) {
 // 조건: 참조 시퀀스 유무에 따른 복합 평가
 static evaluate(solution: string[], targetMass: number) {
     const massDifference = Math.abs(targetMass - calculatedMass);
-    
+
     if (referenceSequence) {
-        // 참조 시퀀스가 있는 경우: 분자량 80% + 시퀀스 유사도 20%
+        // 참조 시퀀스가 있는 경우: 분자량 95% + 시퀀스 유사도 5%
         const sequenceSimilarity = calculateSequenceSimilarity(current, reference);
         const normalizedMassDiff = massDifference / targetMass;
         const sequenceDifference = (100 - sequenceSimilarity) / 100;
-        return normalizedMassDiff * 0.8 + sequenceDifference * 0.2;
+        return normalizedMassDiff * 0.95 + sequenceDifference * 0.05;
     } else {
         // 참조 시퀀스가 없는 경우: 분자량 차이만 고려
         return massDifference;
@@ -361,9 +412,9 @@ static calcByIonType(...) {
 // 조건: 참조 시퀀스 유무에 따른 복합 정렬
 export function sortAmino(list: AminoModel[], compareValue: number, referenceSequence?: string) {
     if (referenceSequence) {
-        // 분자량 정확도 70% + 시퀀스 유사도 30%
-        const scoreA = normalizedMassDiff * 0.7 + normalizedSeqDiff * 0.3;
-        const scoreB = normalizedMassDiff * 0.7 + normalizedSeqDiff * 0.3;
+        // 분자량 정확도 90% + 시퀀스 유사도 10%
+        const scoreA = normalizedMassDiff * 0.9 + normalizedSeqDiff * 0.1;
+        const scoreB = normalizedMassDiff * 0.9 + normalizedSeqDiff * 0.1;
         return scoreA - scoreB;
     } else {
         // 분자량 차이만 고려
@@ -400,18 +451,36 @@ export function removeDuplicates(inputList: AminoModel[]) {
 
 ### 3. 최종 결과 개수 제한
 ```typescript
-// 조건: 사용자 선택 가능 (20, 50, 100개)
+// 조건: 사용자가 동적으로 선택 가능 (20, 50, 100개)
+// 파일: src/lib/components/ResultTable.svelte:81-90
 bestSolutions = allSolutions.slice(0, maxResultCount);
 ```
+
+**UI 구현**:
+```svelte
+<select bind:value={maxResultCount}>
+  <option value={20}>20</option>
+  <option value={50}>50</option>
+  <option value={100}>100</option>
+</select>
+```
+
+**특징**:
+- 기본값: 20개
+- 실시간 변경 가능 (재계산 불필요)
+- 결과 테이블과 Excel 다운로드 모두 적용
 
 ---
 
 ## Web Worker 비동기 처리
 
+**파일**: `src/lib/workers/mass_finder.worker.ts`, `src/routes/mts/+page.svelte`
+
 ### 조건
 - CPU 집약적 계산을 메인 스레드에서 분리
 - UI 응답성 유지
 - 에러 처리 및 진행 상태 표시
+- SA Mode 파라미터 동적 전달
 
 ```typescript
 // Worker 메시지 전송
@@ -422,7 +491,11 @@ worker.postMessage({
     formylation,
     adduct,
     monoisotopicMap,
-    molecularMap
+    molecularMap,
+    saMode,              // SA Mode 선택 ('simple', 'think', 'deepThink')
+    saIterations,        // 동적 반복 횟수
+    initialTemperature,  // 동적 초기 온도
+    coolingRate          // 동적 냉각률
 });
 
 // 결과 처리
@@ -430,10 +503,24 @@ worker.onmessage = (e) => {
     if (e.data.type === 'success') {
         allSolutions = e.data.solutions;
         bestSolutions = allSolutions.slice(0, maxResultCount);
+    } else if (e.data.type === 'error') {
+        console.error('Worker error:', e.data.error);
     }
     loading.set(false);
 };
+
+// 에러 처리
+worker.onerror = (error) => {
+    console.error('Worker error:', error);
+    loading.set(false);
+};
 ```
+
+**전달 파라미터 상세**:
+- `saMode`: 사용자 선택 모드 (UI에서 선택)
+- `saIterations`: 모드별 반복 횟수 (100/200/300)
+- `initialTemperature`: 모드별 초기 온도 (10000/15000/20000)
+- `coolingRate`: 모드별 냉각률 (0.99/0.995/0.998)
 
 ---
 

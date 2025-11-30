@@ -67,21 +67,175 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
   4. 사용자가 Formylation 옵션을 활성화한 경우
 
 **사용자 제어**:
-- FormylationSelector 컴포넌트를 통한 Yes/No/Unknown 선택
+- FormylationSelector 컴포넌트를 통한 Yes/No 선택 (Unknown 옵션 제거됨)
 - M 아미노산을 선택에서 제외하면 M 번역 시 formylation 적용 안 됨
 
-#### E. Admidation (C-말단 아미드화)
-**파일**: `src/lib/helper/stm_helper.ts:272-277`, `src/lib/components/AdmidationSelector.svelte`
+#### E. Admidation (C-말단 아미드화) [DEPRECATED]
+**상태**: 이 기능은 현재 코드베이스에서 제거되었습니다.
 
-**기능 정의**:
+**기존 기능 정의** (참고용):
 - **질량 변화**: -0.98 Da
 - **표시**: 시퀀스 끝에 소문자 'n' 추가
-- **적용 조건**:
-  1. 사용자가 Admidation 옵션을 활성화한 경우
-  2. Premature termination이 적용되지 않은 경우 (C-말단 존재)
+- **적용 조건**: C-말단 존재 시
+- **참고**: AdmidationSelector 컴포넌트 및 관련 로직이 제거됨
 
-**사용자 제어**:
-- AdmidationSelector 컴포넌트를 통한 Yes/No/Unknown 선택
+### 2.5. Potential Modification System
+
+**개요**: 사용자 정의 화학 수식(modification)을 아미노산 시퀀스에 적용하는 시스템입니다. 단일 아미노산 수식(Single-site)과 두 아미노산 간 결합(Crosslinking) 두 가지 타입을 지원합니다.
+
+#### A. Single-site Modifications
+**파일**: `src/lib/helper/stm_helper.ts:473-571`, `src/routes/potential/+page.svelte`
+
+**수식 적용 위치**:
+1. **N-terminus** (N-말단):
+   - **개념**: 아미노산을 대체하지 않고 앞에 수식을 **추가**
+   - **예시**: `MCCCRRC` + N-terminus `f` (target: M) → `fMCCCRRC`
+   - **질량 계산**: `최종 질량 = 원래 질량 + 수식 질량`
+   - **표시**: 수식명 + 아미노산 (예: `fM`)
+
+2. **C-terminus** (C-말단):
+   - **개념**: 아미노산을 대체하지 않고 뒤에 수식을 **추가**
+   - **예시**: `MCCCRRC` + C-terminus `n` (target: C) → `MCCCRRCn`
+   - **질량 계산**: `최종 질량 = 원래 질량 + 수식 질량`
+   - **표시**: 아미노산 + 수식명 (예: `Cn`)
+
+3. **Side Chain** (측쇄):
+   - **개념**: 타겟 아미노산을 수식으로 **완전 대체**
+   - **예시**: `MCCCRRC` + Side Chain `d1` (target: C) → `Md1CCRRC`
+   - **질량 계산**: `최종 질량 = 원래 질량 - 타겟 질량 + 수식 질량`
+   - **표시**: 수식명만 (예: `d1`)
+
+**적용 조건**:
+- 타겟 아미노산이 시퀀스에 존재해야 함
+- ALL 옵션: 모든 타겟 위치에 적용
+- 각 수식은 LocalStorage에 저장된 사용자 정의 데이터 사용
+
+**저장 데이터 구조**:
+```javascript
+{
+  name: 'modification_name',
+  type: 'Single-site',
+  target: 'M',  // 또는 'ALL'
+  condition: 'N-terminus' | 'C-terminus' | 'Side Chain',
+  structureName: 'structure_name',
+  moleculeJson: {...},  // ChemDoodle JSON
+  molecularFormula: 'C6H12N2O',
+  monoisotopicWeight: '144.10111',  // Delta 또는 absolute
+  molecularWeight: '144.17280'      // Delta 또는 absolute
+}
+```
+
+**질량 저장 방식**:
+- **N-terminus/C-terminus**: Delta 값 저장 (ChemDoodle 값 - 타겟 아미노산 질량)
+- **Side Chain**: Absolute 값 저장 (ChemDoodle 값 그대로)
+
+#### B. Crosslinking Modifications
+**파일**: `src/lib/helper/stm_helper.ts:573-706`, `src/routes/potential/+page.svelte`
+
+**수식 적용 조건**:
+1. **EVERYWHERE**: 두 타겟 아미노산이 시퀀스에 존재하기만 하면 적용
+2. **DISTANCE**: 두 타겟 간 거리가 특정 조건을 만족할 때만 적용
+   - 연산자: `>`, `<`, `=`
+   - 거리 값: 정수 (최소 1)
+
+**적용 알고리즘**:
+```typescript
+// 타겟1과 타겟2의 모든 위치 조합에서 crosslinking 가능성 검사
+for (let i = 0; i < sequence.length; i++) {
+  if (sequence[i] === target1) {
+    for (let j = 0; j < sequence.length; j++) {
+      if (sequence[j] === target2 && i !== j) {
+        // 거리 조건 확인
+        const distance = Math.abs(i - j);
+        if (checkDistanceCondition(distance, operator, value)) {
+          // Crosslinking 적용
+        }
+      }
+    }
+  }
+}
+```
+
+**질량 계산**:
+```javascript
+// 두 아미노산을 수식으로 대체
+최종 질량 = 원래 질량 - 타겟1 질량 - 타겟2 질량 + 수식 질량
+```
+
+**표시**:
+- 수식명만 표시 (두 아미노산 모두 수식명으로 대체)
+- 예시: `MCCCRRC` + Crosslinking `XL` (C-C) → `MXLCRRC`
+
+**저장 데이터 구조**:
+```javascript
+{
+  name: 'crosslink_name',
+  type: 'Crosslinking',
+  target1: 'C',
+  target2: 'C',
+  condition: 'EVERYWHERE' | 'DISTANCE',
+  distanceOperator: '>' | '<' | '=',  // DISTANCE인 경우에만
+  distanceValue: 5,                    // DISTANCE인 경우에만
+  structureName: 'structure_name',
+  moleculeJson: {...},
+  molecularFormula: 'C6H8N2O2S2',
+  monoisotopicWeight: '204.00271',  // Absolute 값
+  molecularWeight: '204.27080'      // Absolute 값
+}
+```
+
+#### C. 적용 우선순위
+**파일**: `src/lib/components/stm/StmResultTable.svelte:196`
+
+시퀀스 표시 시 다음 우선순위로 수식 적용:
+1. **Crosslinking** (최우선)
+2. **Side Chain**
+3. **Single-site** (N-terminus 또는 C-terminus)
+4. 자연 아미노산 (수식 없음)
+
+```svelte
+{#if item.letter.crosslinked && item.letter.crosslinkModification}
+    {item.letter.crosslinkModification}
+{:else if item.letter.sideChainModified && item.letter.sideChainModification}
+    {item.letter.sideChainModification}
+{:else if item.letter.singleSiteModified && item.letter.singleSiteModification}
+    {#if item.letter.singleSiteCondition === 'N-terminus'}
+        {item.letter.singleSiteModification}{item.letter.letter}
+    {:else if item.letter.singleSiteCondition === 'C-terminus'}
+        {item.letter.letter}{item.letter.singleSiteModification}
+    {/if}
+{:else}
+    {item.letter.letter}
+{/if}
+```
+
+#### D. UI 구성 요소
+**파일**: `src/routes/potential/+page.svelte`, `src/lib/components/potential/*`
+
+**주요 컴포넌트**:
+- **PotentialModificationSelector**: 저장된 수식 목록에서 선택
+- **SingleSiteSection**: Single-site 타입 설정 (타겟, 조건)
+- **CrosslinkingSection**: Crosslinking 타입 설정 (타겟1, 타겟2, 조건, 거리)
+- **ChemDoodleCanvas**: 화학 구조 그리기 및 분자량 계산
+- **ModificationItem**: 저장된 수식 항목 표시
+- **ProteinSelectDialog**: 타겟 아미노산 선택 모달 (Amino Acids, ncAA 탭)
+
+#### E. 시퀀스 데이터 구조
+**파일**: `src/lib/helper/stm_helper.ts:954-968`
+
+```typescript
+interface PossibilityLetter {
+  letter: string;                          // 아미노산 문자
+  natural: boolean;                        // 자연 아미노산 여부
+  singleSiteModified?: boolean;            // Single-site 수식 적용 여부
+  singleSiteModification?: string;         // Single-site 수식명
+  singleSiteCondition?: string;            // 'N-terminus' | 'C-terminus' | 'Side Chain'
+  sideChainModified?: boolean;             // Side Chain 수식 적용 여부
+  sideChainModification?: string;          // Side Chain 수식명
+  crosslinked?: boolean;                   // Crosslinking 수식 적용 여부
+  crosslinkModification?: string;          // Crosslinking 수식명
+}
+```
 
 ### 3. 커스터마이제이션 시스템
 
@@ -128,8 +282,9 @@ let selectedMonoisotopicAminos = { ...aminoMap };
 **파일**: `src/routes/stm/+page.svelte:22-24`
 ```javascript
 let formylation = false; // N-말단 포밀화
-let admidation = false;  // C-말단 아미드화
 ```
+
+**참고**: Admidation 기능은 제거되었습니다.
 
 ### 4. 계산 알고리즘
 
@@ -196,9 +351,13 @@ finalWeight = baseWeight + formylation + admidation + adduct_weight + disulfide_
 - **Only natural AA**: 표준 번역, 변화 없음
 - **ncAA incorporated**: 하나 이상의 ncAA 사용
 - **reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
-- **Premature termination**: 뒤쪽 절단으로 인한 부분 시퀀스  
+- **Premature termination**: 뒤쪽 절단으로 인한 부분 시퀀스
 - **skipping**: 코돈 건너뛰기 발생
 - **Disulfide**: 디설파이드 결합 형성
+- **Truncated**: 시퀀스 절단 발생
+- **수식명 (x개수)**: Potential Modification 적용 (예: `d1 (x2)`, `dC`, `XL`)
+  - 동일 수식이 여러 개 적용되면 개수 표시 (예: `d1 (x2)`)
+  - Truncated는 중복이어도 하나만 표시
 
 ### 6. 입력 검증 시스템
 
@@ -233,8 +392,8 @@ function checkCustomCodonTitles2() // :122-151
 - **NcAACodonSelector**: ncAA와 코돈 매핑 설정
 - **StmAdductSelector**: 이온 부가체 다중 선택
 - **FormylationSelector**: N-말단 포밀화 옵션
-- **AdmidationSelector**: C-말단 아미드화 옵션
 - **AminoMapSelector**: 표준 아미노산 선택
+- **PotentialModificationSelector**: 사용자 정의 수식 선택 (Single-site, Crosslinking)
 - **StmResultTable**: 계산 결과 표시
 
 #### B. 데이터 흐름
