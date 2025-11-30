@@ -2,9 +2,6 @@ import { codonTableRtoS, aminoMap, molecularWeightMap, getIonWeight } from './am
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType, PotentialModification, SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
 
-// 포밀레이스의 분자량
-const fWeight = 27.99;
-
 export class StmHelper {
     static calc(
         rnaSeq: string,
@@ -12,7 +9,6 @@ export class StmHelper {
         codonTitles: { [key: string]: string[] },
         aminoMap: { [key: string]: number },
         ionTypes: IonType[],
-        useFormylation: boolean,
         potentialModifications: PotentialModification[] = []
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
@@ -154,29 +150,6 @@ export class StmHelper {
             return seqArr.length > 0 && seqArr[seqArr.length - 1].prematureTermination === true;
         }
 
-        // Formylation 적용 조건 확인 함수 - 실제 번역된 시퀀스를 기반으로 확인
-        function shouldApplyFormylationWithSequence(firstCodon: string, firstLetter: PossibilityLetter, ncAAMap: any, codonTitles: any): boolean {
-            // 첫 번째 코돈이 AUG가 아니면 formylation 불가
-            if (firstCodon !== 'AUG') return false;
-            
-            // 자연 아미노산 M이 실제로 번역된 경우
-            if (firstLetter.natural && firstLetter.letter === 'M') {
-                return true;
-            }
-            
-            // ncAA가 AUG에 할당되어 실제로 번역된 경우
-            if (!firstLetter.natural && firstLetter.candidate) {
-                for (const [key] of Object.entries(ncAAMap)) {
-                    const assignedCodons = codonTitles[key] || [];
-                    if (assignedCodons.includes('AUG') && firstLetter.candidate.title === ncAAMap[key].title) {
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
-        }
-
         let basePossibilities = generatePossibilities(0);
 
         // **Skipping 및 Truncated가 적용된 결과 필터링**
@@ -268,22 +241,10 @@ export class StmHelper {
             // 물 손실량은 기존 아미노산에 대해서만 적용
             baseWeight -= MassFinderHelper.getWaterWeight(baseCount);
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
-            
-            // Formylation 조건 확인: useFormylation이 true이고 첫 번째 아미노산이 M이거나 AUG에 할당된 ncAA인 경우
-            // 그리고 reinitiation이 없는 경우에만 적용
-            const firstLetter = seqArr.length > 0 && seqArr[0].letter !== "" ? seqArr[0] : null;
-            const shouldFormylate = useFormylation && firstLetter &&
-                                   !hasInternalInitiationAtStart(seqArr) &&
-                                   shouldApplyFormylationWithSequence(effectiveCodons[0], firstLetter, ncAAMap, codonTitles);
 
-            let updatedSeqArr = shouldFormylate ? [{ letter: "f", natural: true }, ...seqArr] : seqArr;
-
+            let updatedSeqArr = seqArr;
             let finalWeight = baseWeight;
             let finalMolWeight = baseMolWeight;
-            if (shouldFormylate) {
-                finalWeight += fWeight;
-                finalMolWeight += fWeight;
-            }
 
             // Apply Single-site Potential Modifications (N-terminus and C-terminus only)
             // Note: Side Chain modifications are handled separately after ionType generation
@@ -385,7 +346,6 @@ export class StmHelper {
 
             // 개별 아미노산 레벨 reason 수집
             updatedSeqArr.forEach((item, index) => {
-                if (shouldFormylate && index === 0) return; // f는 reason에 포함하지 않음
                 if (!item.natural) {
                     if (item.candidate && !item.skipping) {
                         reasons.push("ncAA incorporated");

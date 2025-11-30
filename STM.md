@@ -52,23 +52,24 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 - **질량 변화**: 각 결합당 -2.02 Da
 - **알고리즘**: 재귀적 페어링 조합 생성
 
-#### D. Formylation (N-말단 포밀화)
-**파일**: `src/lib/helper/stm_helper.ts:151-171`, `src/routes/stm/+page.svelte`
+#### D. Formylation (N-말단 포밀화) [MOVED TO POTENTIAL MODIFICATION]
+**상태**: 이 기능은 **Potential Modification System의 Single-site N-terminus**로 통합되었습니다.
 
-**기능 정의**:
+**이전 기능** (참고용):
 - **질량 변화**: +27.99 Da
 - **표시**: 시퀀스 앞에 소문자 'f' 추가
-- **적용 조건** (모두 만족해야 함):
-  1. 첫 번째 코돈이 AUG여야 함
-  2. 실제로 첫 번째 아미노산이 번역되어야 함
-     - 자연 아미노산 M으로 번역된 경우
-     - AUG에 할당된 ncAA로 번역된 경우
-  3. reinitiation이 적용되지 않은 경우 (N-말단 존재)
-  4. 사용자가 Formylation 옵션을 활성화한 경우
+- **적용 조건**: 첫 번째 코돈이 AUG이고, N-말단이 존재하며, M 아미노산으로 번역된 경우
 
-**사용자 제어**:
-- FormylationSelector 컴포넌트를 통한 Yes/No 선택 (Unknown 옵션 제거됨)
-- M 아미노산을 선택에서 제외하면 M 번역 시 formylation 적용 안 됨
+**현재 사용 방법**:
+1. **Potential Modification** 페이지로 이동
+2. **Single-site** 타입 선택
+3. **Condition**: N-terminus 선택
+4. **Target**: M 선택 (또는 ALL)
+5. ChemDoodle에서 formyl-methionine 구조 그리기 (또는 Load Template 사용)
+6. Structure Name에 `f` 입력
+7. 저장 후 **STM** 페이지에서 해당 modification 선택
+
+**장점**: Potential Modification으로 통합되어 더 유연한 N-terminus 수식 정의 가능
 
 #### E. Admidation (C-말단 아미드화) [DEPRECATED]
 **상태**: 이 기능은 현재 코드베이스에서 제거되었습니다.
@@ -276,15 +277,15 @@ let selectedMonoisotopicAminos = { ...aminoMap };
 **기능**:
 - 표준 20개 아미노산 중 계산에 포함할 아미노산 선택
 - 체크 해제된 아미노산은 번역 결과에서 제외
-- Formylation 조건에도 영향 (M 체크 해제 시 formylation 불가)
 
-#### D. 후처리 옵션 설정
-**파일**: `src/routes/stm/+page.svelte:22-24`
-```javascript
-let formylation = false; // N-말단 포밀화
-```
+#### D. 후처리 옵션 설정 [DEPRECATED]
+**상태**: 기존 후처리 옵션들(Formylation, Admidation)은 **Potential Modification System**으로 통합되었습니다.
 
-**참고**: Admidation 기능은 제거되었습니다.
+**변경 사항**:
+- **Formylation**: Potential Modification의 Single-site N-terminus로 이동
+- **Admidation**: 완전히 제거됨
+
+**현재 사용 방법**: Potential Modification 페이지에서 해당 수식을 정의하고 STM에서 선택
 
 ### 4. 계산 알고리즘
 
@@ -310,24 +311,28 @@ let formylation = false; // N-말단 포밀화
 - **Premature termination**: 시작부터 절단 위치까지 (절단 위치 포함)
 
 #### C. 질량 계산
-**파일**: `src/lib/helper/stm_helper.ts:246-289`
+**파일**: `src/lib/helper/stm_helper.ts:240-248`
 
 **계산 공식**:
 ```javascript
 // 기본 질량 = Σ(아미노산 질량) - 물 손실량
 baseWeight = Σ(amino_weight) - water_loss
 
-// 최종 질량 = 기본 질량 + 후처리 + 이온 부가체
-finalWeight = baseWeight + formylation + admidation + adduct_weight + disulfide_reduction
+// 최종 질량 = 기본 질량 + Potential Modifications + 이온 부가체
+finalWeight = baseWeight + potentialModifications + adduct_weight
 ```
 
 **질량 구성 요소**:
 - **아미노산 질량**: 자연 AA 또는 ncAA monoisotopic weight
 - **물 손실**: 펩타이드 결합 형성으로 인한 손실
-- **Formylation**: +27.99 Da (조건부)
-- **Admidation**: -0.98 Da (조건부)
-- **Disulfide**: -2.02 Da × 결합 수
+- **Potential Modifications**:
+  - **N-terminus**: +수식 질량 (추가 개념)
+  - **C-terminus**: +수식 질량 (추가 개념)
+  - **Side Chain**: -타겟 질량 + 수식 질량 (대체 개념)
+  - **Crosslinking**: -타겟1 질량 - 타겟2 질량 + 수식 질량 (대체 개념)
 - **Ion adduct**: 이온 타입별 고유 질량
+
+**참고**: Formylation(+27.99 Da)과 Admidation(-0.98 Da)은 이제 Potential Modification으로 정의해야 함
 
 #### D. 결과 필터링 및 중복 제거
 **파일**: `src/lib/helper/stm_helper.ts:240-244, 368-373`
@@ -391,9 +396,10 @@ function checkCustomCodonTitles2() // :122-151
 - **SeqConverter**: RNA 시퀀스 입력/변환
 - **NcAACodonSelector**: ncAA와 코돈 매핑 설정
 - **StmAdductSelector**: 이온 부가체 다중 선택
-- **FormylationSelector**: N-말단 포밀화 옵션
 - **AminoMapSelector**: 표준 아미노산 선택
 - **PotentialModificationSelector**: 사용자 정의 수식 선택 (Single-site, Crosslinking)
+  - N-terminus, C-terminus, Side Chain 수식 적용
+  - Formylation 등 기존 후처리 옵션 대체
 - **StmResultTable**: 계산 결과 표시
 
 #### B. 데이터 흐름
@@ -434,13 +440,17 @@ function checkCustomCodonTitles2() // :122-151
 
 ### 10. 생물학적 제약 조건
 
-#### A. Formylation 제약
-- 첫 번째 코돈이 AUG여야 함
-- 실제 번역이 발생해야 함
-- reinitiation 시 적용 불가 (N-말단 부재)
+#### A. N-terminus Potential Modification 제약
+**참고**: Formylation은 이제 Potential Modification의 N-terminus로 처리됩니다.
+- reinitiation 시 N-terminus 수식 적용 불가 (N-말단 부재)
+- 첫 번째 아미노산이 modification의 target과 일치해야 함
+- 타겟이 ALL인 경우 모든 첫 번째 아미노산에 적용 가능
 
-#### B. Admidation 제약
-- Premature termination 시 적용 불가 (C-말단 부재)
+#### B. C-terminus Potential Modification 제약
+**참고**: Admidation 기능은 제거되었으나, C-terminus 수식은 Potential Modification으로 가능합니다.
+- Premature termination 시 C-terminus 수식 적용 불가 (C-말단 부재)
+- 마지막 아미노산이 modification의 target과 일치해야 함
+- 타겟이 ALL인 경우 모든 마지막 아미노산에 적용 가능
 
 #### C. 절단 조건
 - ncAA가 할당된 위치에서만 절단 발생

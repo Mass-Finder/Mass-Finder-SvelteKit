@@ -9,7 +9,6 @@
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
     import { getContext } from "svelte";
     import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
-    import FormylationSelector from "$lib/components/FormylationSelector.svelte";
     import PotentialModificationSelector from "$lib/components/stm/PotentialModificationSelector.svelte";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
@@ -20,7 +19,6 @@
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
 
     let ionTypes = ['H']; // 배열로 변경
-    let formylation = false; // 기본값 no
     let potentialModifications = []; // Potential modifications
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
@@ -62,7 +60,6 @@
                 removeEmptyCodonTitles(),
                 selectedMonoisotopicAminos,
                 ionTypes,
-                formylation,
                 potentialModifications
             );
         } finally {
@@ -217,13 +214,10 @@
         <SeqConverter bind:rnaSeq></SeqConverter>
     </div>
 
-    <div class="mb-3 d-flex justify-content-start align-items-center">
+    <div class="mb-3">
         <StmAdductSelector
             on:changeAdduct={handleAdductChange}
         />
-        <div class="ms-3">
-            <FormylationSelector showUnknown={false} fomyType="no" on:change={(e) => formylation = (e.detail === 'yes')} />
-        </div>
     </div>
 
     <div class="mb-3">

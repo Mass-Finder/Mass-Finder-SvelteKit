@@ -168,7 +168,7 @@
                   aria-expanded="false"
                   aria-controls="stmCollapseFour"
                 >
-                  Step 4 – Post-Translational Modification
+                  Step 4 – Used non-canonical amino acids
                 </button>
               </h2>
               <div
@@ -178,9 +178,10 @@
                 data-bs-parent="#stmAccordion"
               >
                 <div class="accordion-body">
-                  Specify whether modifications occur at the N-terminus or C-terminus of the peptide.<br>
-                  <strong>• Formylation:</strong> The N-terminal methionine is converted to formyl-methionine. It is denoted with a lowercase 'f' and adds 28 to the mass.<br>
-                  <strong>• Amidation:</strong> The C-terminal residue is amidated, denoted with a lowercase 'n', and subtracts 0.98 from the mass.
+                  Select the non-canonical amino acids (ncAAs) used.<br>
+                  To use an ncAA, you must first draw its structure and save it in the "Add Non-Canonical Amino Acids" tab.<br>
+                  Each ncAA requires codon assignment. Multiple codons can be assigned to one ncAA, and the same codon can be assigned to different ncAAs.<br>
+                  Assigned codons will be incorporated at corresponding positions in the RNA sequence.
                 </div>
               </div>
             </div>
