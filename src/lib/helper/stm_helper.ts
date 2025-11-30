@@ -303,19 +303,9 @@ export class StmHelper {
                             if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
                                 appliedModifications.push({mod, position: firstAAIndex});
 
-                                // 원래 아미노산 질량을 빼고 새 구조 질량을 더함
-                                let originalMonoWeight = 0;
-                                let originalMolWeight = 0;
-                                if (firstAA.natural) {
-                                    originalMonoWeight = aminoMap[firstAA.letter] || 0;
-                                    originalMolWeight = molecularWeightMap[firstAA.letter] || 0;
-                                } else if (firstAA.candidate) {
-                                    originalMonoWeight = parseFloat(firstAA.candidate.monoisotopicWeight);
-                                    originalMolWeight = parseFloat(firstAA.candidate.molecularWeight);
-                                }
-
-                                finalWeight = finalWeight - originalMonoWeight + modWeight;
-                                finalMolWeight = finalMolWeight - originalMolWeight + modMolWeight;
+                                // N-terminus: 추가 개념 - 단순히 modification 질량을 더함
+                                finalWeight = finalWeight + modWeight;
+                                finalMolWeight = finalMolWeight + modMolWeight;
                             }
                         }
                     }
@@ -343,19 +333,9 @@ export class StmHelper {
                             if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
                                 appliedModifications.push({mod, position: lastAAIndex});
 
-                                // 원래 아미노산 질량을 빼고 새 구조 질량을 더함
-                                let originalMonoWeight = 0;
-                                let originalMolWeight = 0;
-                                if (lastAA.natural) {
-                                    originalMonoWeight = aminoMap[lastAA.letter] || 0;
-                                    originalMolWeight = molecularWeightMap[lastAA.letter] || 0;
-                                } else if (lastAA.candidate) {
-                                    originalMonoWeight = parseFloat(lastAA.candidate.monoisotopicWeight);
-                                    originalMolWeight = parseFloat(lastAA.candidate.molecularWeight);
-                                }
-
-                                finalWeight = finalWeight - originalMonoWeight + modWeight;
-                                finalMolWeight = finalMolWeight - originalMolWeight + modMolWeight;
+                                // C-terminus: 추가 개념 - 단순히 modification 질량을 더함
+                                finalWeight = finalWeight + modWeight;
+                                finalMolWeight = finalMolWeight + modMolWeight;
                             }
                         }
                     }
@@ -368,16 +348,23 @@ export class StmHelper {
                     updatedSeqArr[position] = {
                         ...updatedSeqArr[position],
                         singleSiteModified: true,
-                        singleSiteModification: mod.structureName
+                        singleSiteModification: mod.structureName,
+                        singleSiteCondition: mod.condition  // 'N-terminus' or 'C-terminus'
                     };
                 }
             }
 
             // sequenceString 생성 시 Single-site modification도 고려
+            // N-terminus: modification + letter (fM)
+            // C-terminus: letter + modification (Mn)
             // Note: Side Chain modification은 나중에 별도로 처리됨
             const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => {
                 if (x.singleSiteModified && x.singleSiteModification) {
-                    return x.singleSiteModification;
+                    if (x.singleSiteCondition === 'N-terminus') {
+                        return x.singleSiteModification + x.letter;  // fM
+                    } else if (x.singleSiteCondition === 'C-terminus') {
+                        return x.letter + x.singleSiteModification;  // Mn
+                    }
                 }
                 return x.letter;
             }).join("");
@@ -551,31 +538,28 @@ export class StmHelper {
                 newPoss.molecularWeight = newPoss.molecularWeight - (targetMolecularWeight * applyCount) + (modMolWeight * applyCount);
 
                 // sequenceString 재생성
-                console.log(`[Side Chain Debug] Before sequenceString, targetIndices=${JSON.stringify(targetIndices)}, applyCount=${applyCount}`);
-                console.log(`[Side Chain Debug] Sequence items:`, newPoss.sequence.filter(item => item.letter !== "").map((item, idx) => ({
-                    idx,
-                    letter: item.letter,
-                    sideChainModified: item.sideChainModified,
-                    sideChainModification: item.sideChainModification
-                })));
-
                 newPoss.sequenceString = newPoss.sequence
                     .filter(item => item.letter !== "")
                     .map(item => {
+                        // Side Chain: 대체 (modification만 표시)
                         if (item.sideChainModified && item.sideChainModification) {
                             return item.sideChainModification;
                         }
-                        if (item.singleSiteModified && item.singleSiteModification) {
-                            return item.singleSiteModification;
+                        // N-terminus: 추가 (modification + letter)
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                            return item.singleSiteModification + item.letter;
                         }
+                        // C-terminus: 추가 (letter + modification)
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                            return item.letter + item.singleSiteModification;
+                        }
+                        // Crosslinking: 대체 (modification만 표시)
                         if (item.crosslinked && item.crosslinkModification) {
                             return item.crosslinkModification;
                         }
                         return item.letter;
                     })
                     .join("");
-
-                console.log(`[Side Chain Debug] applyCount=${applyCount}, sequenceString=${newPoss.sequenceString}, weight=${newPoss.weight.toFixed(3)}, modification=${modification.name}`);
 
                 // Reasons 업데이트
                 newPoss.reasons.push(`${modification.name} (x${applyCount})`);
@@ -897,14 +881,20 @@ export class StmHelper {
             .filter(item => item.letter !== "")
             .map(item => {
                 // 우선순위: Crosslinking > Side Chain > Single-site > 기본 letter
+                // Crosslinking과 Side Chain: 대체 (modification만 표시)
                 if (item.crosslinked && item.crosslinkModification) {
                     return item.crosslinkModification;
                 }
                 if (item.sideChainModified && item.sideChainModification) {
                     return item.sideChainModification;
                 }
-                if (item.singleSiteModified && item.singleSiteModification) {
-                    return item.singleSiteModification;
+                // N-terminus: 추가 (modification + letter)
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                    return item.singleSiteModification + item.letter;
+                }
+                // C-terminus: 추가 (letter + modification)
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                    return item.letter + item.singleSiteModification;
                 }
                 return item.letter;
             })
@@ -951,6 +941,7 @@ interface PossibilityLetter {
     crosslinkModification?: string;
     singleSiteModified?: boolean;
     singleSiteModification?: string;
+    singleSiteCondition?: string;  // 'N-terminus' or 'C-terminus'
     sideChainModified?: boolean;
     sideChainModification?: string;
 }
