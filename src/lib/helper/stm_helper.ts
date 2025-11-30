@@ -384,7 +384,10 @@ export class StmHelper {
         const possibilitiesWithSideChain = StmHelper.applySideChainModifications(possibilities, sideChainMods);
 
         // **Crosslinking modifications 처리 - 모든 조합 생성**
-        const finalPossibilities = StmHelper.applyCrosslinkingModifications(possibilitiesWithSideChain, crosslinkingModifications);
+        const possibilitiesWithCrosslinking = StmHelper.applyCrosslinkingModifications(possibilitiesWithSideChain, crosslinkingModifications);
+
+        // **중복 제거 - sequenceString이 동일한 경우 첫 번째만 유지**
+        const finalPossibilities = StmHelper.removeDuplicateSequences(possibilitiesWithCrosslinking);
 
         return finalPossibilities;
     }
@@ -874,6 +877,25 @@ export class StmHelper {
             adduct: poss.adduct,
             crosslinking: poss.crosslinking ? poss.crosslinking.map(c => ({ ...c, pair: [...c.pair] })) : []
         };
+    }
+
+    /**
+     * sequenceString이 동일한 경우 중복 제거
+     * 첫 번째로 발견된 것만 유지
+     */
+    private static removeDuplicateSequences(possibilities: Possibility[]): Possibility[] {
+        const seenSequences = new Set<string>();
+        const uniquePossibilities: Possibility[] = [];
+
+        for (const poss of possibilities) {
+            const key = poss.sequenceString;
+            if (!seenSequences.has(key)) {
+                seenSequences.add(key);
+                uniquePossibilities.push(poss);
+            }
+        }
+
+        return uniquePossibilities;
     }
 }
 
