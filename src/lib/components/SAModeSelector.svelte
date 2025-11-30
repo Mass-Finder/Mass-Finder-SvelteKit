@@ -6,25 +6,25 @@
   
   // SA 모드 설정
   const saConfigs = {
-    simple: {
-      label: 'Simple',
-      description: 'Fast calculation with basic exploration',
-      initialTemperature: 1000,
-      absoluteTemperature: 0.1,
-      saIterations: 20
-    },
     think: {
       label: 'Think',
       description: 'Balanced calculation with moderate exploration',
       initialTemperature: 10000,
       absoluteTemperature: 0.001,
-      saIterations: 50
+      saIterations: 100
     },
     deepthink: {
       label: 'Deep Think',
       description: 'Thorough calculation with extensive exploration',
       initialTemperature: 50000,
       absoluteTemperature: 0.00001,
+      saIterations: 100
+    },
+    ultrathink: {
+      label: 'Ultra Think',
+      description: 'Advanced reasoning with profound exploration',
+      initialTemperature: 100000,
+      absoluteTemperature: 0.000001,
       saIterations: 100
     }
   };

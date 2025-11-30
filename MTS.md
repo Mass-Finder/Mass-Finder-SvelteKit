@@ -183,39 +183,60 @@ function checkSequenceOverlap(known, converted) {
 
 ## SA Mode Selector (알고리즘 강도 선택)
 
-**파일**: `src/routes/mts/+page.svelte`, `src/lib/helper/mass_finder_helper.ts`
+**파일**: `src/lib/components/SAModeSelector.svelte`, `src/routes/mts/+page.svelte`
 
-**개요**: 사용자가 계산 속도와 정확도 사이의 균형을 선택할 수 있도록 3가지 모드를 제공합니다.
+**개요**: 사용자가 계산 탐색 범위를 선택할 수 있도록 3가지 모드를 제공합니다. 초기 온도와 최소 온도를 조정하여 탐색 공간의 크기를 제어합니다.
 
 ### 모드별 파라미터
 
-| 모드 | 반복 횟수 | 초기 온도 | 냉각률 | 설명 |
-|------|-----------|-----------|--------|------|
-| **Simple** | 100 | 10000.0 | 0.99 | 빠른 계산, 기본적인 정확도 |
-| **Think** | 200 | 15000.0 | 0.995 | 중간 속도, 향상된 정확도 |
-| **Deep Think** | 300 | 20000.0 | 0.998 | 느린 계산, 최고 정확도 |
+| 모드 | 초기 온도 | 최소 온도 | 반복 횟수 | 설명 |
+|------|-----------|-----------|-----------|------|
+| **Think** | 10,000 | 0.001 | 100 | 균형잡힌 계산, 적당한 탐색 범위 |
+| **Deep Think** | 50,000 | 0.00001 | 100 | 철저한 계산, 광범위한 탐색 |
+| **Ultra Think** | 100,000 | 0.000001 | 100 | 고급 추론, 매우 깊은 탐색 |
 
-**사용자 선택**:
+**특징**:
+- **기본값**: Think 모드
+- **LocalStorage**: 사용자 선택이 자동 저장되어 다음 방문 시 유지
+- **반복 횟수**: 모든 모드에서 동일 (100회)
+- **탐색 제어**: 초기 온도와 최소 온도로 탐색 범위 조절
+
+**UI 구현**:
 ```svelte
-<select bind:value={saMode}>
-  <option value="simple">Simple</option>
-  <option value="think">Think</option>
-  <option value="deepThink">Deep Think</option>
-</select>
+<div class="sa-mode-options">
+  {#each Object.entries(saConfigs) as [mode, config]}
+    <div class="form-check">
+      <input
+        type="radio"
+        name="saMode"
+        value={mode}
+        bind:group={selectedMode}
+        on:change={handleModeChange}
+      />
+      <label>
+        <div class="mode-title">{config.label}</div>
+        <small class="mode-description">{config.description}</small>
+      </label>
+    </div>
+  {/each}
+</div>
 ```
 
 **알고리즘 적용**:
 ```typescript
-// 선택된 모드에 따라 동적으로 파라미터 설정
-const params = getModeParams(saMode);
-const solutions = MassFinder.simulatedAnnealing(
-  targetMass,
-  params.iterations,
-  params.initialTemp,
-  params.coolingRate,
-  // ... 기타 파라미터
-);
+// SAModeSelector 컴포넌트에서 이벤트 수신
+function handleSAModeChange(event) {
+  const config = event.detail; // { initialTemperature, absoluteTemperature, saIterations }
+  saIterations = config.saIterations;
+  initialTemperature = config.initialTemperature;
+  absoluteTemperature = config.absoluteTemperature;
+}
 ```
+
+**파라미터 설명**:
+- **initialTemperature**: 시뮬레이티드 어닐링 시작 온도 (높을수록 초기에 다양한 해 탐색)
+- **absoluteTemperature**: 종료 최소 온도 (낮을수록 더 세밀하게 탐색)
+- **saIterations**: 반복 횟수 (모든 모드 100회 고정)
 
 ---
 
@@ -224,12 +245,18 @@ const solutions = MassFinder.simulatedAnnealing(
 ### 1. 초기화 조건
 ```typescript
 // 알고리즘 파라미터 (SA Mode에 따라 동적으로 설정)
-// Simple 모드 예시:
-const saIterations = 100;           // 반복 횟수
-const initialTemperature = 10000.0; // 초기 온도
-const coolingRate = 0.99;           // 냉각률
-const absoluteTemperature = 0.00001; // 최소 온도 (모든 모드 공통)
+// Think 모드 예시:
+const saIterations = 100;           // 반복 횟수 (모든 모드 고정)
+const initialTemperature = 10000;   // 초기 온도 (Think: 10,000 / Deep Think: 50,000 / Ultra Think: 100,000)
+const absoluteTemperature = 0.001;  // 최소 온도 (Think: 0.001 / Deep Think: 0.00001 / Ultra Think: 0.000001)
+const coolingRate = 0.99;           // 냉각률 (고정값)
 ```
+
+**주요 파라미터 역할**:
+- **saIterations**: 알고리즘 반복 횟수 (모든 모드에서 100회로 고정)
+- **initialTemperature**: 탐색 시작 온도 (높을수록 초기 단계에서 더 넓은 범위 탐색)
+- **absoluteTemperature**: 탐색 종료 온도 (낮을수록 더 세밀한 최적화)
+- **coolingRate**: 온도 감소율 (각 반복마다 온도 × 0.99)
 
 ### 2. 초기 솔루션 생성 로직
 ```typescript
@@ -517,10 +544,15 @@ worker.onerror = (error) => {
 ```
 
 **전달 파라미터 상세**:
-- `saMode`: 사용자 선택 모드 (UI에서 선택)
-- `saIterations`: 모드별 반복 횟수 (100/200/300)
-- `initialTemperature`: 모드별 초기 온도 (10000/15000/20000)
-- `coolingRate`: 모드별 냉각률 (0.99/0.995/0.998)
+- `saMode`: 사용자 선택 모드 ('think', 'deepthink', 'ultrathink')
+- `saIterations`: 반복 횟수 (모든 모드 100회 고정)
+- `initialTemperature`: 모드별 초기 온도 (Think: 10,000 / Deep Think: 50,000 / Ultra Think: 100,000)
+- `absoluteTemperature`: 모드별 최소 온도 (Think: 0.001 / Deep Think: 0.00001 / Ultra Think: 0.000001)
+- `coolingRate`: 냉각률 (0.99 고정)
+
+**참고**:
+- LocalStorage 키: `mts_sa_mode`
+- 사용자 선택은 자동 저장되어 다음 방문 시에도 유지됨
 
 ---
 
