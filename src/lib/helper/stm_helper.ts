@@ -880,17 +880,20 @@ export class StmHelper {
     }
 
     /**
-     * sequenceString이 동일한 경우 중복 제거
+     * 중복 제거: sequenceString, adduct, weight, molecularWeight가 모두 동일한 경우
+     * Note(reasons)는 달라도 되지만 나머지가 같으면 중복으로 판단
      * 첫 번째로 발견된 것만 유지
      */
     private static removeDuplicateSequences(possibilities: Possibility[]): Possibility[] {
-        const seenSequences = new Set<string>();
+        const seenKeys = new Set<string>();
         const uniquePossibilities: Possibility[] = [];
 
         for (const poss of possibilities) {
-            const key = poss.sequenceString;
-            if (!seenSequences.has(key)) {
-                seenSequences.add(key);
+            // 중복 판단 키: sequenceString + adduct + weight + molecularWeight
+            const key = `${poss.sequenceString}|${poss.adduct}|${poss.weight.toFixed(5)}|${poss.molecularWeight.toFixed(5)}`;
+
+            if (!seenKeys.has(key)) {
+                seenKeys.add(key);
                 uniquePossibilities.push(poss);
             }
         }
