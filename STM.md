@@ -349,12 +349,9 @@ finalWeight = baseWeight + potentialModifications + adduct_weight
 
 **수집 순서**:
 1. **시퀀스 레벨 절단**: reinitiation, Premature termination
-2. **개별 아미노산 레벨**: ncAA incorporated, skipping
-3. **기본값**: Only natural AA (변화 없는 경우)
+2. **개별 아미노산 레벨**: skipping
 
 #### B. Reason 타입 정의
-- **Only natural AA**: 표준 번역, 변화 없음
-- **ncAA incorporated**: 하나 이상의 ncAA 사용
 - **reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
 - **Premature termination**: 뒤쪽 절단으로 인한 부분 시퀀스
 - **skipping**: 코돈 건너뛰기 발생

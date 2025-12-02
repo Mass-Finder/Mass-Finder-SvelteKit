@@ -347,9 +347,9 @@ export class StmHelper {
             // 개별 아미노산 레벨 reason 수집
             updatedSeqArr.forEach((item, index) => {
                 if (!item.natural) {
-                    if (item.candidate && !item.skipping) {
-                        reasons.push("ncAA incorporated");
-                    }
+                    // if (item.candidate && !item.skipping) {
+                    //     reasons.push("ncAA incorporated");
+                    // }
                     if (item.skipping) {
                         reasons.push("Ribosome skipping");
                     }
@@ -362,9 +362,9 @@ export class StmHelper {
             });
 
             // Only natural AA는 아무런 변화가 없는 경우에만 적용
-            if (reasons.length === 0) {
-                reasons.push("Only natural AA");
-            }
+            // if (reasons.length === 0) {
+            //     reasons.push("Only natural AA");
+            // }
 
             // 각 ionType에 대해 별도의 possibility 생성
             for (const ionType of ionTypes) {
