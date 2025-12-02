@@ -21,7 +21,7 @@
 
       // Validation: Molecular properties must be calculated
       if (!$molecularFormula || !$monoisotopicWeight || !$molecularWeight) {
-        alert('Please calculate molecular properties first.');
+        alert('Please calculate molecular weight first.');
         return;
       }
 
@@ -90,7 +90,7 @@
 
   
   <main class="container mt-5 p-4 bg-light rounded shadow">
-    <h1 class="text-center mb-4">Chemical Draw Canvas</h1>
+    <h1 class="text-center mb-4">calculate molecular weight</h1>
 
     <!-- Title Input -->
     <div class="mb-3">
@@ -118,7 +118,7 @@
     <!-- Save Button -->
     <div class="mb-4">
       <button class="btn btn-primary btn-lg w-100" on:click={saveData}>
-        Calculate & Save Data
+        save ncAA
       </button>
     </div>
 

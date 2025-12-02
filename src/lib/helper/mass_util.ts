@@ -175,7 +175,7 @@ export function removeSingleFSequences(inputList: AminoModel[]): AminoModel[] {
     });
 }
 
-// Known Sequence와 RNA 변환 시퀀스 간의 중복 처리 함수
+// Fixed sequence와 RNA 변환 시퀀스 간의 중복 처리 함수
 export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedSequence: string): {
     finalKnownSequence: string,
     remainingRnaSequence: string,
@@ -197,11 +197,11 @@ export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedS
         };
     }
 
-    // Known Sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
+    // Fixed sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
     const overlapPosition = rnaConvertedSequence.indexOf(knownSequence);
     
     if (overlapPosition !== -1) {
-        // 중복이 있는 경우: Known Sequence를 제거하고 나머지 RNA 시퀀스 반환
+        // 중복이 있는 경우: Fixed sequence를 제거하고 나머지 RNA 시퀀스 반환
         const beforeKnown = rnaConvertedSequence.substring(0, overlapPosition);
         const afterKnown = rnaConvertedSequence.substring(overlapPosition + knownSequence.length);
         const remainingRnaSequence = beforeKnown + afterKnown;
@@ -217,11 +217,11 @@ export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedS
         };
     }
 
-    // RNA 변환 시퀀스가 Known Sequence에 포함되어 있는지 확인
+    // RNA 변환 시퀀스가 Fixed sequence에 포함되어 있는지 확인
     const rnaInKnownPosition = knownSequence.indexOf(rnaConvertedSequence);
     
     if (rnaInKnownPosition !== -1) {
-        // RNA 시퀀스가 Known Sequence에 포함된 경우: Known Sequence만 사용
+        // RNA 시퀀스가 Fixed sequence에 포함된 경우: Fixed sequence만 사용
         return {
             finalKnownSequence: knownSequence,
             remainingRnaSequence: '',
@@ -233,7 +233,7 @@ export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedS
         };
     }
 
-    // 부분 중복 확인 (Known Sequence의 끝과 RNA 시퀀스의 시작이 겹치는 경우)
+    // 부분 중복 확인 (Fixed sequence의 끝과 RNA 시퀀스의 시작이 겹치는 경우)
     for (let i = 1; i <= Math.min(knownSequence.length, rnaConvertedSequence.length); i++) {
         const knownSuffix = knownSequence.substring(knownSequence.length - i);
         const rnaPrefix = rnaConvertedSequence.substring(0, i);
@@ -254,7 +254,7 @@ export function processKnownSequenceOverlap(knownSequence: string, rnaConvertedS
         }
     }
 
-    // RNA 시퀀스의 끝과 Known Sequence의 시작이 겹치는 경우
+    // RNA 시퀀스의 끝과 Fixed sequence의 시작이 겹치는 경우
     for (let i = 1; i <= Math.min(knownSequence.length, rnaConvertedSequence.length); i++) {
         const rnaSuffix = rnaConvertedSequence.substring(rnaConvertedSequence.length - i);
         const knownPrefix = knownSequence.substring(0, i);

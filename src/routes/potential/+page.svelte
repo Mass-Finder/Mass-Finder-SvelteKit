@@ -86,7 +86,7 @@
 
     // Validation: Molecular properties must be calculated
     if (!$molecularFormula || !$monoisotopicWeight || !$molecularWeight) {
-      alert('Please calculate molecular properties first.');
+      alert('Please calculate molecular weight first.');
       return;
     }
 

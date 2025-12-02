@@ -284,19 +284,19 @@
       return { hasOverlap: false, message: "" };
     }
 
-    // Known Sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
+    // Fixed sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
     if (converted.indexOf(known) !== -1) {
       return {
         hasOverlap: true,
-        message: `Known Sequence "${known}" is already included in the RNA sequence. Duplicate portion will be automatically removed.`,
+        message: `Fixed sequence "${known}" is already included in the RNA sequence. Duplicate portion will be automatically removed.`,
       };
     }
 
-    // RNA 변환 시퀀스가 Known Sequence에 포함되어 있는지 확인
+    // RNA 변환 시퀀스가 Fixed sequence에 포함되어 있는지 확인
     if (known.indexOf(converted) !== -1) {
       return {
         hasOverlap: true,
-        message: `RNA sequence is already included in Known Sequence "${known}". Only Known Sequence will be used.`,
+        message: `RNA sequence is already included in Fixed sequence "${known}". Only Fixed sequence will be used.`,
       };
     }
 
@@ -308,7 +308,7 @@
       if (knownSuffix === convertedPrefix) {
         return {
           hasOverlap: true,
-          message: `Partial overlap detected: "${knownSuffix}" appears at the end of Known Sequence and start of RNA sequence. Duplicate will be automatically removed.`,
+          message: `Partial overlap detected: "${knownSuffix}" appears at the end of Fixed sequence and start of RNA sequence. Duplicate will be automatically removed.`,
         };
       }
 
@@ -318,7 +318,7 @@
       if (convertedSuffix === knownPrefix) {
         return {
           hasOverlap: true,
-          message: `Partial overlap detected: "${convertedSuffix}" appears at the end of RNA sequence and start of Known Sequence. Duplicate will be automatically removed.`,
+          message: `Partial overlap detected: "${convertedSuffix}" appears at the end of RNA sequence and start of Fixed sequence. Duplicate will be automatically removed.`,
         };
       }
     }
@@ -408,14 +408,14 @@
 
   <div class="mb-3">
     <label for="essential-sequence" class="form-label fw-bold"
-      >Known Sequence (Optional)</label
+      >Fixed sequence (Optional)</label
     >
     <input
       type="text"
       id="essential-sequence"
       bind:value={knownSequence}
       class="form-control"
-      placeholder="Known Sequence"
+      placeholder="Fixed sequence"
       on:input={handleknownSequenceInput}
     />
   </div>

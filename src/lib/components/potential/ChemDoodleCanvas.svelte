@@ -662,7 +662,7 @@ M  END`,
       on:click={calculateChemical}
       disabled={calculateDisabled}
     >
-      Calculate Molecular Properties
+    calculate molecular weight
     </button>
   </div>
 

@@ -210,7 +210,7 @@ function resetForm() {
 3. Calculate 버튼으로 분자 속성 계산
 
 ### 저장 단계
-1. "Calculate & Save Data" 버튼 클릭
+1. "save ncAA" 버튼 클릭
 2. 타이틀 검증 (공백, 중복 체크)
 3. 분자 속성 검증 (계산 완료 확인)
 4. LocalStorage에 데이터 추가
@@ -381,7 +381,7 @@ const ncAAWeight = savedNcAA.find(item => item.title === 'B')?.monoisotopicWeigh
 1. Draw 페이지 접속
 2. "Saved Title"에 `B` 입력 (ncAA 식별자)
 3. ChemDoodle 캔버스에서 비표준 아미노산 구조 그리기
-4. "Calculate & Save Data" 버튼 클릭
+4. "save ncAA" 버튼 클릭
 5. 분자 속성 자동 계산 및 저장 완료
 6. "Saved Molecule Data" 섹션에서 확인
 

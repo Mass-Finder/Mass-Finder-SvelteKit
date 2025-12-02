@@ -62,19 +62,19 @@ export class MassFinderHelper {
         dataMap = { ...aminoMap };
         moleMap = { ...molecularMap };
         
-        // 참조 시퀀스 설정 및 Known Sequence와의 중복 처리
+        // 참조 시퀀스 설정 및 Fixed sequence와의 중복 처리
         let processedInitAminos = initAminos;
         if (proteinSequence) {
             const isRnaSequence = /^[AUGC]+$/.test(proteinSequence) && proteinSequence.length % 3 === 0;
             const rnaConvertedSequence = isRnaSequence ? this.convertRnaToAminoAcids(proteinSequence) : proteinSequence;
             
-            // Known Sequence와 RNA 변환 시퀀스 간의 중복 처리
+            // Fixed sequence와 RNA 변환 시퀀스 간의 중복 처리
             const overlapResult = processKnownSequenceOverlap(initAminos, rnaConvertedSequence);
             
-            // 처리된 Known Sequence 사용
+            // 처리된 Fixed sequence 사용
             processedInitAminos = overlapResult.finalKnownSequence;
             
-            // 참조 시퀀스는 중복 제거된 나머지 RNA 시퀀스와 Known Sequence 결합
+            // 참조 시퀀스는 중복 제거된 나머지 RNA 시퀀스와 Fixed sequence 결합
             if (overlapResult.remainingRnaSequence) {
                 referenceSequence = processedInitAminos + overlapResult.remainingRnaSequence;
             } else {

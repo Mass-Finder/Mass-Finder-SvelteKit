@@ -351,7 +351,7 @@ export class StmHelper {
                         reasons.push("ncAA incorporated");
                     }
                     if (item.skipping) {
-                        reasons.push("skipping");
+                        reasons.push("Ribosome skipping");
                     }
                 }
             });

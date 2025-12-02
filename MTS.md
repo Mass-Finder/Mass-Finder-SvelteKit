@@ -20,11 +20,11 @@ X-MAS의 MTS (Mass to Sequence) 기능은 감지된 분자량으로부터 가능
 
 ### 2. 알려진 시퀀스 활용
 **As a** 연구자  
-**I want to** 이미 알고 있는 부분 시퀀스(Known Sequence)를 제약 조건으로 사용하고 싶다  
+**I want to** 이미 알고 있는 부분 시퀀스(Fixed sequence)를 제약 조건으로 사용하고 싶다  
 **So that** 더 정확한 예측 결과를 얻을 수 있다
 
 **Acceptance Criteria:**
-- Known Sequence는 선택사항
+- Fixed sequence는 선택사항
 - 입력된 시퀀스는 모든 결과에 포함되어야 함
 - 선택된 아미노산과 ncAA만 유효한 입력으로 인정
 - 자동으로 대문자 변환 처리
@@ -65,7 +65,7 @@ X-MAS의 MTS (Mass to Sequence) 기능은 감지된 분자량으로부터 가능
 
 ### 6. 시퀀스 중복 감지 및 처리
 **As a** 사용자  
-**I want to** Known Sequence와 RNA 시퀀스 간 중복을 자동으로 감지하고 처리하고 싶다  
+**I want to** Fixed sequence와 RNA 시퀀스 간 중복을 자동으로 감지하고 처리하고 싶다  
 **So that** 중복된 정보로 인한 오류를 방지할 수 있다
 
 **Acceptance Criteria:**
@@ -88,7 +88,7 @@ if (detectedMass === null) {
 }
 ```
 
-#### 2. Known Sequence 검증
+#### 2. Fixed sequence 검증
 ```typescript
 // 조건: 선택된 아미노산 또는 ncAA만 허용
 function validateknownSequence() {
@@ -155,7 +155,7 @@ function checkSequenceOverlap(known, converted) {
     
     // 1. 완전 포함 검사
     if (converted.indexOf(known) !== -1) {
-        return { hasOverlap: true, message: "Known Sequence included in RNA" };
+        return { hasOverlap: true, message: "Fixed sequence included in RNA" };
     }
     
     // 2. 역방향 완전 포함 검사
@@ -568,7 +568,7 @@ interface AminoModel {
     sequenceSimilarity?: number;      // 시퀀스 유사도 (%)
     formyType?: FormyType;           // 포밀레이션 타입
     ionType?: IonType;               // 이온 타입
-    essentialSeq?: string;           // Known sequence
+    essentialSeq?: string;           // Fixed sequence
 }
 ```
 

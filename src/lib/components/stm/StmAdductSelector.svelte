@@ -32,7 +32,7 @@
 </script>
 
 <div class="form-group">
-  <label class="form-label fw-bold">Adduct (Multiple Selection)</label>
+  <label class="form-label fw-bold">Adducts (Multiple Selection)</label>
   
   <div class="adduct-groups">
     <!-- Positive Group -->

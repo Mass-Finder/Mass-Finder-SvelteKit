@@ -179,7 +179,7 @@
                         <p class="text-muted mb-3 lh-base">Determine optimal amino acid sequences from detected molecular masses using simulated annealing algorithms.</p>
                         <ul class="module-features ps-0 mb-0">
                             <li class="mb-2">Simulated annealing optimization</li>
-                            <li class="mb-2">Known sequence constraints</li>
+                            <li class="mb-2">Fixed sequence constraints</li>
                             <li class="mb-2">RNA reference integration</li>
                             <li class="mb-2">Formylation & adduct handling</li>
                         </ul>
