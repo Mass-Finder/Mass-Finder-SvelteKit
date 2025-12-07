@@ -242,141 +242,147 @@ export class StmHelper {
             baseWeight -= MassFinderHelper.getWaterWeight(baseCount);
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
 
-            let updatedSeqArr = seqArr;
-            let finalWeight = baseWeight;
-            let finalMolWeight = baseMolWeight;
+            // Generate power sets for N-terminus and C-terminus modifications
+            // This creates all possible combinations (0개, 1개, 2개, 3개, 4개 적용)
+            const nTerminusSubsets = StmHelper.generatePowerSet(nTerminusMods);
+            const cTerminusSubsets = StmHelper.generatePowerSet(cTerminusMods);
 
-            // Apply Single-site Potential Modifications (N-terminus and C-terminus only)
-            // Note: Side Chain modifications are handled separately after ionType generation
-            const appliedModifications: Array<{mod: any, position: number}> = [];
+            // For each combination of N-terminus and C-terminus modifications
+            for (const nSubset of nTerminusSubsets) {
+                for (const cSubset of cTerminusSubsets) {
+                    let updatedSeqArr = seqArr.map(item => ({ ...item }));
+                    let finalWeight = baseWeight;
+                    let finalMolWeight = baseMolWeight;
 
-            // N-terminus modifications
-            for (const mod of nTerminusMods) {
-                const modWeight = parseFloat(mod.monoisotopicWeight);
-                const modMolWeight = parseFloat(mod.molecularWeight);
+                    // Apply Single-site Potential Modifications (N-terminus and C-terminus only)
+                    // Note: Side Chain modifications are handled separately after ionType generation
+                    const appliedModifications: Array<{mod: any, position: number}> = [];
 
-                if (true) { // Always true for nTerminusMods
-                    // N-terminus: 맨 앞 아미노산 체크
-                    if (!hasInternalInitiationAtStart(seqArr)) {
-                        const firstAAIndex = seqArr.findIndex(item => item.letter !== "");
-                        if (firstAAIndex !== -1) {
-                            const firstAA = seqArr[firstAAIndex];
-                            if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
-                                appliedModifications.push({mod, position: firstAAIndex});
+                    // Apply selected N-terminus modifications from current subset
+                    for (const mod of nSubset) {
+                        const modWeight = parseFloat(mod.monoisotopicWeight);
+                        const modMolWeight = parseFloat(mod.molecularWeight);
 
-                                // N-terminus: 추가 개념 - 단순히 modification 질량을 더함
-                                finalWeight = finalWeight + modWeight;
-                                finalMolWeight = finalMolWeight + modMolWeight;
+                        // N-terminus: 맨 앞 아미노산 체크
+                        if (!hasInternalInitiationAtStart(seqArr)) {
+                            const firstAAIndex = seqArr.findIndex(item => item.letter !== "");
+                            if (firstAAIndex !== -1) {
+                                const firstAA = seqArr[firstAAIndex];
+                                if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
+                                    appliedModifications.push({mod, position: firstAAIndex});
+
+                                    // N-terminus: 추가 개념 - 단순히 modification 질량을 더함
+                                    finalWeight = finalWeight + modWeight;
+                                    finalMolWeight = finalMolWeight + modMolWeight;
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            // C-terminus modifications
-            for (const mod of cTerminusMods) {
-                const modWeight = parseFloat(mod.monoisotopicWeight);
-                const modMolWeight = parseFloat(mod.molecularWeight);
+                    // Apply selected C-terminus modifications from current subset
+                    for (const mod of cSubset) {
+                        const modWeight = parseFloat(mod.monoisotopicWeight);
+                        const modMolWeight = parseFloat(mod.molecularWeight);
 
-                if (true) { // Always true for cTerminusMods
-                    // C-terminus: 맨 뒤 아미노산 체크
-                    if (!hasPrematureTerminationAtEnd(seqArr)) {
-                        // 뒤에서부터 찾기
-                        let lastAAIndex = -1;
-                        for (let i = seqArr.length - 1; i >= 0; i--) {
-                            if (seqArr[i].letter !== "") {
-                                lastAAIndex = i;
-                                break;
+                        // C-terminus: 맨 뒤 아미노산 체크
+                        if (!hasPrematureTerminationAtEnd(seqArr)) {
+                            // 뒤에서부터 찾기
+                            let lastAAIndex = -1;
+                            for (let i = seqArr.length - 1; i >= 0; i--) {
+                                if (seqArr[i].letter !== "") {
+                                    lastAAIndex = i;
+                                    break;
+                                }
                             }
-                        }
-                        if (lastAAIndex !== -1) {
-                            const lastAA = seqArr[lastAAIndex];
-                            if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
-                                appliedModifications.push({mod, position: lastAAIndex});
+                            if (lastAAIndex !== -1) {
+                                const lastAA = seqArr[lastAAIndex];
+                                if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
+                                    appliedModifications.push({mod, position: lastAAIndex});
 
-                                // C-terminus: 추가 개념 - 단순히 modification 질량을 더함
-                                finalWeight = finalWeight + modWeight;
-                                finalMolWeight = finalMolWeight + modMolWeight;
+                                    // C-terminus: 추가 개념 - 단순히 modification 질량을 더함
+                                    finalWeight = finalWeight + modWeight;
+                                    finalMolWeight = finalMolWeight + modMolWeight;
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            // Update updatedSeqArr with Single-site modifications
-            for (const {mod, position} of appliedModifications) {
-                if (position >= 0 && position < updatedSeqArr.length) {
-                    updatedSeqArr[position] = {
-                        ...updatedSeqArr[position],
-                        singleSiteModified: true,
-                        singleSiteModification: mod.structureName,
-                        singleSiteCondition: mod.condition  // 'N-terminus' or 'C-terminus'
-                    };
-                }
-            }
-
-            // sequenceString 생성 시 Single-site modification도 고려
-            // N-terminus: modification + letter (fM)
-            // C-terminus: letter + modification (Mn)
-            // Note: Side Chain modification은 나중에 별도로 처리됨
-            const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => {
-                if (x.singleSiteModified && x.singleSiteModification) {
-                    if (x.singleSiteCondition === 'N-terminus') {
-                        return x.singleSiteModification + x.letter;  // fM
-                    } else if (x.singleSiteCondition === 'C-terminus') {
-                        return x.letter + x.singleSiteModification;  // Mn
+                    // Update updatedSeqArr with Single-site modifications
+                    for (const {mod, position} of appliedModifications) {
+                        if (position >= 0 && position < updatedSeqArr.length) {
+                            updatedSeqArr[position] = {
+                                ...updatedSeqArr[position],
+                                singleSiteModified: true,
+                                singleSiteModification: mod.structureName,
+                                singleSiteCondition: mod.condition  // 'N-terminus' or 'C-terminus'
+                            };
+                        }
                     }
-                }
-                return x.letter;
-            }).join("");
 
-            // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
-            const reasons: string[] = [];
+                    // sequenceString 생성 시 Single-site modification도 고려
+                    // N-terminus: modification + letter (fM)
+                    // C-terminus: letter + modification (Mn)
+                    // Note: Side Chain modification은 나중에 별도로 처리됨
+                    const sequenceString = updatedSeqArr.filter(x => x.letter !== "").map(x => {
+                        if (x.singleSiteModified && x.singleSiteModification) {
+                            if (x.singleSiteCondition === 'N-terminus') {
+                                return x.singleSiteModification + x.letter;  // fM
+                            } else if (x.singleSiteCondition === 'C-terminus') {
+                                return x.letter + x.singleSiteModification;  // Mn
+                            }
+                        }
+                        return x.letter;
+                    }).join("");
 
-            // 시퀀스 레벨 절단 확인 (reinitiation, Premature termination)
-            const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
-            const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
+                    // 사유(reason) 수집 - 동일한 reason이 여러 번 발생하면 모두 기록
+                    const reasons: string[] = [];
 
-            if (hasInternalInitiation) {
-                reasons.push("reinitiation");
-            }
-            if (hasPrematureTermination) {
-                reasons.push("Premature termination");
-            }
+                    // 시퀀스 레벨 절단 확인 (reinitiation, Premature termination)
+                    const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
+                    const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
 
-            // 개별 아미노산 레벨 reason 수집
-            updatedSeqArr.forEach((item, index) => {
-                if (!item.natural) {
-                    // if (item.candidate && !item.skipping) {
-                    //     reasons.push("ncAA incorporated");
+                    if (hasInternalInitiation) {
+                        reasons.push("reinitiation");
+                    }
+                    if (hasPrematureTermination) {
+                        reasons.push("Premature termination");
+                    }
+
+                    // 개별 아미노산 레벨 reason 수집
+                    updatedSeqArr.forEach((item, index) => {
+                        if (!item.natural) {
+                            // if (item.candidate && !item.skipping) {
+                            //     reasons.push("ncAA incorporated");
+                            // }
+                            if (item.skipping) {
+                                reasons.push("Ribosome skipping");
+                            }
+                        }
+                    });
+
+                    // Single-site Potential Modifications를 reason에 추가
+                    appliedModifications.forEach(({mod}) => {
+                        reasons.push(`${mod.name}`);
+                    });
+
+                    // Only natural AA는 아무런 변화가 없는 경우에만 적용
+                    // if (reasons.length === 0) {
+                    //     reasons.push("Only natural AA");
                     // }
-                    if (item.skipping) {
-                        reasons.push("Ribosome skipping");
+
+                    // 각 ionType에 대해 별도의 possibility 생성
+                    for (const ionType of ionTypes) {
+                        const adductWeight = ionType === 'none' ? 0 : getIonWeight(ionType);
+                        possibilities.push({
+                            sequence: updatedSeqArr,
+                            sequenceString: sequenceString,
+                            reasons: reasons,
+                            weight: finalWeight + adductWeight,
+                            molecularWeight: finalMolWeight + adductWeight,
+                            adduct: ionType
+                        });
                     }
                 }
-            });
-
-            // Single-site Potential Modifications를 reason에 추가
-            appliedModifications.forEach(({mod}) => {
-                reasons.push(`${mod.name}`);
-            });
-
-            // Only natural AA는 아무런 변화가 없는 경우에만 적용
-            // if (reasons.length === 0) {
-            //     reasons.push("Only natural AA");
-            // }
-
-            // 각 ionType에 대해 별도의 possibility 생성
-            for (const ionType of ionTypes) {
-                const adductWeight = ionType === 'none' ? 0 : getIonWeight(ionType);
-                possibilities.push({
-                    sequence: updatedSeqArr,
-                    sequenceString: sequenceString,
-                    reasons: reasons,
-                    weight: finalWeight + adductWeight,
-                    molecularWeight: finalMolWeight + adductWeight,
-                    adduct: ionType
-                });
             }
         }
 
@@ -390,6 +396,22 @@ export class StmHelper {
         const finalPossibilities = StmHelper.removeDuplicateSequences(possibilitiesWithCrosslinking);
 
         return finalPossibilities;
+    }
+
+    /**
+     * Generate power set (all subsets) of an array
+     * Example: [A, B] => [[], [A], [B], [A, B]]
+     * 0개, 1개, 2개, ... 모든 조합 생성
+     */
+    private static generatePowerSet<T>(array: T[]): T[][] {
+        const result: T[][] = [[]];  // 빈 조합부터 시작
+        for (const item of array) {
+            const length = result.length;
+            for (let i = 0; i < length; i++) {
+                result.push([...result[i], item]);
+            }
+        }
+        return result;
     }
 
     /**

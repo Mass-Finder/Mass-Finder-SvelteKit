@@ -93,23 +93,92 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
    - **예시**: `MCCCRRC` + N-terminus `f` (target: M) → `fMCCCRRC`
    - **질량 계산**: `최종 질량 = 원래 질량 + 수식 질량`
    - **표시**: 수식명 + 아미노산 (예: `fM`)
+   - **조합 생성**: 선택된 모든 N-terminus 수식의 power set 생성 (0개, 1개, 2개, ... 모두 적용)
 
 2. **C-terminus** (C-말단):
    - **개념**: 아미노산을 대체하지 않고 뒤에 수식을 **추가**
    - **예시**: `MCCCRRC` + C-terminus `n` (target: C) → `MCCCRRCn`
    - **질량 계산**: `최종 질량 = 원래 질량 + 수식 질량`
    - **표시**: 아미노산 + 수식명 (예: `Cn`)
+   - **조합 생성**: 선택된 모든 C-terminus 수식의 power set 생성 (0개, 1개, 2개, ... 모두 적용)
 
 3. **Side Chain** (측쇄):
    - **개념**: 타겟 아미노산을 수식으로 **완전 대체**
    - **예시**: `MCCCRRC` + Side Chain `d1` (target: C) → `Md1CCRRC`
    - **질량 계산**: `최종 질량 = 원래 질량 - 타겟 질량 + 수식 질량`
    - **표시**: 수식명만 (예: `d1`)
+   - **조합 생성**: 재귀적으로 0개, 1개, 2개, ... N개 적용 가능성 생성
 
 **적용 조건**:
 - 타겟 아미노산이 시퀀스에 존재해야 함
 - ALL 옵션: 모든 타겟 위치에 적용
 - 각 수식은 LocalStorage에 저장된 사용자 정의 데이터 사용
+
+**Power Set 조합 생성 (N-terminus & C-terminus)**:
+**파일**: `src/lib/helper/stm_helper.ts:245-248, 400-409`
+
+사용자가 최대 4개의 Potential Modifications를 선택할 수 있으며, **조건이 맞더라도 모든 경우의 수가 자동으로 계산됩니다**:
+- 0개 적용 (아무것도 적용 안됨)
+- 1개만 적용
+- 2개만 적용
+- 3개만 적용
+- 4개 모두 적용
+
+시스템은 선택된 수식들의 **모든 가능한 조합(Power Set)**을 자동으로 생성합니다:
+
+**예시 1**: N-terminus 수식 2개 선택 (f1, f2)
+- 생성되는 조합: `[]` (0개), `[f1]`, `[f2]`, `[f1, f2]`
+- 총 **4가지** 가능성 생성 (2²)
+
+**예시 2**: N-terminus 2개 (f1, f2) + C-terminus 2개 (n1, n2) 선택
+- N-terminus 조합: 4가지 (2²)
+- C-terminus 조합: 4가지 (2²)
+- 총 **16가지** 가능성 생성 (4 × 4)
+
+**예시 3**: N-terminus 1개 (f1) + C-terminus 3개 (n1, n2, n3) 선택
+- N-terminus 조합: 2가지 (2¹)
+- C-terminus 조합: 8가지 (2³)
+- 총 **16가지** 가능성 생성 (2 × 8)
+
+**예시 4**: N-terminus 4개 선택 시
+- 총 **16가지** 조합 (2⁴)
+- 0개 적용: 1가지
+- 1개 적용: 4가지
+- 2개 적용: 6가지
+- 3개 적용: 4가지
+- 4개 적용: 1가지
+
+**알고리즘**:
+```typescript
+// Power set 생성 함수
+private static generatePowerSet<T>(array: T[]): T[][] {
+    const result: T[][] = [[]];  // 빈 조합부터 시작
+    for (const item of array) {
+        const length = result.length;
+        for (let i = 0; i < length; i++) {
+            result.push([...result[i], item]);
+        }
+    }
+    return result;
+}
+
+// N-terminus와 C-terminus의 모든 조합 생성
+const nTerminusSubsets = generatePowerSet(nTerminusMods);
+const cTerminusSubsets = generatePowerSet(cTerminusMods);
+
+for (const nSubset of nTerminusSubsets) {
+    for (const cSubset of cTerminusSubsets) {
+        // 현재 조합만 적용한 possibility 생성
+    }
+}
+```
+
+**핵심 원리**:
+- 사용자가 4개를 선택해도, 실제로 조건에 맞지 않으면 0개 적용된 결과도 포함
+- 조건에 맞으면 1개, 2개, 3개, 4개 적용된 모든 경우가 결과에 포함
+- 각 조합은 별도의 possibility로 생성되어 결과 테이블에 표시
+
+**참고**: Side Chain modifications는 별도의 재귀 알고리즘을 사용하여 0개부터 N개까지 모든 적용 개수를 생성합니다 (applySideChainRecursive 함수).
 
 **저장 데이터 구조**:
 ```javascript
