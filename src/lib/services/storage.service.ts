@@ -13,7 +13,7 @@ import { logger } from '../utils/logger';
 /**
  * 저장 옵션
  */
-export interface StorageOptions {
+export interface StorageOptions<T = unknown> {
   /**
    * 최대 크기 (MB)
    * @default 5
@@ -23,7 +23,7 @@ export interface StorageOptions {
   /**
    * 데이터 유효성 검증 함수
    */
-  validator?: (data: any) => boolean;
+  validator?: (data: T) => boolean;
 
   /**
    * 만료 시간 (밀리초)
@@ -75,7 +75,7 @@ export class StorageService {
    * });
    * ```
    */
-  save<T>(key: string, data: T, options?: StorageOptions): boolean {
+  save<T>(key: string, data: T, options?: StorageOptions<T>): boolean {
     if (!this.isAvailable) {
       logger.warn(`Cannot save to localStorage: not available (key: ${key})`);
       return false;
@@ -138,7 +138,7 @@ export class StorageService {
    * });
    * ```
    */
-  load<T>(key: string, options?: StorageOptions): T | null {
+  load<T>(key: string, options?: StorageOptions<T>): T | null {
     if (!this.isAvailable) {
       return null;
     }
@@ -320,7 +320,7 @@ export class StorageService {
         const item = localStorage.getItem(key);
         if (!item) continue;
 
-        const wrapper = JSON.parse(item) as StorageWrapper<any>;
+        const wrapper = JSON.parse(item) as StorageWrapper<unknown>;
         if (wrapper.expiresAt && now > wrapper.expiresAt) {
           this.remove(key);
           cleanedCount++;

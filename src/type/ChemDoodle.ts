@@ -1,10 +1,39 @@
+// ChemDoodle type definitions
+// Note: ChemDoodle is an external library, so some types are kept as 'unknown' for flexibility
+
 declare namespace ChemDoodle {
-    // Add relevant types and interfaces here
+    // Molecule structure (simplified)
+    interface Molecule {
+        atoms: unknown[];
+        bonds: unknown[];
+        [key: string]: unknown;
+    }
+
+    // Canvas options
+    interface CanvasOptions {
+        [key: string]: unknown;
+    }
+
+    // Calculation options
+    interface CalculationOptions {
+        [key: string]: unknown;
+    }
+
+    // Calculation result
+    interface CalculationResult {
+        [key: string]: unknown;
+    }
+
+    // Styles object
+    interface Styles {
+        [key: string]: unknown;
+    }
+
     class SketcherCanvas {
-        constructor(id: string, width: number, height: number, options: any);
-        getMolecule(): any;
+        constructor(id: string, width: number, height: number, options: CanvasOptions);
+        getMolecule(): Molecule;
         repaint(): void;
-        styles: any;
+        styles: Styles;
     }
 
     namespace ELEMENT {
@@ -13,25 +42,29 @@ declare namespace ChemDoodle {
     }
 
     namespace iChemLabs {
-        function calculate(molecule: any, options: any, callback: (content: any) => void): any;
+        function calculate(
+            molecule: Molecule,
+            options: CalculationOptions,
+            callback: (content: CalculationResult) => void
+        ): unknown;
     }
 
     namespace lib {
-        let jQuery: any;
+        // jQuery is external, keep as unknown
+        let jQuery: unknown;
     }
 
     class ViewerCanvas {
         constructor(id: string, width: number, height: number);
-        loadMolecule(data : any): any;
+        loadMolecule(data: Molecule | string): unknown;
         repaint(): void;
-        styles: any;
+        styles: Styles;
     }
 
-    // 추가된 io 네임스페이스
     namespace io {
         class JSONInterpreter {
-            molTo(molecule: any): string; 
-            molFrom(json: string): any;
+            molTo(molecule: Molecule): string;
+            molFrom(json: string): Molecule;
         }
     }
 }

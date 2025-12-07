@@ -33,7 +33,7 @@ class Logger {
    * @param message - 로그 메시지
    * @param args - 추가 인자
    */
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
       console.log(this.format('DEBUG', message), ...args);
     }
@@ -44,7 +44,7 @@ class Logger {
    * @param message - 로그 메시지
    * @param args - 추가 인자
    */
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
       console.info(this.format('INFO', message), ...args);
     }
@@ -55,7 +55,7 @@ class Logger {
    * @param message - 로그 메시지
    * @param args - 추가 인자
    */
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog('warn')) {
       console.warn(this.format('WARN', message), ...args);
     }
@@ -66,7 +66,7 @@ class Logger {
    * @param message - 로그 메시지
    * @param args - 추가 인자
    */
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
       console.error(this.format('ERROR', message), ...args);
     }

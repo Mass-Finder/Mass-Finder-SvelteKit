@@ -17,10 +17,14 @@ export interface Bond {
     pid: number;
 }
 
+export interface Ring {
+    atoms: Atom[];
+}
+
 export interface MoleculeJson {
     atoms: Atom[];
     bonds: Bond[];
-    rings: any[];
+    rings: Ring[];
 }
 
 export class Molecule {

@@ -1,4 +1,4 @@
-import type { IonType, FormyType } from '../../type/Types';
+import type { IonType, FormyType, JsonObject } from '../../type/Types';
 
 export class AminoModel {
     code?: string;
@@ -29,24 +29,24 @@ export class AminoModel {
         this.totalCount = data.totalCount;
     }
 
-    static fromJson(json: { [key: string]: any }): AminoModel {
+    static fromJson(json: JsonObject): AminoModel {
         return new AminoModel({
-            code: json['code'],
-            totalWeight: json['totalWeight'],
-            waterWeight: json['waterWeight'],
-            weight: json['weight'],
-            molecularWeight: json['molecularWeight'],
-            formyType: json['formyType'] as FormyType,
-            ionType: json['ionType'] as IonType,
-            essentialSeq: json['essentialSeq'],
-            similarity: json['similarity'],
-            sequenceSimilarity: json['sequenceSimilarity'],
-            matchedCount: json['matchedCount'],
-            totalCount: json['totalCount']
+            code: json['code'] as string | undefined,
+            totalWeight: json['totalWeight'] as number | undefined,
+            waterWeight: json['waterWeight'] as number | undefined,
+            weight: json['weight'] as number | undefined,
+            molecularWeight: json['molecularWeight'] as number | undefined,
+            formyType: json['formyType'] as FormyType | undefined,
+            ionType: json['ionType'] as IonType | undefined,
+            essentialSeq: json['essentialSeq'] as string | undefined,
+            similarity: json['similarity'] as number | undefined,
+            sequenceSimilarity: json['sequenceSimilarity'] as number | undefined,
+            matchedCount: json['matchedCount'] as number | undefined,
+            totalCount: json['totalCount'] as number | undefined
         });
     }
 
-    toJson(): { [key: string]: any } {
+    toJson(): JsonObject {
         return {
             code: this.code,
             totalWeight: this.totalWeight,

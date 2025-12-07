@@ -27,7 +27,7 @@ export type DistanceOperator = '>' | '=' | '<';
 interface BasePotentialModification {
   name: string;
   structureName: string;
-  moleculeJson: any;
+  moleculeJson: MoleculeJson;
   molecularFormula: string;
   monoisotopicWeight: string;
   molecularWeight: string;
@@ -52,3 +52,48 @@ export interface CrosslinkingPotentialModification extends BasePotentialModifica
 
 // Union type for all Potential Modifications
 export type PotentialModification = SingleSitePotentialModification | CrosslinkingPotentialModification;
+
+// ncAA (Non-Canonical Amino Acid) Interface
+export interface NcAA {
+  title: string;
+  moleculeJson: MoleculeJson;
+  molecularFormula: string;
+  monoisotopicWeight: string;
+  molecularWeight: string;
+}
+
+// ncAA Map type
+export type NcAAMap = { [key: string]: NcAA };
+
+// Molecule JSON structure
+export interface MoleculeJson {
+  atoms: Atom[];
+  bonds: Bond[];
+  rings: Ring[];
+}
+
+export interface Atom {
+  label: string;
+  x: number;
+  y: number;
+  z: number;
+  enhancedStereo?: {
+    type: string;
+    group: number;
+  };
+  pid: number;
+}
+
+export interface Bond {
+  a1: Atom;
+  a2: Atom;
+  bondOrder: number;
+  pid: number;
+}
+
+export interface Ring {
+  atoms: Atom[];
+}
+
+// JSON object type (for fromJson/toJson methods)
+export type JsonObject = { [key: string]: unknown };
