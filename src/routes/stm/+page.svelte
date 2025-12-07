@@ -20,6 +20,7 @@
 
     let ionTypes = ['H']; // 배열로 변경
     let potentialModifications = []; // Potential modifications
+    let showNoteColumn = true; // Note 칼럼 표시 여부
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
     let codonTitles = writable({
@@ -203,6 +204,10 @@
     function handlePotentialModificationChange(e) {
         potentialModifications = e.detail;
     }
+
+    function handleNoteColumnToggle(e) {
+        showNoteColumn = e.detail;
+    }
 </script>
 
 <div class="container mt-5">
@@ -217,6 +222,7 @@
     <div class="mb-3">
         <StmAdductSelector
             on:changeAdduct={handleAdductChange}
+            on:toggleNoteColumn={handleNoteColumnToggle}
         />
     </div>
 
@@ -249,6 +255,6 @@
     </button>
 
     {#if rnaSeq !== null && possibilities.length > 0}
-        <StmResultTable {possibilities} />
+        <StmResultTable {possibilities} {showNoteColumn} />
     {/if}
 </div>
