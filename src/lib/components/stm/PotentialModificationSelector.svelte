@@ -5,6 +5,7 @@
     import type { PotentialModification } from '../../../type/Types';
     import PotentialModificationDialog from './PotentialModificationDialog.svelte';
     import PotentialModificationSelectItem from './PotentialModificationSelectItem.svelte';
+    import { storage } from '$lib/services/storage.service';
 
     const dispatch = createEventDispatcher();
     const MAX_SELECTION = 4;
@@ -23,9 +24,9 @@
     });
 
     function loadSavedModifications() {
-        const storedData = localStorage.getItem('potentialModifications');
+        const storedData = storage.load<PotentialModification[]>('potentialModifications');
         if (storedData) {
-            savedModifications.set(JSON.parse(storedData));
+            savedModifications.set(storedData);
         }
     }
 

@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { storage } from '$lib/services/storage.service';
 
   const dispatch = createEventDispatcher();
   
@@ -13,12 +14,12 @@
   // localStorage key
   const STORAGE_KEY = 'mts_initial_temperature';
   
-  // 컴포넌트 마운트 시 localStorage에서 값 로드
+  // 컴포넌트 마운트 시 storage에서 값 로드
   onMount(() => {
     if (browser) {
-      const savedTemperature = localStorage.getItem(STORAGE_KEY);
+      const savedTemperature = storage.load(STORAGE_KEY);
       if (savedTemperature) {
-        const temp = parseInt(savedTemperature);
+        const temp = typeof savedTemperature === 'number' ? savedTemperature : parseInt(savedTemperature);
         if (temperatureOptions.includes(temp)) {
           initialTemperature = temp;
           dispatch('change', initialTemperature);
@@ -30,12 +31,12 @@
   // select input 변경 시 처리 함수
   function handleChange(event) {
     initialTemperature = parseInt(event.target.value);
-    
-    // localStorage에 저장
+
+    // storage에 저장
     if (browser) {
-      localStorage.setItem(STORAGE_KEY, initialTemperature.toString());
+      storage.save(STORAGE_KEY, initialTemperature);
     }
-    
+
     dispatch('change', initialTemperature);
   }
 </script>

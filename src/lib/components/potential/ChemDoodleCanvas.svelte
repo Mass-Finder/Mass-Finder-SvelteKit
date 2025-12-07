@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import { Molecule } from '$lib/model/atom';
   import { shortToLongMapper, aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
+  import { storage } from '$lib/services/storage.service';
 
   const dispatch = createEventDispatcher();
 
@@ -47,8 +48,8 @@
   });
 
   function loadSavedData() {
-    savedNcAA = JSON.parse(localStorage.getItem('moleculeData') || '[]');
-    savedModifications = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    savedNcAA = storage.load('moleculeData') || [];
+    savedModifications = storage.load('potentialModifications') || [];
   }
 
   function openModal() {

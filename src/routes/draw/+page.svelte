@@ -3,6 +3,7 @@
     import { writable } from 'svelte/store';
     import MolecularItem from '$lib/components/MolecularItem.svelte';
     import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
+    import { storage } from '$lib/services/storage.service';
 
     let molecularFormula = writable('');
     let monoisotopicWeight = writable('');
@@ -32,23 +33,23 @@
         monoisotopicWeight: $monoisotopicWeight,
         molecularWeight: $molecularWeight
       };
-      let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+      const storedData = storage.load('moleculeData') || [];
       storedData.push(dataSet);
-      localStorage.setItem('moleculeData', JSON.stringify(storedData));
+      storage.save('moleculeData', storedData);
       loadSavedData();
       alert('Data Saved!');
       resetForm();
     }
 
     function loadSavedData() {
-      let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+      const storedData = storage.load('moleculeData') || [];
       savedData.set(storedData);
     }
 
     function deleteData(index) {
-      let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+      const storedData = storage.load('moleculeData') || [];
       storedData.splice(index, 1);
-      localStorage.setItem('moleculeData', JSON.stringify(storedData));
+      storage.save('moleculeData', storedData);
       savedData.set([...storedData]);
     }
 
@@ -82,7 +83,7 @@
     }
 
     function checkTitleDuplicated() {
-        const storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+        const storedData = storage.load('moleculeData') || [];
         const isDuplicate = storedData.some(data => data.title === chemicalTitle);
         return isDuplicate;
     }

@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
   import { shortToLongMapper } from '$lib/helper/amino_mapper';
+  import { storage } from '$lib/services/storage.service';
 
   export let showDialog = false;
   export let showAllOption = false;
@@ -15,7 +16,7 @@
   }
 
   function loadSavedData() {
-    savedNcAA = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+    savedNcAA = storage.load('moleculeData') || [];
   }
 
   function handleSelect(code) {

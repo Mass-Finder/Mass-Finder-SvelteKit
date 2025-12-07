@@ -3,6 +3,7 @@
   import { codonTableRtoS } from '$lib/helper/amino_mapper';
   import SaveDialog from './stm/SeqSaveDialog.svelte';
   import LoadDialog from './stm/SeqLoadDialog.svelte';
+  import { storage } from '$lib/services/storage.service';
 
   const dispatch = createEventDispatcher();
 
@@ -66,9 +67,9 @@
 
   function handleSave(event) {
     const { title, content } = event.detail;
-    const savedRnaSeqs = JSON.parse(localStorage.getItem("savedRnaSeqs")) || [];
+    const savedRnaSeqs = storage.load("savedRnaSeqs") || [];
     savedRnaSeqs.push({ title, content });
-    localStorage.setItem("savedRnaSeqs", JSON.stringify(savedRnaSeqs));
+    storage.save("savedRnaSeqs", savedRnaSeqs);
   }
 
   function openLoadDialog() {

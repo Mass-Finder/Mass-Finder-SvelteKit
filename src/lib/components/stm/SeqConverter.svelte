@@ -6,6 +6,7 @@
   } from "$lib/helper/amino_mapper";
   import SaveDialog from './SeqSaveDialog.svelte';
   import LoadDialog from './SeqLoadDialog.svelte';
+  import { storage } from '$lib/services/storage.service';
 
   let inputValue = ""; // 입력받을 값 (RNA만)
   export let rnaSeq = ""; // RNA 시퀀스를 직접 export
@@ -64,9 +65,9 @@
 
   function handleSave(event) {
     const { title, content } = event.detail;
-    const savedRnaSeqs = JSON.parse(localStorage.getItem("savedRnaSeqs")) || [];
+    const savedRnaSeqs = storage.load("savedRnaSeqs") || [];
     savedRnaSeqs.push({ title, content });
-    localStorage.setItem("savedRnaSeqs", JSON.stringify(savedRnaSeqs));
+    storage.save("savedRnaSeqs", savedRnaSeqs);
   }
 
   function openLoadDialog() {

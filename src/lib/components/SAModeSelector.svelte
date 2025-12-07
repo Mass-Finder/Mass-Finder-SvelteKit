@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
   import { browser } from '$app/environment';
+  import { storage } from '$lib/services/storage.service';
 
   const dispatch = createEventDispatcher();
   
@@ -35,10 +36,10 @@
   // localStorage key
   const STORAGE_KEY = 'mts_sa_mode';
   
-  // 컴포넌트 마운트 시 localStorage에서 값 로드
+  // 컴포넌트 마운트 시 storage에서 값 로드
   onMount(() => {
     if (browser) {
-      const savedMode = localStorage.getItem(STORAGE_KEY);
+      const savedMode = storage.load(STORAGE_KEY);
       if (savedMode && saConfigs[savedMode]) {
         selectedMode = savedMode;
         dispatch('change', saConfigs[selectedMode]);
@@ -52,12 +53,12 @@
   // 라디오 버튼 변경 시 처리 함수
   function handleModeChange(event) {
     selectedMode = event.target.value;
-    
-    // localStorage에 저장
+
+    // storage에 저장
     if (browser) {
-      localStorage.setItem(STORAGE_KEY, selectedMode);
+      storage.save(STORAGE_KEY, selectedMode);
     }
-    
+
     dispatch('change', saConfigs[selectedMode]);
   }
 </script>

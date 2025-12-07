@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher } from "svelte";
+    import { storage } from '$lib/services/storage.service';
 
     export let showDialog = false;
 
@@ -11,7 +12,7 @@
     }
 
     function loadSavedSequences() {
-        savedSequences = JSON.parse(localStorage.getItem("savedRnaSeqs")) || [];
+        savedSequences = storage.load("savedRnaSeqs") || [];
     }
 
     function handleSelect(content) {
@@ -27,7 +28,7 @@
     function deleteSequence(index, event) {
         event.stopPropagation(); // 버튼 클릭이 sequence-item 클릭으로 전파되는 것을 방지
         savedSequences = savedSequences.filter((_, i) => i !== index);
-        localStorage.setItem("savedRnaSeqs", JSON.stringify(savedSequences));
+        storage.save("savedRnaSeqs", savedSequences);
     }
 </script>
 

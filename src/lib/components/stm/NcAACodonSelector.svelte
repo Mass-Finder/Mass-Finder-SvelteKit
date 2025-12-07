@@ -6,6 +6,7 @@
     import MolecularListItem from '$lib/components/MolecularListItem.svelte';
     import NcAACodonSelectItem from './NcAACodonSelectItem.svelte';
     import { get } from 'svelte/store';
+    import { storage } from '$lib/services/storage.service';
 
 
     const dispatch = createEventDispatcher();
@@ -33,7 +34,7 @@
     });
   
     function loadSavedData() {
-      let storedData = JSON.parse(localStorage.getItem('moleculeData') || '[]');
+      const storedData = storage.load('moleculeData') || [];
       savedData.set(storedData);
     }
   

@@ -7,6 +7,7 @@
   import ModificationItem from '$lib/components/potential/ModificationItem.svelte';
   import { SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
   import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
+  import { storage } from '$lib/services/storage.service';
 
   let modificationName = '';
   let modificationType = 'Single-site';
@@ -91,7 +92,7 @@
     }
 
     // Check for duplicate modification name
-    const storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    const storedData = storage.load('potentialModifications') || [];
     const isDuplicate = storedData.some(data => data.name === modificationName);
     if (isDuplicate) {
       alert('The modification name already exists.');
@@ -143,9 +144,9 @@
       molecularWeight: savedMolecularWeight
     };
 
-    // Save to localStorage
+    // Save to storage
     storedData.push(modificationData);
-    localStorage.setItem('potentialModifications', JSON.stringify(storedData));
+    storage.save('potentialModifications', storedData);
 
     console.log('Saved Modification Data:', modificationData);
     alert('Modification saved successfully!');
@@ -173,14 +174,14 @@
   }
 
   function loadSavedModifications() {
-    let storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    const storedData = storage.load('potentialModifications') || [];
     savedModifications.set(storedData);
   }
 
   function deleteModification(index) {
-    let storedData = JSON.parse(localStorage.getItem('potentialModifications') || '[]');
+    const storedData = storage.load('potentialModifications') || [];
     storedData.splice(index, 1);
-    localStorage.setItem('potentialModifications', JSON.stringify(storedData));
+    storage.save('potentialModifications', storedData);
     savedModifications.set([...storedData]);
   }
 
