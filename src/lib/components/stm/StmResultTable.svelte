@@ -23,8 +23,6 @@
           const baseReason = reason.replace(/\s*\(x\d+\)$/, '');
           allReasons.add(baseReason);
         });
-      } else {
-        // allReasons.add('Only natural AA');
       }
     });
 
@@ -93,7 +91,6 @@
   
   function formatReasons(reasons) {
     if (!reasons || reasons.length === 0) {
-      // return 'Only natural AA';
       return '';
     }
     const counts = {};

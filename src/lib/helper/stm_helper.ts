@@ -1,6 +1,7 @@
 import { codonTableRtoS, aminoMap, molecularWeightMap, getIonWeight } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType, PotentialModification, SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
+import { logger } from '../utils/logger';
 
 export class StmHelper {
     static calc(
@@ -351,9 +352,6 @@ export class StmHelper {
                     // 개별 아미노산 레벨 reason 수집
                     updatedSeqArr.forEach((item, index) => {
                         if (!item.natural) {
-                            // if (item.candidate && !item.skipping) {
-                            //     reasons.push("ncAA incorporated");
-                            // }
                             if (item.skipping) {
                                 reasons.push("Ribosome skipping");
                             }
@@ -785,7 +783,7 @@ export class StmHelper {
                 results.push([...currentCombo]);
                 // 너무 많은 로그 방지 - 처음 50개만 출력
                 if (results.length <= 50) {
-                    console.log(`[Combination Debug] Added combination of size ${currentCombo.length}:`, currentCombo);
+                    logger.debug(`Crosslinking: Added combination of size ${currentCombo.length}`, currentCombo);
                 }
             }
 
@@ -824,12 +822,12 @@ export class StmHelper {
             const count = summary.get(combo.length) || 0;
             summary.set(combo.length, count + 1);
         });
-        console.log(`[Combination Debug] Max size limit: ${maxSize}`);
-        console.log('[Combination Debug] Summary by combination size:');
+        logger.debug(`Crosslinking: Max size limit=${maxSize}`);
+        logger.debug('Crosslinking: Summary by combination size:');
         summary.forEach((count, size) => {
-            console.log(`  - Size ${size}: ${count} combinations`);
+            logger.debug(`  - Size ${size}: ${count} combinations`);
         });
-        console.log(`[Combination Debug] Total combinations: ${results.length}`);
+        logger.debug(`Crosslinking: Total combinations=${results.length}`);
 
         return results;
     }

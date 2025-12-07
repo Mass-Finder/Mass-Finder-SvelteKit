@@ -4,6 +4,13 @@ import type { IonType, FormyType } from '../../type/Types';
 
 import {calculateSimilarity, calculateSequenceSimilarity, calculateSequenceSimilarityWithCounts, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
 import { getIonWeight, codonTableRtoS } from './amino_mapper';
+import { logger } from '../utils/logger';
+import {
+    SIMULATED_ANNEALING_CONFIG,
+    CHEMICAL_CONSTANTS,
+    REFERENCE_SEQUENCE_CONFIG,
+} from '../config/algorithm.config';
+import { SA_EVALUATE_WEIGHTS } from '../config/scoring.config';
 
 // 사용가능한 아미노산의 리스트 모노이소토픽 무게
 let dataMap: { [key: string]: number } = {};
@@ -14,11 +21,6 @@ let moleMap: { [key: string]: number } = {};
 // 참조 시퀀스 (시퀀스 유사도 계산용)
 let referenceSequence: string = '';
 
-// 냉각률
-const coolingRate = 0.99;
-// 포밀레이스의 분자량
-const fWeight = 27.99;
-
 /**
  * 매스 파인더 핵심로직
  * 시뮬레이티드 어닐링 알고리즘을 사용해 입력된 mass에 사용된 아미노산을 추측해 결과를 도출한다.
@@ -27,7 +29,7 @@ const fWeight = 27.99;
  */
 export class MassFinderHelper {
     // 몇개의 결과를 도출할건지에 대한 값
-    static topSolutionsCount: number = 100;
+    static topSolutionsCount: number = SIMULATED_ANNEALING_CONFIG.TOP_SOLUTIONS_COUNT;
 
     static formyType: FormyType = 'unknown';
     static ionType: IonType = 'unknown';
@@ -39,11 +41,11 @@ export class MassFinderHelper {
     // [ionType] : 이온이 들어가는지에 대한 값
     // [aminoMap] : 계산에 사용되는 아미노산의 모음
     // [proteinSequence] : 초기 솔루션으로 사용할 단백질/RNA 시퀀스 (선택사항)
-    // [initialTemperature] : 시뮬레이티드 어닐링 초기 온도 (기본값: 10000)
-    // [absoluteTemperature] : 시뮬레이티드 어닐링 최소 온도 (기본값: 0.00001)
-    // [saIterations] : 시뮬레이티드 어닐링 반복 횟수 (기본값: 100)
+    // [initialTemperature] : 시뮬레이티드 어닐링 초기 온도
+    // [absoluteTemperature] : 시뮬레이티드 어닐링 최소 온도
+    // [saIterations] : 시뮬레이티드 어닐링 반복 횟수
     // 최종적으로 AminoModel의 리스트를 리턴함
-    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
+    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
         bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence, initialTemperature, absoluteTemperature, saIterations)
@@ -57,7 +59,7 @@ export class MassFinderHelper {
     }
 
     /// calcByIonType 함수에서 이온값에따라 알아서 구분되어 호출되는 함수
-    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
+    static calc(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
         this.formyType = fomyType;
         dataMap = { ...aminoMap };
         moleMap = { ...molecularMap };
@@ -105,7 +107,7 @@ export class MassFinderHelper {
         bestSolutions = this.setSequenceSimilarity(bestSolutions);
 
         bestSolutions.forEach(solution => {
-            console.log(`combins : ${solution.code}, result : ${solution.weight}`);
+            logger.debug(`SA Result: sequence=${solution.code}, weight=${solution.weight}`);
         });
 
         return bestSolutions;
@@ -113,7 +115,7 @@ export class MassFinderHelper {
 
     // calc 함수에서 호출되는 함수
     // FormyType 값에 따라 솔루션을 각각 구해와서 전달하는 역할을 한다.
-    static calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001, saIterations: number = 100): AminoModel[] {
+    static calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
         const bestSolutions: AminoModel[] = [];
         for (let i = 0; i < saIterations; i++) {
             switch (fType) {
@@ -125,7 +127,7 @@ export class MassFinderHelper {
                     bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
-                    const solutionYes = this.simulatedAnnealing(targetMass - fWeight, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionYes = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsY = `f${Object.keys(solutionYes)[0]}`;
                     const weightY = this.getMonoisotopicWeightSum(seqsY);
                     const molecularWeightY = this.getMolecularWeightSum(seqsY);
@@ -133,7 +135,7 @@ export class MassFinderHelper {
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
                     const solutionUnknown1 = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
-                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - fWeight, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
                     const seqsU1 = Object.keys(solutionUnknown1)[0];
                     const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
                     const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
@@ -149,7 +151,7 @@ export class MassFinderHelper {
     }
 
     /// 핵심로직으로 랜덤한 값과 그 랜던값에서 조금 바꾼 다른 값을 계속 비교해 나가면서 최적의 해를 찾음
-    static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = 10000, absoluteTemperature: number = 0.00001): { [key: string]: number } {
+    static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
         let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, seqLength) : this.randomSolution(seqLength);
@@ -158,7 +160,7 @@ export class MassFinderHelper {
         let bestSolution = [...currentSolution];
         let bestEnergy = currentEnergy;
 
-        // 초기온도에 계속해서 0.99를 곱해서 최소온도가 될때까지 반복해서 최적의 해를 구함
+        // 초기온도에 계속해서 냉각률을 곱해서 최소온도가 될때까지 반복해서 최적의 해를 구함
         while (temperature > absoluteTemperature) {
             // 기존 조합을 기준으로 새로운 조합 추출
             const newSolution = this.neighborSolution(currentSolution, targetMass);
@@ -177,7 +179,7 @@ export class MassFinderHelper {
                 bestEnergy = currentEnergy;
             }
 
-            temperature *= coolingRate;
+            temperature *= SIMULATED_ANNEALING_CONFIG.COOLING_RATE;
         }
 
         return { [bestSolution.join('')]: bestEnergy };
@@ -278,8 +280,8 @@ export class MassFinderHelper {
             
             // 참조 시퀀스가 있는 경우 참조 시퀀스의 아미노산을 우선적으로 선택
             if (referenceSequence) {
-                // 60% 확률로 참조 시퀀스에서 아미노산 선택, 40% 확률로 랜덤 선택
-                if (Math.random() < 0.9 && referenceSequence.length > 0) {
+                // 설정된 확률로 참조 시퀀스에서 아미노산 선택
+                if (Math.random() < REFERENCE_SEQUENCE_CONFIG.USE_PROBABILITY && referenceSequence.length > 0) {
                     // 참조 시퀀스에서 무작위로 아미노산 선택
                     const refIndex = Math.floor(Math.random() * referenceSequence.length);
                     const candidateAmino = referenceSequence[refIndex];
@@ -310,20 +312,6 @@ export class MassFinderHelper {
         return newSolution;
     }
 
-    // static neighborSolution(currentSolution: string[], targetMass: number): string[] {
-    //     const newSolution = [...currentSolution];
-    //     if (newSolution.length > 0) {
-    //         const index = Math.floor(Math.random() * newSolution.length);
-    //         const newAminoAcid = Object.keys(dataMap)[Math.floor(Math.random() * Object.keys(dataMap).length)];
-    //         newSolution[index] = newAminoAcid;
-
-    //         while (this.evaluate(newSolution, targetMass) > targetMass) {
-    //             newSolution.splice(Math.floor(Math.random() * newSolution.length), 1);
-    //         }
-    //     }
-    //     return newSolution;
-    // }
-
     // 도출된 솔루션의 전체 질량과 목표값의 차이 도출 (시퀀스 유사도 고려)
     static evaluate(solution: string[], targetMass: number): number {
         const mass = solution.reduce((sum, gene) => sum + (dataMap[gene] ?? 0), 0);
@@ -339,9 +327,9 @@ export class MassFinderHelper {
             
             // 분자량 차이를 정규화 (큰 값을 방지하기 위해)
             const normalizedMassDiff = massDifference / targetMass;
-            
-            // 복합 평가 점수 계산 (분자량 95%, 시퀀스 유사도 5%) - difference 값 우선시
-            return normalizedMassDiff * 0.95 + sequenceDifference * 0.05;
+
+            // 복합 평가 점수 계산 - difference 값 우선시
+            return normalizedMassDiff * SA_EVALUATE_WEIGHTS.NORMALIZED_MASS_DIFF + sequenceDifference * SA_EVALUATE_WEIGHTS.SEQUENCE_DIFF;
         }
         
         // 참조 시퀀스가 없는 경우 기존 방식대로 분자량 차이만 고려
@@ -363,7 +351,7 @@ export class MassFinderHelper {
             // 아미노산들만의 물 증발량 계산 (포밀레이션은 물 증발량에 포함되지 않음)
             result -= this.getWaterWeight(aminoSequence.length);
             // 포밀레이션 무게 추가
-            result += fWeight;
+            result += CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT;
             return result;
         } else {
             // 포밀레이션이 없는 경우: 모든 아미노산 계산
@@ -381,7 +369,7 @@ export class MassFinderHelper {
             // 아미노산들만의 물 증발량 계산 (포밀레이션은 물 증발량에 포함되지 않음)
             result -= this.getWaterWeight(aminoSequence.length);
             // 포밀레이션 무게 추가
-            result += fWeight;
+            result += CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT;
             return result;
         } else {
             // 포밀레이션이 없는 경우: 모든 아미노산 계산
@@ -393,7 +381,7 @@ export class MassFinderHelper {
 
     static getWaterWeight(aminoLength: number): number {
         if (aminoLength === 0) return 0;
-        return 18.01056 * (aminoLength - 1);
+        return CHEMICAL_CONSTANTS.WATER_WEIGHT * (aminoLength - 1);
     }
 
     // 물 증발량 계산을위해 가능한 아미노산의 갯수 범위를 산정힘
@@ -401,8 +389,8 @@ export class MassFinderHelper {
         // 사용 가능한 아미노산의 종류들의 최대 최소 값
         const minValue = Math.min(...Object.values(dataMap));
         const maxValue = Math.max(...Object.values(dataMap));
-        // 포밀레이스가 들어갈수도 있다면 [fWeight] 값이 제일 작은값
-        const max = type === 'yes' || type === 'unknown' ? Math.ceil(targetMass / fWeight) : Math.ceil(targetMass / minValue);
+        // 포밀레이스가 들어갈수도 있다면 FORMYLATION_WEIGHT 값이 제일 작은값
+        const max = type === 'yes' || type === 'unknown' ? Math.ceil(targetMass / CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT) : Math.ceil(targetMass / minValue);
         const min = Math.floor(targetMass / maxValue);
         return [min, max];
     }
