@@ -6,6 +6,11 @@ import { applyCrosslinkingModifications } from './stm-crosslinking';
 import { removeDuplicateSequences, type Possibility, type PossibilityLetter } from './stm-utils';
 
 /**
+ * Minimum sequence length for results (sequences with fewer amino acids are filtered out)
+ */
+const MIN_SEQUENCE_LENGTH = 1;
+
+/**
  * Generate power set (all subsets) of an array
  * Example: [A, B] => [[], [A], [B], [A, B]]
  * 0개, 1개, 2개, ... 모든 조합 생성
@@ -250,7 +255,10 @@ export class StmCore {
                 if (truncationIndex > 0) {
                     const internalInitSeqs = generatePossibilities(truncationIndex, effectiveCodons, ncAAMap, codonTitles, memo);
                     for (const seq of internalInitSeqs) {
-                        if (seq.length > 0 && seq.filter(x => x.letter !== "").length > 0) {
+                        const seqLength = seq.filter(x => x.letter !== "").length;
+                        // 빈 시퀀스 또는 MIN_SEQUENCE_LENGTH 이하인 경우 제외
+                        if (seqLength > 0 && seqLength <= MIN_SEQUENCE_LENGTH) continue;
+                        if (seq.length > 0 && seqLength > 0) {
                             // 첫 번째 요소에 reinitiation 마킹
                             const markedSeq = [...seq];
                             if (markedSeq.length > 0) {
@@ -269,7 +277,10 @@ export class StmCore {
                 if (truncationIndex < effectiveCodons.length - 1) {
                     const prematureSeqs = generatePossibilitiesRange(0, truncationIndex + 1, effectiveCodons, ncAAMap, codonTitles);
                     for (const seq of prematureSeqs) {
-                        if (seq.length > 0 && seq.filter(x => x.letter !== "").length > 0) {
+                        const seqLength = seq.filter(x => x.letter !== "").length;
+                        // 빈 시퀀스 또는 MIN_SEQUENCE_LENGTH 이하인 경우 제외
+                        if (seqLength > 0 && seqLength <= MIN_SEQUENCE_LENGTH) continue;
+                        if (seq.length > 0 && seqLength > 0) {
                             // 마지막 요소에 premature termination 마킹
                             const markedSeq = [...seq];
                             if (markedSeq.length > 0) {
@@ -293,8 +304,8 @@ export class StmCore {
         for (const seqArr of basePossibilities) {
             // 원래 시퀀스의 실제 아미노산 문자들로 구성된 문자열
             const originalLetters = seqArr.filter(x => x.letter !== "").map(x => x.letter).join("");
-            // 시퀀스 길이가 3 이하인 경우 Possibility 목록에 추가하지 않음
-            if (originalLetters.length <= 3) continue;
+            // 시퀀스 길이가 MIN_SEQUENCE_LENGTH 이하인 경우 Possibility 목록에 추가하지 않음
+            if (originalLetters.length <= MIN_SEQUENCE_LENGTH) continue;
 
             // 기존 아미노산 시퀀스들만으로 분자량과 물 손실량 계산
             let baseWeight = 0;

@@ -405,11 +405,17 @@ finalWeight = baseWeight + potentialModifications + adduct_weight
 **참고**: Formylation(+27.99 Da)과 Admidation(-0.98 Da)은 이제 Potential Modification으로 정의해야 함
 
 #### D. 결과 필터링 및 중복 제거
-**파일**: `src/lib/helper/stm_helper.ts:240-244, 368-373`
+**파일**: `src/lib/helper/stm-core.ts:303-308, stm-utils.ts`
 
 **필터링 조건**:
 - 빈 시퀀스 제거
-- 3개 이하 아미노산 시퀀스 제외
+- **MIN_SEQUENCE_LENGTH** 이하 아미노산 시퀀스 제외
+  - **파일**: `src/lib/helper/stm-core.ts:11`
+  - **현재 값**: `const MIN_SEQUENCE_LENGTH = 3`
+  - **적용 위치**:
+    - 기본 시퀀스 생성 시 (308번 라인)
+    - reinitiation 시퀀스 생성 시 (260번 라인)
+    - Premature termination 시퀀스 생성 시 (282번 라인)
 - 유니크 키 기반 중복 제거: `시퀀스-디설파이드패턴-이온타입`
 
 ### 5. Reason 분류 시스템
@@ -526,7 +532,11 @@ function checkCustomCodonTitles2() // :122-151
 ### 11. 주요 알고리즘 파라미터
 
 #### A. 필터링 기준
-- 최소 시퀀스 길이: 4개 아미노산
+- **최소 시퀀스 길이**: `MIN_SEQUENCE_LENGTH + 1` 개 아미노산 (현재: 4개)
+  - **설정 파일**: `src/lib/helper/stm-core.ts:11`
+  - **상수명**: `MIN_SEQUENCE_LENGTH`
+  - **현재 값**: `3` (3개 이하 제외, 4개부터 포함)
+  - **변경 방법**: 상수 값 수정 후 재빌드
 - 최대 결과 수: 제한 없음 (사용자 시스템 성능에 의존)
 
 #### B. 질량 정밀도
