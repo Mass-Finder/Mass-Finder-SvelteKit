@@ -13,7 +13,6 @@
     molecularWeightMap,
     codonTableRtoS,
   } from "$lib/helper/amino_mapper";
-  import { MassFinderHelper } from "$lib/helper/mass_finder_helper";
 
   // 상태 관리 변수들
   let detectedMass = null;
@@ -27,6 +26,7 @@
     absoluteTemperature: 0.001,
     saIterations: 50
   };
+  /** @type {{ [key: string]: number }} */
   let selectedMonoisotopicAminos = { ...aminoMap };
   let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
   const loading = getContext("loading");
@@ -49,8 +49,7 @@
     loading.set(true);
     if (!validate()) return loading.set(false);
 
-    // 최대 100개의 결과를 가져오도록 설정
-    MassFinderHelper.topSolutionsCount = 100;
+    // topSolutionsCount는 인스턴스 변수이므로 worker에서 처리됨
 
     try {
       // 선택된 NCAA 값들
