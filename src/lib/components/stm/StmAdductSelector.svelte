@@ -54,42 +54,45 @@
     <!-- Positive Group -->
     <div class="adduct-group">
       <h6 class="group-title">Positive</h6>
-      {#each adductOptions.filter(option => option.group === 'Positive') as option}
-        <div class="form-check">
-          <input 
-            class="form-check-input" 
-            type="checkbox" 
-            id="stm-adduct-{option.value}"
-            checked={selectedAdducts.includes(option.value)}
-            on:change={() => handleChange(option.value)}
-          >
-          <label class="form-check-label" for="stm-adduct-{option.value}">
-            {option.label}
-          </label>
-        </div>
-      {/each}
+      <div class="checkboxes-row">
+        {#each adductOptions.filter(option => option.group === 'Positive') as option}
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="stm-adduct-{option.value}"
+              checked={selectedAdducts.includes(option.value)}
+              on:change={() => handleChange(option.value)}
+            >
+            <label class="form-check-label" for="stm-adduct-{option.value}">
+              {option.label}
+            </label>
+          </div>
+        {/each}
+      </div>
     </div>
 
     <!-- Negative Group -->
     <div class="adduct-group">
       <h6 class="group-title">Negative</h6>
-      {#each adductOptions.filter(option => option.group === 'Negative') as option}
-        <div class="form-check">
-          <input 
-            class="form-check-input" 
-            type="checkbox" 
-            id="stm-adduct-{option.value}"
-            checked={selectedAdducts.includes(option.value)}
-            on:change={() => handleChange(option.value)}
-          >
-          <label class="form-check-label" for="stm-adduct-{option.value}">
-            {option.label}
-          </label>
-        </div>
-      {/each}
+      <div class="checkboxes-row">
+        {#each adductOptions.filter(option => option.group === 'Negative') as option}
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="stm-adduct-{option.value}"
+              checked={selectedAdducts.includes(option.value)}
+              on:change={() => handleChange(option.value)}
+            >
+            <label class="form-check-label" for="stm-adduct-{option.value}">
+              {option.label}
+            </label>
+          </div>
+        {/each}
+      </div>
     </div>
   </div>
-  
   {#if selectedAdducts.length === 0}
     <div class="alert alert-info mt-2">
       <small>No adduct selected - will show as [M] in results</small>
@@ -104,13 +107,12 @@
 
   .adduct-groups {
     display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 15px;
   }
 
   .adduct-group {
-    flex: 1;
-    min-width: 150px;
+    width: 100%;
   }
 
   .group-title {
@@ -122,8 +124,14 @@
     padding-bottom: 4px;
   }
 
+  .checkboxes-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
   .form-check {
-    margin-bottom: 5px;
+    margin-bottom: 0;
   }
 
   .form-check-label {
