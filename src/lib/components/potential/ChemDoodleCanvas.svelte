@@ -767,7 +767,8 @@ M  END`,
                 on:click={() => loadAminoAcid(aminoCode)}
                 title={shortToLongMapper[aminoCode]}
               >
-                {aminoCode}
+                <div class="amino-code-single">{aminoCode}</div>
+                <div class="amino-code-three">{shortToLongMapper[aminoCode]}</div>
               </button>
             {/each}
           </div>
@@ -953,14 +954,29 @@ M  END`,
 
   .amino-acid-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
     gap: 8px;
   }
 
   .amino-btn {
-    min-width: 50px;
+    min-width: 70px;
     font-weight: bold;
-    padding: 10px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .amino-code-single {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+
+  .amino-code-three {
+    font-size: 0.75em;
+    font-weight: normal;
+    opacity: 0.8;
   }
 
   .template-list {
