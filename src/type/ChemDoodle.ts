@@ -32,14 +32,25 @@ declare namespace ChemDoodle {
     class SketcherCanvas {
         constructor(id: string, width: number, height: number, options: CanvasOptions);
         getMolecule(): Molecule;
+        loadMolecule(molecule: Molecule): void;
+        clear(): void;
         repaint(): void;
         styles: Styles;
     }
 
-    namespace ELEMENT {
-        let H: { jmolColor: string };
-        let S: { jmolColor: string };
+    // MOL 파일 읽기 함수
+    function readMOL(molString: string): Molecule;
+
+    // ELEMENT 객체 타입 정의
+    interface ElementType {
+        jmolColor: string;
     }
+
+    const ELEMENT: {
+        H: ElementType;
+        S: ElementType;
+        [key: string]: ElementType;
+    };
 
     namespace iChemLabs {
         function calculate(

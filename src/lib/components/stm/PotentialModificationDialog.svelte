@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import Modal from '$lib/components/Modal.svelte';
+    import { formatFormula } from '$lib/helper/formula_util';
     import type { PotentialModification } from '../../../type/Types';
 
     export let showDialog: boolean = false;
@@ -57,7 +58,7 @@
                                         {mod.type}
                                     </span>
                                     <span class="text-muted small">
-                                        Formula: {mod.molecularFormula} |
+                                        Formula: <span class="formula">{@html formatFormula(mod.molecularFormula)}</span> |
                                         Weight: {mod.monoisotopicWeight}
                                     </span>
                                 </div>
@@ -114,5 +115,9 @@
 
     .alert {
         margin-bottom: 0;
+    }
+
+    .formula {
+        font-family: 'Times New Roman', Times, serif;
     }
 </style>

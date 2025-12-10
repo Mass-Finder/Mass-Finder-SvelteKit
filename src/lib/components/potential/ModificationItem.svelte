@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { formatFormula } from '$lib/helper/formula_util';
 
   export let modification;
   export let index;
@@ -44,7 +45,7 @@
           {/if}
         {/if}
         <p class="mb-1"><strong>Structure Name:</strong> {modification.structureName}</p>
-        <p class="mb-1"><strong>Formula:</strong> {modification.molecularFormula}</p>
+        <p class="mb-1"><strong>Formula:</strong> <span class="formula">{@html formatFormula(modification.molecularFormula)}</span></p>
         <p class="mb-1"><strong>Monoisotopic Weight:</strong> {modification.monoisotopicWeight}</p>
         <p class="mb-1"><strong>Molecular Weight:</strong> {modification.molecularWeight}</p>
       </div>
@@ -77,5 +78,9 @@
 
   canvas {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .formula {
+    font-family: 'Times New Roman', Times, serif;
   }
 </style>

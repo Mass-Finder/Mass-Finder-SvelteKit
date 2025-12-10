@@ -1,13 +1,14 @@
 <script>
     import { onMount } from 'svelte';
-  
+    import { formatFormula } from '$lib/helper/formula_util';
+
     export let data;
     export let index;
     export let deleteData;
-  
+
     onMount(() => {
       let canvasId = `canvas-${index}`;
-  
+
       setTimeout(() => {
         ChemDoodle.ELEMENT['H'].jmolColor = 'black';
         ChemDoodle.ELEMENT['S'].jmolColor = '#B9A130';
@@ -31,7 +32,7 @@
       <div class="col-md-8">
         <div class="card-body">
           <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
-          <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
+          <p class="card-text mb-1"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
           <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
           <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
         </div>
@@ -52,13 +53,17 @@
     .data-item {
       width: 100%;
     }
-  
+
     canvas {
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-  
+
     .card-title {
       font-size: 1.25rem;
+    }
+
+    .formula {
+      font-family: 'Times New Roman', Times, serif;
     }
   </style>
   

@@ -4,6 +4,7 @@
   import { Molecule } from '$lib/model/atom';
   import { shortToLongMapper, aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
   import { storage } from '$lib/services/storage.service';
+  import { formatFormula } from '$lib/helper/formula_util';
 
   const dispatch = createEventDispatcher();
 
@@ -671,7 +672,7 @@ M  END`,
     <div class="results">
       {#if $molecularFormula}
         <div class="mb-2">
-          <strong>Molecular Formula:</strong> {$molecularFormula}
+          <strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula($molecularFormula)}</span>
         </div>
       {/if}
       {#if $monoisotopicWeight}
@@ -779,7 +780,7 @@ M  END`,
                   on:click={() => loadNcAA(ncaa)}
                 >
                   <div class="template-name">{ncaa.title}</div>
-                  <div class="template-formula">{ncaa.molecularFormula}</div>
+                  <div class="template-formula">{@html formatFormula(ncaa.molecularFormula)}</div>
                 </button>
               {/each}
             </div>
@@ -795,7 +796,7 @@ M  END`,
                   on:click={() => loadModification(mod)}
                 >
                   <div class="template-name">{mod.name}</div>
-                  <div class="template-formula">{mod.molecularFormula}</div>
+                  <div class="template-formula">{@html formatFormula(mod.molecularFormula)}</div>
                 </button>
               {/each}
             </div>
@@ -986,5 +987,9 @@ M  END`,
 
   .btn-load-template {
     width: 150px;
+  }
+
+  .formula {
+    font-family: 'Times New Roman', Times, serif;
   }
 </style>
