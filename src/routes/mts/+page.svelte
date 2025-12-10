@@ -18,8 +18,8 @@
   let detectedMass = null;
   let knownSequence = "";
   let proteinSequence = "";
-  let formylation = "yes";
-  let adduct = "H";
+  let formylation = "unknown";
+  let adduct = "+H";
   // SA 모드 설정 (기본값: Think)
   let saConfig = {
     initialTemperature: 10000,

@@ -2,7 +2,7 @@ import { AminoModel } from '../model/AminoModel';
 
 import type { IonType, FormyType } from '../../type/Types';
 
-import {calculateSimilarity, calculateSequenceSimilarity, calculateSequenceSimilarityWithCounts, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
+import { calculateSimilarity, calculateSequenceSimilarity, calculateSequenceSimilarityWithCounts, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
 import { getIonWeight, codonTableRtoS } from './amino_mapper';
 import { logger } from '../utils/logger';
 import {

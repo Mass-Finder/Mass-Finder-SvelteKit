@@ -6,8 +6,8 @@
   // showUnknown 프로퍼티로 unknown 옵션 노출 여부를 제어 (기본은 true)
   export let showUnknown = true;
 
-  // fomyType 변수: 외부에서 입력받을 수 있도록 export 하며 기본값은 'yes'
-  export let fomyType = 'yes';
+  // fomyType 변수: 외부에서 입력받을 수 있도록 export 하며 기본값은 'unknown'
+  export let fomyType = 'unknown';
 
   // select input 변경 시 처리 함수
   function handleChange(event) {
