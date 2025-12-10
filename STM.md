@@ -52,24 +52,42 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 - **질량 변화**: 각 결합당 -2.02 Da
 - **알고리즘**: 재귀적 페어링 조합 생성
 
-#### D. Formylation (N-말단 포밀화) [MOVED TO POTENTIAL MODIFICATION]
-**상태**: 이 기능은 **Potential Modification System의 Single-site N-terminus**로 통합되었습니다.
+#### D. Formylation (N-말단 포밀화) [BUILT-IN MODIFICATION]
+**상태**: 이 기능은 **Potential Modification System의 기본 내장 수식**으로 제공됩니다.
 
-**이전 기능** (참고용):
-- **질량 변화**: +27.99 Da
-- **표시**: 시퀀스 앞에 소문자 'f' 추가
-- **적용 조건**: 첫 번째 코돈이 AUG이고, N-말단이 존재하며, M 아미노산으로 번역된 경우
+**자동 제공 방식**:
+- **파일**: `src/lib/components/stm/PotentialModificationDialog.svelte:12-24`
+- PotentialModificationDialog를 열면 **Formylation이 자동으로 첫 번째 항목에 표시**됨
+- 사용자가 별도로 생성하거나 저장할 필요 없음
+- 스토리지에 저장되지 않으며, 매번 자동으로 생성됨
 
-**현재 사용 방법**:
-1. **Potential Modification** 페이지로 이동
-2. **Single-site** 타입 선택
-3. **Condition**: N-terminus 선택
-4. **Target**: M 선택 (또는 ALL)
-5. ChemDoodle에서 formyl-methionine 구조 그리기 (또는 Load Template 사용)
-6. Structure Name에 `f` 입력
-7. 저장 후 **STM** 페이지에서 해당 modification 선택
+**기본 설정**:
+```typescript
+{
+  name: 'Formylation',
+  type: 'Single-site',
+  condition: 'N-terminus',
+  target: 'ALL',
+  molecularFormula: '-',
+  monoisotopicWeight: '27.99',
+  molecularWeight: '29.02',
+  structureName: 'f'
+}
+```
 
-**장점**: Potential Modification으로 통합되어 더 유연한 N-terminus 수식 정의 가능
+**사용 방법**:
+1. **STM** 페이지에서 **Potential Modification** 선택 버튼 클릭
+2. 다이얼로그에서 **Formylation** 항목을 선택 (항상 첫 번째에 위치)
+3. 자동으로 N-terminus에 적용됨
+
+**적용 조건**:
+- N-말단이 존재하는 시퀀스 (reinitiation이 아닌 경우)
+- Target이 ALL이므로 모든 첫 번째 아미노산에 적용 가능
+
+**장점**:
+- 사용자가 별도 설정 없이 즉시 사용 가능
+- 다른 사용자 정의 Potential Modifications와 함께 조합 가능
+- Power set 생성 시 Formylation 포함/미포함 모든 경우의 수 자동 계산
 
 #### E. Admidation (C-말단 아미드화) [DEPRECATED]
 **상태**: 이 기능은 현재 코드베이스에서 제거되었습니다.

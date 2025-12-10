@@ -2,12 +2,29 @@
     import { createEventDispatcher } from 'svelte';
     import Modal from '$lib/components/Modal.svelte';
     import { formatFormula } from '$lib/helper/formula_util';
-    import type { PotentialModification } from '../../../type/Types';
+    import { SingleSiteCondition, type PotentialModification } from '../../../type/Types';
+    import type { MoleculeJson } from '$lib/model/atom';
 
     export let showDialog: boolean = false;
     export let availableModifications: PotentialModification[] = [];
 
     const dispatch = createEventDispatcher();
+
+    // 기본 Formylation 객체 (스토리지에 저장되지 않음)
+    const formylationModification: PotentialModification = {
+        name: 'Formylation',
+        type: 'Single-site',
+        condition: SingleSiteCondition.N_TERMINUS,
+        target: 'ALL',
+        molecularFormula: '-',
+        monoisotopicWeight: '27.99',
+        molecularWeight: '29.02',
+        structureName: 'f',
+        moleculeJson: {} as MoleculeJson
+    };
+
+    // 사용 가능한 modification 목록 (Formylation + 사용자 정의 modifications)
+    $: allModifications = [formylationModification, ...availableModifications];
 
     function handleSelect(mod: PotentialModification) {
         dispatch('select', mod);
@@ -34,41 +51,34 @@
             <p class="text-muted small">Choose a modification to apply</p>
         </div>
 
-        {#if availableModifications.length === 0}
-            <div class="alert alert-info">
-                No modifications available. Create modifications in the
-                <a href="/potential" target="_blank">Potential Modification</a> page.
-            </div>
-        {:else}
-            <ul class="list-group">
-                {#each availableModifications as mod (mod.name)}
-                    <li
-                        class="list-group-item list-group-item-action modification-list-item"
-                        on:click={() => handleSelect(mod)}
-                        on:keypress={(e) => e.key === 'Enter' && handleSelect(mod)}
-                        role="button"
-                        tabindex="0"
-                    >
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1 modification-name">{mod.name}</h6>
-                                <p class="mb-1 text-muted small">{getModificationInfo(mod)}</p>
-                                <div class="modification-properties">
-                                    <span class="badge bg-light text-dark me-1">
-                                        {mod.type}
-                                    </span>
-                                    <span class="text-muted small">
-                                        Formula: <span class="formula">{@html formatFormula(mod.molecularFormula)}</span> |
-                                        Weight: {mod.monoisotopicWeight}
-                                    </span>
-                                </div>
+        <ul class="list-group">
+            {#each allModifications as mod (mod.name)}
+                <li
+                    class="list-group-item list-group-item-action modification-list-item"
+                    on:click={() => handleSelect(mod)}
+                    on:keypress={(e) => e.key === 'Enter' && handleSelect(mod)}
+                    role="button"
+                    tabindex="0"
+                >
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 modification-name">{mod.name}</h6>
+                            <p class="mb-1 text-muted small">{getModificationInfo(mod)}</p>
+                            <div class="modification-properties">
+                                <span class="badge bg-light text-dark me-1">
+                                    {mod.type}
+                                </span>
+                                <span class="text-muted small">
+                                    Formula: <span class="formula">{@html formatFormula(mod.molecularFormula)}</span> |
+                                    Weight: {mod.monoisotopicWeight}
+                                </span>
                             </div>
-                            <i class="bi bi-chevron-right text-muted"></i>
                         </div>
-                    </li>
-                {/each}
-            </ul>
-        {/if}
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                </li>
+            {/each}
+        </ul>
     </Modal>
 {/if}
 
