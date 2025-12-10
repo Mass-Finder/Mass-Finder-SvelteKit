@@ -1,4 +1,4 @@
-import { codonTableRtoS, aminoMap, molecularWeightMap, getIonWeight } from './amino_mapper';
+import { codonTableRtoS, molecularWeightMap, getIonWeight } from './amino_mapper';
 import { MassFinderHelper } from './mass_finder_helper';
 import type { IonType, PotentialModification, NcAAMap, NcAA, SingleSitePotentialModification, CrosslinkingPotentialModification } from '../../type/Types';
 import { applySideChainModifications } from './stm-side-chain';
@@ -32,7 +32,7 @@ export function generatePowerSet<T>(array: T[]): T[][] {
  * @param effectiveCodons - Array of codons to process
  * @param ncAAMap - Map of non-canonical amino acids
  * @param codonTitles - Map of codons to ncAA titles
- * @param aminoMapParam - Map of amino acids to monoisotopic weights
+ * @param aminoMapParam - Map of amino acids to monoisotopic weights (user-selected only)
  * @param memo - Memoization cache
  */
 function generatePossibilities(
@@ -40,6 +40,7 @@ function generatePossibilities(
     effectiveCodons: string[],
     ncAAMap: NcAAMap,
     codonTitles: { [key: string]: string[] },
+    aminoMapParam: { [key: string]: number },
     memo: Map<string, PossibilityLetter[][]>
 ): PossibilityLetter[][] {
     if (index >= effectiveCodons.length) return [[]];
@@ -51,9 +52,9 @@ function generatePossibilities(
     const currentCodon = effectiveCodons[index];
     const possibilitiesForCurrent: PossibilityLetter[] = [];
 
-    // (1) 자연 아미노산으로 변환 가능한 경우
+    // (1) 자연 아미노산으로 변환 가능한 경우 (사용자가 선택한 아미노산만)
     const naturalAmino = codonTableRtoS[currentCodon];
-    if (naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined) {
+    if (naturalAmino && naturalAmino !== '[Stop]' && aminoMapParam[naturalAmino] !== undefined) {
         possibilitiesForCurrent.push({ letter: naturalAmino, natural: true });
     }
 
@@ -83,9 +84,9 @@ function generatePossibilities(
     // (3) skipping 조건들
     // - 자연 아미노산이 없는 경우
     // - 자연 아미노산이 Stop 코돈인 경우
-    // - 자연 아미노산이 있지만 aminoMap에서 제외된 경우
+    // - 자연 아미노산이 있지만 사용자가 선택하지 않은 경우
     // - ncAA 대체도 불가능한 경우
-    const naturalAminoAvailable = naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined;
+    const naturalAminoAvailable = naturalAmino && naturalAmino !== '[Stop]' && aminoMapParam[naturalAmino] !== undefined;
     if (!candidateFound && !naturalAminoAvailable) {
         possibilitiesForCurrent.push({
             letter: "",
@@ -94,7 +95,7 @@ function generatePossibilities(
         });
     }
 
-    const nextPossibilities = generatePossibilities(index + 1, effectiveCodons, ncAAMap, codonTitles, memo);
+    const nextPossibilities = generatePossibilities(index + 1, effectiveCodons, ncAAMap, codonTitles, aminoMapParam, memo);
     for (const option of possibilitiesForCurrent) {
         for (const next of nextPossibilities) {
             results.push([option, ...next]);
@@ -115,13 +116,15 @@ function generatePossibilities(
  * @param effectiveCodons - Array of codons to process
  * @param ncAAMap - Map of non-canonical amino acids
  * @param codonTitles - Map of codons to ncAA titles
+ * @param aminoMapParam - Map of amino acids to monoisotopic weights (user-selected only)
  */
 function generatePossibilitiesRange(
     startIndex: number,
     endIndex: number,
     effectiveCodons: string[],
     ncAAMap: NcAAMap,
-    codonTitles: { [key: string]: string[] }
+    codonTitles: { [key: string]: string[] },
+    aminoMapParam: { [key: string]: number }
 ): PossibilityLetter[][] {
     if (startIndex >= endIndex || startIndex >= effectiveCodons.length) return [[]];
 
@@ -129,9 +132,9 @@ function generatePossibilitiesRange(
     const currentCodon = effectiveCodons[startIndex];
     const possibilitiesForCurrent: PossibilityLetter[] = [];
 
-    // 자연 아미노산으로 변환 가능한 경우
+    // 자연 아미노산으로 변환 가능한 경우 (사용자가 선택한 아미노산만)
     const naturalAmino = codonTableRtoS[currentCodon];
-    if (naturalAmino && naturalAmino !== '[Stop]' && aminoMap[naturalAmino] !== undefined) {
+    if (naturalAmino && naturalAmino !== '[Stop]' && aminoMapParam[naturalAmino] !== undefined) {
         possibilitiesForCurrent.push({ letter: naturalAmino, natural: true });
     }
 
@@ -150,7 +153,7 @@ function generatePossibilitiesRange(
 
     // 다음 범위의 가능성들
     const nextPossibilities = startIndex + 1 < endIndex ?
-        generatePossibilitiesRange(startIndex + 1, endIndex, effectiveCodons, ncAAMap, codonTitles) : [[]];
+        generatePossibilitiesRange(startIndex + 1, endIndex, effectiveCodons, ncAAMap, codonTitles, aminoMapParam) : [[]];
 
     for (const option of possibilitiesForCurrent) {
         for (const next of nextPossibilities) {
@@ -228,7 +231,7 @@ export class StmCore {
             effectiveCodons.push(codon);
         }
 
-        let basePossibilities = generatePossibilities(0, effectiveCodons, ncAAMap, codonTitles, memo);
+        let basePossibilities = generatePossibilities(0, effectiveCodons, ncAAMap, codonTitles, aminoMapParam, memo);
 
         // **Skipping 및 Truncated가 적용된 결과 필터링**
         basePossibilities = basePossibilities.filter(seq => seq.filter(x => x.letter !== "").length > 0);
@@ -253,7 +256,7 @@ export class StmCore {
             if (hasNcAAAtPosition) {
                 // reinitiation: truncationIndex부터 시작하는 시퀀스
                 if (truncationIndex > 0) {
-                    const internalInitSeqs = generatePossibilities(truncationIndex, effectiveCodons, ncAAMap, codonTitles, memo);
+                    const internalInitSeqs = generatePossibilities(truncationIndex, effectiveCodons, ncAAMap, codonTitles, aminoMapParam, memo);
                     for (const seq of internalInitSeqs) {
                         const seqLength = seq.filter(x => x.letter !== "").length;
                         // 빈 시퀀스 또는 MIN_SEQUENCE_LENGTH 이하인 경우 제외
@@ -275,7 +278,7 @@ export class StmCore {
 
                 // Premature termination: 0부터 truncationIndex까지의 시퀀스 (ncAA 위치에서 중단)
                 if (truncationIndex < effectiveCodons.length - 1) {
-                    const prematureSeqs = generatePossibilitiesRange(0, truncationIndex + 1, effectiveCodons, ncAAMap, codonTitles);
+                    const prematureSeqs = generatePossibilitiesRange(0, truncationIndex + 1, effectiveCodons, ncAAMap, codonTitles, aminoMapParam);
                     for (const seq of prematureSeqs) {
                         const seqLength = seq.filter(x => x.letter !== "").length;
                         // 빈 시퀀스 또는 MIN_SEQUENCE_LENGTH 이하인 경우 제외
@@ -315,8 +318,9 @@ export class StmCore {
                 if (item.letter === "") return;
                 baseCount++;
                 if (item.natural) {
-                    baseWeight += aminoMapParam[item.letter];
-                    baseMolWeight += molecularWeightMap[item.letter];
+                    // aminoMapParam에 없는 아미노산은 0으로 처리 (사용자가 선택하지 않은 경우)
+                    baseWeight += (aminoMapParam[item.letter] || 0);
+                    baseMolWeight += (molecularWeightMap[item.letter] || 0);
                 } else if (item.candidate) {
                     baseWeight += parseFloat(item.candidate.monoisotopicWeight);
                     baseMolWeight += parseFloat(item.candidate.molecularWeight);
