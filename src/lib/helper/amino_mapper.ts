@@ -84,10 +84,10 @@ export const shortToLongMapper = {
 
 
   const AdductMapper = {
-    "H" : "[M+H]⁺",
-    "Na" : "[M+Na]⁺",
-    "K" : "[M+K]⁺",
-    "NH₄" : "[M+NH₄]⁺",
+    "+H" : "[M+H]⁺",
+    "+Na" : "[M+Na]⁺",
+    "+K" : "[M+K]⁺",
+    "+NH₄" : "[M+NH₄]⁺",
     "-H" : "[M-H]⁺",
     "-Na" : "[M-2H+Na]⁺",
     "-K" : "[M-2H+K]⁺",
@@ -191,10 +191,10 @@ export const codonTableRtoS = {
 
   export function getIonWeight(ionType: IonType): number {
     switch (ionType) {
-        case 'H': return 1.0073;
-        case 'Na': return 22.9892;
-        case 'K': return 38.9632;
-        case 'NH₄': return 18.03382;
+        case '+H': return 1.0073;
+        case '+Na': return 22.9892;
+        case '+K': return 38.9632;
+        case '+NH₄': return 18.03382;
         case '-H': return -1.0073;
         case '-Na': return -22.9892;
         case '-K': return -38.9632;

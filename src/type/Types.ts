@@ -1,6 +1,6 @@
 // src/types.d.ts
 export type FormyType = 'yes' | 'no' | 'unknown';
-export type IonType = 'H' | 'Na' | 'K' | 'NH₄' | '-H' | '-Na' | '-K' | '-NH₄' | 'none' | 'unknown';
+export type IonType = '+H' | '+Na' | '+K' | '+NH₄' | '-H' | '-Na' | '-K' | '-NH₄' | 'none' | 'unknown';
 
 // Potential Modification Types
 export type ModificationType = 'Single-site' | 'Crosslinking';

@@ -6,13 +6,13 @@
 
   export let showNoteColumn = true;
 
-  let selectedAdducts = ['H']; // 기본값으로 H 선택
+  let selectedAdducts = ['+H']; // 기본값으로 +H 선택
 
   const adductOptions = [
-    { value: 'H', label: 'H', group: 'Positive' },
-    { value: 'Na', label: 'Na', group: 'Positive' },
-    { value: 'K', label: 'K', group: 'Positive' },
-    { value: 'NH₄', label: 'NH₄', group: 'Positive' },
+    { value: '+H', label: '+H', group: 'Positive' },
+    { value: '+Na', label: '+Na', group: 'Positive' },
+    { value: '+K', label: '+K', group: 'Positive' },
+    { value: '+NH₄', label: '+NH₄', group: 'Positive' },
     { value: '-H', label: '-H', group: 'Negative' },
     { value: '-Na', label: '-Na', group: 'Negative' },
     { value: '-K', label: '-K', group: 'Negative' },

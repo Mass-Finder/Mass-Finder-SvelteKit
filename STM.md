@@ -333,7 +333,8 @@ let ionTypes = ['H']; // 기본값: 수소 이온
 ```
 
 **지원 이온 타입**:
-- H+, Na+, K+, NH4+, Li+, Cs+, Ca2+, Mg2+, none
+- **Positive**: +H, +Na, +K, +NH₄ (UI에 "+" 부호 표시)
+- **Negative**: -H, -Na, -K, -NH₄
 - 다중 선택 가능
 - 각 이온 타입별로 별도 결과 생성
 

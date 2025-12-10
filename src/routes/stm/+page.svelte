@@ -18,7 +18,7 @@
     // 선택된 ncaa
     let ncAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
 
-    let ionTypes = ['H']; // 배열로 변경
+    let ionTypes = ['+H']; // 배열로 변경
     let potentialModifications = []; // Potential modifications
     let showNoteColumn = true; // Note 칼럼 표시 여부
 
