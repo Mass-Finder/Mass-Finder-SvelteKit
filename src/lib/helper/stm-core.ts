@@ -330,14 +330,15 @@ export class StmCore {
             baseWeight -= MassFinderHelper.getWaterWeight(baseCount);
             baseMolWeight -= MassFinderHelper.getWaterWeight(baseCount);
 
-            // Generate power sets for N-terminus and C-terminus modifications
-            // This creates all possible combinations (0개, 1개, 2개, 3개, 4개 적용)
-            const nTerminusSubsets = generatePowerSet(nTerminusMods);
-            const cTerminusSubsets = generatePowerSet(cTerminusMods);
+            // Generate individual options for N-terminus and C-terminus modifications
+            // N-terminus와 C-terminus는 각각 최대 1개만 적용 가능 (중복 불가)
+            // 0개 적용(빈 배열) + 각 modification을 개별적으로 적용
+            const nTerminusOptions: SingleSitePotentialModification[][] = [[], ...nTerminusMods.map(mod => [mod])];
+            const cTerminusOptions: SingleSitePotentialModification[][] = [[], ...cTerminusMods.map(mod => [mod])];
 
-            // For each combination of N-terminus and C-terminus modifications
-            for (const nSubset of nTerminusSubsets) {
-                for (const cSubset of cTerminusSubsets) {
+            // For each combination of N-terminus and C-terminus modifications (각각 최대 1개)
+            for (const nSubset of nTerminusOptions) {
+                for (const cSubset of cTerminusOptions) {
                     let updatedSeqArr = seqArr.map(item => ({ ...item }));
                     let finalWeight = baseWeight;
                     let finalMolWeight = baseMolWeight;
