@@ -132,68 +132,55 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 - ALL 옵션: 모든 타겟 위치에 적용
 - 각 수식은 LocalStorage에 저장된 사용자 정의 데이터 사용
 
-**Power Set 조합 생성 (N-terminus & C-terminus)**:
-**파일**: `src/lib/helper/stm_helper.ts:245-248, 400-409`
+**Individual 조합 생성 (N-terminus & C-terminus)**:
+**파일**: `src/lib/helper/stm-core.ts:333-337`
 
-사용자가 최대 4개의 Potential Modifications를 선택할 수 있으며, **조건이 맞더라도 모든 경우의 수가 자동으로 계산됩니다**:
+**중요**: N-terminus와 C-terminus는 각각 **최대 1개만 적용 가능**하며 **중복 적용 불가**합니다.
+
+사용자가 여러 개의 N-terminus 또는 C-terminus Modifications를 선택할 수 있지만, 각 시퀀스에는 **최대 1개씩만** 적용됩니다:
 - 0개 적용 (아무것도 적용 안됨)
-- 1개만 적용
-- 2개만 적용
-- 3개만 적용
-- 4개 모두 적용
-
-시스템은 선택된 수식들의 **모든 가능한 조합(Power Set)**을 자동으로 생성합니다:
+- 1개만 적용 (선택된 수식 중 하나만)
 
 **예시 1**: N-terminus 수식 2개 선택 (f1, f2)
-- 생성되는 조합: `[]` (0개), `[f1]`, `[f2]`, `[f1, f2]`
-- 총 **4가지** 가능성 생성 (2²)
+- 생성되는 조합: `[]` (0개), `[f1]`, `[f2]`
+- 총 **3가지** 가능성 생성 (1 + 2개)
+- ❌ `[f1, f2]` 조합은 생성되지 않음 (중복 불가)
 
 **예시 2**: N-terminus 2개 (f1, f2) + C-terminus 2개 (n1, n2) 선택
-- N-terminus 조합: 4가지 (2²)
-- C-terminus 조합: 4가지 (2²)
-- 총 **16가지** 가능성 생성 (4 × 4)
+- N-terminus 조합: 3가지 (`[]`, `[f1]`, `[f2]`)
+- C-terminus 조합: 3가지 (`[]`, `[n1]`, `[n2]`)
+- 총 **9가지** 가능성 생성 (3 × 3)
 
 **예시 3**: N-terminus 1개 (f1) + C-terminus 3개 (n1, n2, n3) 선택
-- N-terminus 조합: 2가지 (2¹)
-- C-terminus 조합: 8가지 (2³)
-- 총 **16가지** 가능성 생성 (2 × 8)
+- N-terminus 조합: 2가지 (`[]`, `[f1]`)
+- C-terminus 조합: 4가지 (`[]`, `[n1]`, `[n2]`, `[n3]`)
+- 총 **8가지** 가능성 생성 (2 × 4)
 
 **예시 4**: N-terminus 4개 선택 시
-- 총 **16가지** 조합 (2⁴)
+- 총 **5가지** 조합 (1 + 4개)
 - 0개 적용: 1가지
 - 1개 적용: 4가지
-- 2개 적용: 6가지
-- 3개 적용: 4가지
-- 4개 적용: 1가지
+- ❌ 2개 이상 적용: 불가능 (중복 불가)
 
 **알고리즘**:
 ```typescript
-// Power set 생성 함수
-private static generatePowerSet<T>(array: T[]): T[][] {
-    const result: T[][] = [[]];  // 빈 조합부터 시작
-    for (const item of array) {
-        const length = result.length;
-        for (let i = 0; i < length; i++) {
-            result.push([...result[i], item]);
-        }
-    }
-    return result;
-}
+// Individual 옵션 생성 (Power Set이 아님!)
+// N-terminus와 C-terminus는 각각 최대 1개만 적용 가능
+const nTerminusOptions: SingleSitePotentialModification[][] = [[], ...nTerminusMods.map(mod => [mod])];
+const cTerminusOptions: SingleSitePotentialModification[][] = [[], ...cTerminusMods.map(mod => [mod])];
 
-// N-terminus와 C-terminus의 모든 조합 생성
-const nTerminusSubsets = generatePowerSet(nTerminusMods);
-const cTerminusSubsets = generatePowerSet(cTerminusMods);
-
-for (const nSubset of nTerminusSubsets) {
-    for (const cSubset of cTerminusSubsets) {
+// For each combination of N-terminus and C-terminus modifications (각각 최대 1개)
+for (const nSubset of nTerminusOptions) {
+    for (const cSubset of cTerminusOptions) {
         // 현재 조합만 적용한 possibility 생성
     }
 }
 ```
 
 **핵심 원리**:
-- 사용자가 4개를 선택해도, 실제로 조건에 맞지 않으면 0개 적용된 결과도 포함
-- 조건에 맞으면 1개, 2개, 3개, 4개 적용된 모든 경우가 결과에 포함
+- N-terminus와 C-terminus는 생물학적으로 각 시퀀스에 하나씩만 존재
+- 여러 개를 선택해도 각각 개별적으로만 적용됨
+- 0개 적용 또는 1개 적용만 가능
 - 각 조합은 별도의 possibility로 생성되어 결과 테이블에 표시
 
 **참고**: Side Chain modifications는 별도의 재귀 알고리즘을 사용하여 0개부터 N개까지 모든 적용 개수를 생성합니다 (applySideChainRecursive 함수).
