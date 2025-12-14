@@ -135,14 +135,17 @@ export function formatFormulaSubtraction(formula1: string, formula2: string): st
  * 화학식을 아래첨자 숫자가 포함된 형태로 변환
  *
  * 화학식의 숫자를 HTML 아래첨자 태그로 변환합니다.
+ * 음수 부호도 함께 아래첨자로 처리됩니다.
  * 예시: C5H11NO2 -> C<sub>5</sub>H<sub>11</sub>NO<sub>2</sub>
+ * 예시: C2H-2 -> C<sub>2</sub>H<sub>-2</sub>
  *
- * @param formula - 분자식 문자열 (예: "C5H11NO2")
+ * @param formula - 분자식 문자열 (예: "C5H11NO2", "C2H-2")
  * @returns 아래첨자 형식이 적용된 HTML 문자열
  */
 export function formatFormula(formula: string): string {
   if (!formula) return '';
 
-  // 숫자를 아래첨자 HTML 태그로 변환
-  return formula.replace(/(\d+)/g, '<sub>$1</sub>');
+  // 음수 부호를 포함한 숫자를 아래첨자 HTML 태그로 변환
+  // -?\d+ 패턴: 선택적 마이너스 부호와 숫자
+  return formula.replace(/(-?\d+)/g, '<sub>$1</sub>');
 }
