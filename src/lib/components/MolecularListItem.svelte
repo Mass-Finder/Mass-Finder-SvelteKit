@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
-  
+    import { formatFormula } from '$lib/helper/formula_util';
+
     export let data;
     export let index;
     export let onClickBody;
@@ -36,7 +37,7 @@
         <div class="card-body">
           <!-- New Title Section -->
           <h4 class="card-title text-primary mb-2"><strong>{data.title}</strong></h4>
-          <h5 class="card-subtitle mb-2 text-muted">Molecular Formula: {data.molecularFormula}</h5>
+          <h5 class="card-subtitle mb-2 text-muted">Molecular Formula: <span class="formula">{@html formatFormula(data.molecularFormula)}</span></h5>
           <p class="card-text">Monoisotopic Weight: {data.monoisotopicWeight}</p>
           <p class="card-text">Molecular Weight: {data.molecularWeight}</p>
         </div>
@@ -84,5 +85,9 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .formula {
+      font-family: 'Times New Roman', Times, serif;
     }
   </style>

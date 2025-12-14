@@ -1,7 +1,8 @@
 <script>
     import { onMount } from 'svelte';
     import CodonSelectDialog from './CodonSelectDialog.svelte';
-  
+    import { formatFormula } from '$lib/helper/formula_util';
+
     export let data;
     export let key;
     export let onCancelSelectData;
@@ -46,7 +47,7 @@
 
 <div class="card-body text-center">
     <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
-    <p class="card-text mb-1"><strong>Molecular Formula:</strong> {data.molecularFormula}</p>
+    <p class="card-text mb-1"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
     <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
     <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
     <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
@@ -122,6 +123,10 @@
         margin: 0;
         width: 12px;
         height: 12px;
+    }
+
+    .formula {
+        font-family: 'Times New Roman', Times, serif;
     }
 </style>
   
