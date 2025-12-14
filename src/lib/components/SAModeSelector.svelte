@@ -7,15 +7,15 @@
   
   // SA 모드 설정
   const saConfigs = {
-    think: {
-      label: 'Think',
+    standard: {
+      label: 'Standard',
       description: 'Balanced calculation with moderate exploration',
       initialTemperature: 10000,
       absoluteTemperature: 0.001,
       saIterations: 100
     },
-    deepthink: {
-      label: 'Deep Think',
+    think: {
+      label: 'Think',
       description: 'Thorough calculation with extensive exploration',
       initialTemperature: 50000,
       absoluteTemperature: 0.00001,
@@ -29,9 +29,9 @@
       saIterations: 100
     }
   };
-  
-  // 기본값: Think
-  export let selectedMode = 'think';
+
+  // 기본값: Standard
+  export let selectedMode = 'standard';
   
   // localStorage key
   const STORAGE_KEY = 'mts_sa_mode';
