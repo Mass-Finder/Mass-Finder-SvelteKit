@@ -173,6 +173,11 @@
       return false;
     }
 
+    if (detectedMass > 10000) {
+      alert("The detected mass value is too large. Please enter a value below 10,000.");
+      return false;
+    }
+
     if (!validateknownSequence()) {
       alert("Please enter the correct KnownSequence");
       return false;
