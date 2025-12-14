@@ -107,12 +107,13 @@
 
   .adduct-groups {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
+    flex-direction: row;
+    gap: 30px;
+    align-items: flex-start;
   }
 
   .adduct-group {
-    width: 100%;
+    flex: 1;
   }
 
   .group-title {
