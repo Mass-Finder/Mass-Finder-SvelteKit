@@ -91,7 +91,7 @@
 
   
   <main class="container mt-5 p-4 bg-light rounded shadow">
-    <h1 class="text-center mb-4">calculate molecular weight</h1>
+    <h1 class="text-center mb-4">My ncAA</h1>
 
     <!-- Title Input -->
     <div class="mb-3">
