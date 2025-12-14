@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { PotentialModification } from '../../../type/Types';
+    import { formatFormula } from '$lib/helper/formula_util';
 
     export let modification: PotentialModification;
     export let onRemove: () => void;
@@ -26,7 +27,7 @@
     <div class="modification-details">
         <p class="detail-text">{getModificationInfo(modification)}</p>
         <p class="detail-text mb-1">
-            <strong>Formula:</strong> {modification.molecularFormula}
+            <strong>Formula:</strong> <span class="formula">{@html formatFormula(modification.molecularFormula)}</span>
         </p>
         <p class="detail-text mb-0">
             <strong>Weight:</strong> {modification.monoisotopicWeight}
@@ -84,5 +85,9 @@
 
     button {
         font-size: 0.8rem;
+    }
+
+    .formula {
+        font-family: 'Times New Roman', Times, serif;
     }
 </style>
