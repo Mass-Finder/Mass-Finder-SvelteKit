@@ -357,7 +357,7 @@ export class StmCore {
                             const firstAAIndex = seqArr.findIndex(item => item.letter !== "");
                             if (firstAAIndex !== -1) {
                                 const firstAA = seqArr[firstAAIndex];
-                                if (firstAA && (mod.target === 'ALL' || firstAA.letter === mod.target)) {
+                                if (firstAA && (mod.target === 'All' || firstAA.letter === mod.target)) {
                                     appliedModifications.push({mod, position: firstAAIndex});
 
                                     // N-terminus: 추가 개념 - 단순히 modification 질량을 더함
@@ -385,7 +385,7 @@ export class StmCore {
                             }
                             if (lastAAIndex !== -1) {
                                 const lastAA = seqArr[lastAAIndex];
-                                if (lastAA && (mod.target === 'ALL' || lastAA.letter === mod.target)) {
+                                if (lastAA && (mod.target === 'All' || lastAA.letter === mod.target)) {
                                     appliedModifications.push({mod, position: lastAAIndex});
 
                                     // C-terminus: 추가 개념 - 단순히 modification 질량을 더함

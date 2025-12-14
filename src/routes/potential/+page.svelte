@@ -108,8 +108,8 @@
 
     if (modificationType === 'Single-site' &&
         (singleSiteCondition === SingleSiteCondition.N_TERMINUS || singleSiteCondition === SingleSiteCondition.C_TERMINUS)) {
-      // For N-terminus and C-terminus: subtract target amino acid weight (or Glycine for ALL)
-      const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
+      // For N-terminus and C-terminus: subtract target amino acid weight (or Glycine for All)
+      const targetAA = targetAminoAcid === 'All' ? 'G' : targetAminoAcid;
       const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
       const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
       const targetFormula = aminoFormulaMap[targetAA] || '';

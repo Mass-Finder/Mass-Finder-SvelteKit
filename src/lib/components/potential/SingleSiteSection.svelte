@@ -13,7 +13,7 @@
   $: showAllOption = condition === SingleSiteCondition.N_TERMINUS || condition === SingleSiteCondition.C_TERMINUS;
 
   // Condition이 Side Chain으로 바뀌면 ALL 옵션이 없으므로 target을 초기화
-  $: if (!showAllOption && targetAminoAcid === 'ALL') {
+  $: if (!showAllOption && targetAminoAcid === 'All') {
     targetAminoAcid = '';
   }
 
@@ -68,7 +68,7 @@
       <div class="col-md-6">
         <label class="form-label fw-bold">Target</label>
         <button class="btn btn-outline-primary w-100 target-btn" on:click={handleOpenDialog}>
-          {targetAminoAcid === '' ? 'Select Amino Acid' : targetAminoAcid === 'ALL' ? 'ALL' : targetAminoAcid}
+          {targetAminoAcid === '' ? 'Select Amino Acid' : targetAminoAcid === 'All' ? 'All' : targetAminoAcid}
         </button>
       </div>
     </div>

@@ -67,7 +67,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
   name: 'Formylation',
   type: 'Single-site',
   condition: 'N-terminus',
-  target: 'ALL',
+  target: 'All',
   molecularFormula: '-',
   monoisotopicWeight: '27.99',
   molecularWeight: '29.02',
@@ -82,7 +82,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 
 **적용 조건**:
 - N-말단이 존재하는 시퀀스 (reinitiation이 아닌 경우)
-- Target이 ALL이므로 모든 첫 번째 아미노산에 적용 가능
+- Target이 All이므로 모든 첫 번째 아미노산에 적용 가능
 
 **장점**:
 - 사용자가 별도 설정 없이 즉시 사용 가능
@@ -129,7 +129,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 
 **적용 조건**:
 - 타겟 아미노산이 시퀀스에 존재해야 함
-- ALL 옵션: 모든 타겟 위치에 적용
+- All 옵션: 모든 타겟 위치에 적용
 - 각 수식은 LocalStorage에 저장된 사용자 정의 데이터 사용
 
 **Individual 조합 생성 (N-terminus & C-terminus)**:
@@ -190,7 +190,7 @@ for (const nSubset of nTerminusOptions) {
 {
   name: 'modification_name',
   type: 'Single-site',
-  target: 'M',  // 또는 'ALL'
+  target: 'M',  // 또는 'All'
   condition: 'N-terminus' | 'C-terminus' | 'Side Chain',
   structureName: 'structure_name',
   moleculeJson: {...},  // ChemDoodle JSON
@@ -619,13 +619,13 @@ function checkCustomCodonTitles2() // :122-151
 **참고**: Formylation은 이제 Potential Modification의 N-terminus로 처리됩니다.
 - reinitiation 시 N-terminus 수식 적용 불가 (N-말단 부재)
 - 첫 번째 아미노산이 modification의 target과 일치해야 함
-- 타겟이 ALL인 경우 모든 첫 번째 아미노산에 적용 가능
+- 타겟이 All인 경우 모든 첫 번째 아미노산에 적용 가능
 
 #### B. C-terminus Potential Modification 제약
 **참고**: Admidation 기능은 제거되었으나, C-terminus 수식은 Potential Modification으로 가능합니다.
 - Premature termination 시 C-terminus 수식 적용 불가 (C-말단 부재)
 - 마지막 아미노산이 modification의 target과 일치해야 함
-- 타겟이 ALL인 경우 모든 마지막 아미노산에 적용 가능
+- 타겟이 All인 경우 모든 마지막 아미노산에 적용 가능
 
 #### C. 절단 조건
 - ncAA가 할당된 위치에서만 절단 발생

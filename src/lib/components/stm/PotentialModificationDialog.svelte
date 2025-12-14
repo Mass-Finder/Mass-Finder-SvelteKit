@@ -15,7 +15,7 @@
         name: 'Formylation',
         type: 'Single-site',
         condition: SingleSiteCondition.N_TERMINUS,
-        target: 'ALL',
+        target: 'All',
         molecularFormula: 'CHO',
         monoisotopicWeight: '27.99',
         molecularWeight: '29.02',

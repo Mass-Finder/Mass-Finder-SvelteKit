@@ -62,10 +62,10 @@
           <div class="amino-acid-grid">
             {#if showAllOption}
               <button
-                class="btn btn-sm {selectedValue === 'ALL' ? 'btn-primary' : 'btn-outline-primary'} amino-btn all-btn"
-                on:click={() => handleSelect('ALL')}
+                class="btn btn-sm {selectedValue === 'All' ? 'btn-primary' : 'btn-outline-primary'} amino-btn all-btn"
+                on:click={() => handleSelect('All')}
               >
-                ALL
+                All
               </button>
             {/if}
             {#each Object.keys(shortToLongMapper) as aminoCode}
