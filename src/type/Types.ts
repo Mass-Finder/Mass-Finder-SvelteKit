@@ -15,8 +15,8 @@ export enum SingleSiteCondition {
 // Crosslinking Condition
 export enum CrosslinkingCondition {
   ADJACENT = 'Adjacent',
-  ADJACENT_1_TO_2 = 'Adjacent(Target 1->2)',
-  ADJACENT_2_TO_1 = 'Adjacent(Target 2->1)',
+  ADJACENT_1_TO_2 = 'Adjacent(Target 1→2)',
+  ADJACENT_2_TO_1 = 'Adjacent(Target 2→1)',
   DISTANCE = 'Distance'
 }
 
