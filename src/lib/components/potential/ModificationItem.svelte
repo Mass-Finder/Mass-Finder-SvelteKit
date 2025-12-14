@@ -45,6 +45,9 @@
           {/if}
         {/if}
         <p class="mb-1"><strong>Structure Name:</strong> {modification.structureName}</p>
+        {#if modification.formulaCalculation}
+          <p class="mb-1"><strong>Formula Calculation:</strong> <span class="formula">{@html formatFormula(modification.formulaCalculation)}</span></p>
+        {/if}
         <p class="mb-1"><strong>Formula:</strong> <span class="formula">{@html formatFormula(modification.molecularFormula)}</span></p>
         <p class="mb-1"><strong>Monoisotopic Weight:</strong> {modification.monoisotopicWeight}</p>
         <p class="mb-1"><strong>Molecular Weight:</strong> {modification.molecularWeight}</p>

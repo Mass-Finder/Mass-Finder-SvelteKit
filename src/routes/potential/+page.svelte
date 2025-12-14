@@ -6,8 +6,9 @@
   import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
   import ModificationItem from '$lib/components/potential/ModificationItem.svelte';
   import { SingleSiteCondition, CrosslinkingCondition } from '../../type/Types';
-  import { aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
+  import { aminoMap, molecularWeightMap, aminoFormulaMap } from '$lib/helper/amino_mapper';
   import { storage } from '$lib/services/storage.service';
+  import { formatFormulaSubtraction } from '$lib/helper/formula_util';
 
   let modificationName = '';
   let modificationType = 'Single-site';
@@ -102,6 +103,8 @@
     // Calculate values to save
     let savedMonoisotopicWeight;
     let savedMolecularWeight;
+    let savedMolecularFormula;
+    let formulaCalculation;
 
     if (modificationType === 'Single-site' &&
         (singleSiteCondition === SingleSiteCondition.N_TERMINUS || singleSiteCondition === SingleSiteCondition.C_TERMINUS)) {
@@ -109,14 +112,21 @@
       const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
       const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
       const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
+      const targetFormula = aminoFormulaMap[targetAA] || '';
 
       // Save delta values
       savedMonoisotopicWeight = (parseFloat($monoisotopicWeight) - targetMonoisotopicWeight).toFixed(5);
       savedMolecularWeight = (parseFloat($molecularWeight) - targetMolecularWeight).toFixed(5);
+
+      // Calculate and save formula subtraction
+      formulaCalculation = formatFormulaSubtraction($molecularFormula, targetFormula);
+      savedMolecularFormula = formulaCalculation.split(' = ')[1]; // Get result only
     } else {
       // For Side Chain and Crosslinking: save absolute values (no subtraction)
       savedMonoisotopicWeight = parseFloat($monoisotopicWeight).toFixed(5);
       savedMolecularWeight = parseFloat($molecularWeight).toFixed(5);
+      savedMolecularFormula = $molecularFormula;
+      formulaCalculation = undefined;
     }
 
     const modificationData = {
@@ -139,7 +149,9 @@
       ),
       structureName: structureName,
       moleculeJson: $moleculeJson,
-      molecularFormula: $molecularFormula,
+      molecularFormula: savedMolecularFormula,
+      originalFormula: $molecularFormula,
+      formulaCalculation: formulaCalculation,
       monoisotopicWeight: savedMonoisotopicWeight,
       molecularWeight: savedMolecularWeight
     };

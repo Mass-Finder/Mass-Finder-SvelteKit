@@ -2,9 +2,9 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import { writable } from 'svelte/store';
   import { Molecule } from '$lib/model/atom';
-  import { shortToLongMapper, aminoMap, molecularWeightMap } from '$lib/helper/amino_mapper';
+  import { shortToLongMapper, aminoMap, molecularWeightMap, aminoFormulaMap } from '$lib/helper/amino_mapper';
   import { storage } from '$lib/services/storage.service';
-  import { formatFormula } from '$lib/helper/formula_util';
+  import { formatFormula, formatFormulaSubtraction } from '$lib/helper/formula_util';
 
   const dispatch = createEventDispatcher();
 
@@ -80,6 +80,21 @@
   $: shouldShowDelta = modificationType === 'Single-site' && (singleSiteCondition === 'N-terminus' || singleSiteCondition === 'C-terminus');
   $: deltaMonoisotopicWeight = shouldShowDelta ? calculateDelta($monoisotopicWeight, 'monoisotopic') : null;
   $: deltaMolecularWeight = shouldShowDelta ? calculateDelta($molecularWeight, 'molecular') : null;
+
+  // Formula Calculation (N-terminus, C-terminus만)
+  $: formulaCalculation = shouldShowDelta && $molecularFormula ? calculateFormulaSubtraction() : null;
+
+  function calculateFormulaSubtraction() {
+    if (!$molecularFormula || !shouldShowDelta) return null;
+
+    const targetAA = targetAminoAcid === 'ALL' ? 'G' : targetAminoAcid;
+    if (!targetAA) return null;
+
+    const targetFormula = aminoFormulaMap[targetAA];
+    if (!targetFormula) return null;
+
+    return formatFormulaSubtraction($molecularFormula, targetFormula);
+  }
 
   function calculateDelta(calculatedWeight, weightType) {
     if (!calculatedWeight || !shouldShowDelta) return null;
@@ -673,6 +688,11 @@ M  END`,
       {#if $molecularFormula}
         <div class="mb-2">
           <strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula($molecularFormula)}</span>
+        </div>
+      {/if}
+      {#if formulaCalculation}
+        <div class="mb-2">
+          <strong>Formula Calculation:</strong> <span class="formula">{@html formatFormula(formulaCalculation)}</span>
         </div>
       {/if}
       {#if $monoisotopicWeight}

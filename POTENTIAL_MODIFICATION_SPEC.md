@@ -706,37 +706,59 @@ function updateSequenceWithCrosslinking(possibility, pairs, modificationName) {
 
 #### 7.1.2 Calculate Molecular Properties 결과 표시
 
-**Calculate Molecular Properties 버튼을 클릭하면 나타나는 결과 화면**에서, 사용자가 그린 구조의 **절대 질량**뿐만 아니라 **실제로 저장될 delta 값**도 함께 표시해야 합니다.
+**Calculate Molecular Properties 버튼을 클릭하면 나타나는 결과 화면**에서, 사용자가 그린 구조의 **절대 질량**뿐만 아니라 **실제로 저장될 delta 값** 및 **분자식 계산 결과**도 함께 표시해야 합니다.
 
 **표시 내용**:
 1. **Molecular Formula**: 그린 구조의 분자식
-2. **Monoisotopic Weight**: 그린 구조의 절대 질량 (Calculated)
-3. **Molecular Weight**: 그린 구조의 절대 분자량 (Calculated)
-4. **Delta Monoisotopic Weight**: 저장될 delta 값 (절대 질량 - target 아미노산 무게)
-5. **Delta Molecular Weight**: 저장될 delta 분자량 (절대 분자량 - target 아미노산 무게)
+2. **Formula Calculation**: N/C-terminus의 경우 분자식 뺄셈 계산 과정 및 결과 (예: C4H5 - C3H2 = CH3)
+3. **Monoisotopic Weight**: 그린 구조의 절대 질량 (Calculated)
+4. **Molecular Weight**: 그린 구조의 절대 분자량 (Calculated)
+5. **Delta Monoisotopic Weight**: 저장될 delta 값 (절대 질량 - target 아미노산 무게)
+6. **Delta Molecular Weight**: 저장될 delta 분자량 (절대 분자량 - target 아미노산 무게)
+
+**분자식 계산 로직**:
+- **N-terminus와 C-terminus**: 그린 구조의 분자식에서 target 아미노산의 분자식을 차감
+  - 계산 공식: `결과 분자식 = 그린 구조 분자식 - target 아미노산 분자식`
+  - 예시 1: C4H5 - C3H2 = CH3
+  - 예시 2: C3H2 - C1H4 = C2H-2 (음수 계수 허용)
+- **Side Chain와 Crosslinking**: 분자식 계산 없음 (절대 값 그대로 사용)
 
 **표시 예시**:
 
 **Single-site N-terminus (Target: M)**
 ```
 Molecular Formula: C5H11NO2S
+Formula Calculation: C5H11NO2S - C5H11NO2S = (Empty formula, meaning same as target)
 Monoisotopic Weight: 97.000 (Calculated)
 Molecular Weight: 97.000 (Calculated)
 
 Delta Monoisotopic Weight: -52.05105 (97.000 - 149.05105 [M])
 Delta Molecular Weight: -52.20800 (97.000 - 149.20800 [M])
-→ This delta value will be saved
+→ This delta value and result formula will be saved
 ```
 
-**Single-site C-terminus (Target: ALL)**
+**Single-site C-terminus (Target: ALL, based on Glycine)**
 ```
 Molecular Formula: CHO
+Formula Calculation: CHO - C2H5NO2 = C-1H-4N-1O-1 (Negative coefficients allowed)
 Monoisotopic Weight: 28.010 (Calculated)
 Molecular Weight: 28.010 (Calculated)
 
 Delta Monoisotopic Weight: -47.02203 (28.010 - 75.03203 [G])
 Delta Molecular Weight: -47.05700 (28.010 - 75.06700 [G])
-→ This delta value will be saved (based on Glycine)
+→ This delta value and result formula will be saved (based on Glycine)
+```
+
+**Single-site N-terminus (Target: ALL, Formylation 예시)**
+```
+Molecular Formula: CHO
+Formula Calculation: CHO - C2H5NO2 = C-1H-4N-1O-1
+Monoisotopic Weight: 28.010 (Calculated)
+Molecular Weight: 28.010 (Calculated)
+
+Delta Monoisotopic Weight: -47.02203 (28.010 - 75.03203 [G])
+Delta Molecular Weight: -47.05700 (28.010 - 75.06700 [G])
+→ This delta value and result formula will be saved (based on Glycine)
 ```
 
 **Single-site Side Chain (Target: C)**
@@ -746,6 +768,7 @@ Monoisotopic Weight: 165.000 (Calculated)
 Molecular Weight: 165.000 (Calculated)
 
 → This absolute value will be saved (No delta calculation for Side Chain)
+→ No formula calculation (absolute formula saved as is)
 ```
 
 **Crosslinking (Target1: C, Target2: C)**
@@ -755,11 +778,23 @@ Monoisotopic Weight: 240.292 (Calculated)
 Molecular Weight: 240.292 (Calculated)
 
 → This absolute value will be saved (No delta calculation for Crosslinking)
+→ No formula calculation (absolute formula saved as is)
 ```
+
+**저장되는 데이터**:
+- **N-terminus와 C-terminus**:
+  - `molecularFormula`: 뺄셈 결과 분자식 (예: CH3, C2H-2)
+  - `originalFormula`: 원본 그린 구조의 분자식 (예: C4H5)
+  - `formulaCalculation`: 전체 계산 과정 (예: "C4H5 - C3H2 = CH3")
+- **Side Chain와 Crosslinking**:
+  - `molecularFormula`: 그린 구조의 분자식 그대로
+  - `originalFormula`: undefined
+  - `formulaCalculation`: undefined
 
 **구현 위치**:
 - ChemDoodleCanvas.svelte의 결과 표시 영역
-- Target 정보를 prop으로 받아서 delta 계산 및 표시
+- Target 정보를 prop으로 받아서 delta 및 formula 계산/표시
+- formula_util.ts의 parseFormula, subtractFormula, formatFormulaSubtraction 함수 사용
 
 ### 7.2 STM 화면에서의 검증
 - ✅ 이미 구현됨: 최대 4개 modification 선택 제한

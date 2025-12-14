@@ -82,6 +82,30 @@ export const shortToLongMapper = {
     R: 174.20400  // Arginine
 };
 
+  // 기초 아미노산 리스트 Molecular Formula 전용
+  export const aminoFormulaMap = {
+    G: 'C2H5NO2',   // Glycine
+    A: 'C3H7NO2',   // Alanine
+    S: 'C3H7NO3',   // Serine
+    T: 'C4H9NO3',   // Threonine
+    C: 'C3H7NO2S',  // Cysteine
+    V: 'C5H11NO2',  // Valine
+    L: 'C6H13NO2',  // Leucine
+    I: 'C6H13NO2',  // Isoleucine
+    M: 'C5H11NO2S', // Methionine
+    P: 'C5H9NO2',   // Proline
+    F: 'C9H11NO2',  // Phenylalanine
+    Y: 'C9H11NO3',  // Tyrosine
+    W: 'C11H12N2O2', // Tryptophan
+    D: 'C4H7NO4',   // Aspartic Acid
+    E: 'C5H9NO4',   // Glutamic Acid
+    N: 'C4H8N2O3',  // Asparagine
+    Q: 'C5H10N2O3', // Glutamine
+    H: 'C6H9N3O2',  // Histidine
+    K: 'C6H14N2O2', // Lysine
+    R: 'C6H14N4O2'  // Arginine
+};
+
 
   const AdductMapper = {
     "+H" : "[M+H]⁺",
