@@ -426,21 +426,118 @@ finalWeight = baseWeight + potentialModifications + adduct_weight
 ### 5. Reason 분류 시스템
 
 #### A. Reason 수집 로직
-**파일**: `src/lib/helper/stm_helper.ts:291-322`
+**파일**: `src/lib/helper/stm-core.ts:410-489`
 
 **수집 순서**:
-1. **시퀀스 레벨 절단**: reinitiation, Premature termination
-2. **개별 아미노산 레벨**: skipping
+1. **시퀀스 레벨 절단**: Reinitiation, Premature termination (명시적 절단)
+2. **연속 Skipping 감지**: 맨 앞/뒤의 연속 skipping을 절단으로 재분류
+3. **개별 아미노산 레벨**: 중간의 Ribosome skipping만 기록
+
+**알고리즘 상세**:
+```typescript
+// 1. 명시적 절단 마킹 확인
+const hasInternalInitiation = hasInternalInitiationAtStart(seqArr);
+const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
+
+// 2. 맨 앞에서부터 연속된 skipping 카운트
+let consecutiveSkippingAtStart = 0;
+for (const item of updatedSeqArr) {
+    if (item.skipping && item.letter === "") {
+        consecutiveSkippingAtStart++;
+    } else if (item.letter !== "") {
+        break;  // 실제 아미노산을 만나면 중단
+    }
+}
+
+// 3. 맨 뒤에서부터 연속된 skipping 카운트
+let consecutiveSkippingAtEnd = 0;
+for (let i = updatedSeqArr.length - 1; i >= 0; i--) {
+    const item = updatedSeqArr[i];
+    if (item.skipping && item.letter === "") {
+        consecutiveSkippingAtEnd++;
+    } else if (item.letter !== "") {
+        break;  // 실제 아미노산을 만나면 중단
+    }
+}
+
+// 4. 연속 skipping을 절단으로 재분류
+if (consecutiveSkippingAtStart > 0 && !hasInternalInitiation) {
+    reasons.push("Reinitiation");
+}
+if (consecutiveSkippingAtEnd > 0 && !hasPrematureTermination) {
+    reasons.push("Premature termination");
+}
+
+// 5. 중간 skipping만 카운트
+let skippingCount = 0;
+updatedSeqArr.forEach((item, index) => {
+    if (item.skipping) {
+        const isStartSkipping = index < consecutiveSkippingAtStart;
+        const isEndSkipping = index >= updatedSeqArr.length - consecutiveSkippingAtEnd;
+
+        if (!isStartSkipping && !isEndSkipping) {
+            skippingCount++;  // 중간 skipping만 카운트
+        }
+    }
+});
+```
 
 #### B. Reason 타입 정의
-- **reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
+- **Reinitiation**: 앞쪽 절단으로 인한 부분 시퀀스
+  - ncAA 위치에서의 명시적 절단으로 생성된 경우
+  - 맨 앞에서부터 연속된 Ribosome skipping이 발생하여 결과적으로 절단된 것처럼 보이는 경우
 - **Premature termination**: 뒤쪽 절단으로 인한 부분 시퀀스
-- **skipping**: 코돈 건너뛰기 발생
+  - ncAA 위치에서의 명시적 절단으로 생성된 경우
+  - 맨 뒤에서부터 연속된 Ribosome skipping이 발생하여 결과적으로 절단된 것처럼 보이는 경우
+- **Ribosome skipping**: 코돈 건너뛰기 발생 (중간 위치에서만 표시)
+  - 맨 앞의 연속 skipping은 Reinitiation으로 표시
+  - 맨 뒤의 연속 skipping은 Premature termination으로 표시
+  - 중간에 발생한 skipping만 Ribosome skipping으로 표시
 - **Disulfide**: 디설파이드 결합 형성
 - **Truncated**: 시퀀스 절단 발생
 - **수식명 (x개수)**: Potential Modification 적용 (예: `d1 (x2)`, `dC`, `XL`)
   - 동일 수식이 여러 개 적용되면 개수 표시 (예: `d1 (x2)`)
   - Truncated는 중복이어도 하나만 표시
+
+#### C. Reason 분류 예시
+
+**예시 1: 맨 앞 연속 skipping → Reinitiation**
+```
+시퀀스: [skip, skip, skip, A, M, I, N, O]
+결과: "Reinitiation"
+설명: 맨 앞의 3개 연속 skipping이 Reinitiation으로 재분류됨
+```
+
+**예시 2: 맨 뒤 연속 skipping → Premature termination**
+```
+시퀀스: [A, M, I, N, O, skip, skip, skip]
+결과: "Premature termination"
+설명: 맨 뒤의 3개 연속 skipping이 Premature termination으로 재분류됨
+```
+
+**예시 3: 중간 skipping → Ribosome skipping**
+```
+시퀀스: [A, skip, M, skip, I, N, O]
+결과: "Ribosome skipping", "Ribosome skipping"
+설명: 중간의 2개 skipping은 그대로 Ribosome skipping으로 표시
+```
+
+**예시 4: 앞+중간+뒤 skipping → 혼합**
+```
+시퀀스: [skip, skip, A, skip, M, I, skip, skip, skip]
+결과: "Reinitiation", "Ribosome skipping", "Premature termination"
+설명:
+- 맨 앞 2개 skip → Reinitiation
+- 중간 1개 skip → Ribosome skipping
+- 맨 뒤 3개 skip → Premature termination
+```
+
+**예시 5: 명시적 절단 + skipping**
+```
+시퀀스: [skip, skip, A, M, I] (internalInitiation=true로 마킹됨)
+결과: "Reinitiation" (1번만)
+설명: 명시적 절단이 이미 있으면 연속 skipping을 중복으로 추가하지 않음
+```
 
 ### 6. 입력 검증 시스템
 

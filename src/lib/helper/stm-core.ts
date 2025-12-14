@@ -431,20 +431,78 @@ export class StmCore {
                     const hasPrematureTermination = hasPrematureTerminationAtEnd(seqArr);
 
                     if (hasInternalInitiation) {
-                        reasons.push("reinitiation");
+                        reasons.push("Reinitiation");
                     }
                     if (hasPrematureTermination) {
                         reasons.push("Premature termination");
                     }
 
+                    // 맨 앞에서부터 연속된 skipping이 있는지 확인
+                    let consecutiveSkippingAtStart = 0;
+                    for (const item of updatedSeqArr) {
+                        if (item.skipping && item.letter === "") {
+                            consecutiveSkippingAtStart++;
+                        } else if (item.letter !== "") {
+                            // 실제 아미노산을 만나면 중단
+                            break;
+                        }
+                    }
+
+                    // 맨 뒤에서부터 연속된 skipping이 있는지 확인
+                    let consecutiveSkippingAtEnd = 0;
+                    for (let i = updatedSeqArr.length - 1; i >= 0; i--) {
+                        const item = updatedSeqArr[i];
+                        if (item.skipping && item.letter === "") {
+                            consecutiveSkippingAtEnd++;
+                        } else if (item.letter !== "") {
+                            // 실제 아미노산을 만나면 중단
+                            break;
+                        }
+                    }
+
+                    // 맨 앞에서부터 연속 skipping이 있고, 그 뒤에 실제 시퀀스가 있는 경우
+                    // -> Reinitiation으로 처리
+                    const hasSkippingAtStartThatLooksLikeReinitiation =
+                        consecutiveSkippingAtStart > 0 &&
+                        updatedSeqArr.some(item => item.letter !== "");
+
+                    if (hasSkippingAtStartThatLooksLikeReinitiation && !hasInternalInitiation) {
+                        // 이미 reinitiation 마킹이 없는 경우에만 추가
+                        reasons.push("Reinitiation");
+                    }
+
+                    // 맨 뒤에서부터 연속 skipping이 있고, 그 앞에 실제 시퀀스가 있는 경우
+                    // -> Premature termination으로 처리
+                    const hasSkippingAtEndThatLooksLikePrematureTermination =
+                        consecutiveSkippingAtEnd > 0 &&
+                        updatedSeqArr.some(item => item.letter !== "");
+
+                    if (hasSkippingAtEndThatLooksLikePrematureTermination && !hasPrematureTermination) {
+                        // 이미 premature termination 마킹이 없는 경우에만 추가
+                        reasons.push("Premature termination");
+                    }
+
                     // 개별 아미노산 레벨 reason 수집
-                    updatedSeqArr.forEach((item) => {
+                    let skippingCount = 0;
+                    updatedSeqArr.forEach((item, index) => {
                         if (!item.natural) {
                             if (item.skipping) {
-                                reasons.push("Ribosome skipping");
+                                // 맨 앞의 연속 skipping은 이미 Reinitiation으로 처리했으므로 제외
+                                const isStartSkipping = index < consecutiveSkippingAtStart && hasSkippingAtStartThatLooksLikeReinitiation;
+                                // 맨 뒤의 연속 skipping은 이미 Premature termination으로 처리했으므로 제외
+                                const isEndSkipping = index >= updatedSeqArr.length - consecutiveSkippingAtEnd && hasSkippingAtEndThatLooksLikePrematureTermination;
+
+                                if (!isStartSkipping && !isEndSkipping) {
+                                    skippingCount++;
+                                }
                             }
                         }
                     });
+
+                    // 실제 중간에 발생한 skipping만 기록
+                    for (let i = 0; i < skippingCount; i++) {
+                        reasons.push("Ribosome skipping");
+                    }
 
                     // Single-site Potential Modifications를 reason에 추가
                     appliedModifications.forEach(({mod}) => {
