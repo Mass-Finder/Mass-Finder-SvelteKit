@@ -16,7 +16,7 @@
         type: 'Single-site',
         condition: SingleSiteCondition.N_TERMINUS,
         target: 'ALL',
-        molecularFormula: '-',
+        molecularFormula: 'CHO',
         monoisotopicWeight: '27.99',
         molecularWeight: '29.02',
         structureName: 'f',
