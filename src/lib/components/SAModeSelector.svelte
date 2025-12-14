@@ -69,10 +69,10 @@
   <div class="sa-mode-options">
     {#each Object.entries(saConfigs) as [mode, config]}
       <div class="form-check">
-        <input 
-          class="form-check-input" 
-          type="radio" 
-          name="saMode" 
+        <input
+          class="form-check-input"
+          type="radio"
+          name="saMode"
           id="saMode_{mode}"
           value={mode}
           bind:group={selectedMode}
@@ -80,8 +80,8 @@
         />
         <label class="form-check-label" for="saMode_{mode}">
           <div class="mode-info">
-            <div class="mode-title">{config.label}</div>
-            <small class="mode-description text-muted">{config.description}</small>
+            <span class="mode-title">{config.label}</span>
+            <span class="mode-description text-muted">{config.description}</span>
           </div>
         </label>
       </div>
@@ -108,72 +108,78 @@
   .sa-mode-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
-  
+
   .form-check {
     position: relative;
-    padding: 16px;
-    border-radius: 8px;
+    padding: 10px 12px;
+    border-radius: 6px;
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
     transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   }
-  
+
   .form-check:hover {
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
     border-color: #cccccc;
   }
-  
+
   .form-check:has(.form-check-input:checked) {
     background-color: #e3f2fd;
     border-color: #2196f3;
-    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2), 0 2px 4px rgba(33, 150, 243, 0.14);
+    box-shadow: 0 1px 3px rgba(33, 150, 243, 0.2);
   }
-  
+
   .form-check-input {
     position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 20px;
-    height: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 12px;
+    width: 18px;
+    height: 18px;
     accent-color: #2196f3;
-  }
-  
-  .mode-info {
-    padding-right: 32px;
-  }
-  
-  .mode-title {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #212121;
-    margin-bottom: 4px;
-    line-height: 1.5;
-  }
-  
-  .mode-description {
-    font-size: 0.875rem;
-    color: #757575;
-    line-height: 1.43;
     margin: 0;
   }
-  
+
+  .mode-info {
+    padding-right: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mode-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #212121;
+    line-height: 1.4;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+
+  .mode-description {
+    font-size: 0.8rem;
+    color: #757575;
+    line-height: 1.3;
+    margin: 0;
+  }
+
   .form-check-label {
     cursor: pointer;
     width: 100%;
     display: block;
   }
-  
+
   .form-text {
     font-size: 0.75rem;
     color: #757575;
-    margin-top: 8px;
+    margin-top: 6px;
     line-height: 1.33;
   }
-  
+
   .form-check:has(.form-check-input:checked) .mode-title {
     color: #1976d2;
   }
