@@ -153,6 +153,25 @@
             </div>
 
             <div class="col-lg-6">
+                <div class="module-card draw card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/draw')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/draw')}>
+                    <div class="p-4 flex-grow-1">
+                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">✏️</div>
+                        <h3 class="h4 fw-semibold text-dark mb-3">My ncAAs</h3>
+                        <p class="text-muted mb-3 lh-base">Interactive molecular structure drawing tool for custom compound design and mass calculation.</p>
+                        <ul class="module-features ps-0 mb-0">
+                            <li class="mb-2">Chemical structure drawing</li>
+                            <li class="mb-2">Real-time mass calculation</li>
+                            <li class="mb-2">Export capabilities</li>
+                            <li class="mb-2">Integration with analysis modules</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open Editor</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
                 <div class="module-card stm card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/stm')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/stm')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🧬</div>
@@ -186,25 +205,6 @@
                     </div>
                     <div class="p-4 pt-0">
                         <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/mts')}>Find Sequences</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
-                <div class="module-card draw card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/draw')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/draw')}>
-                    <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">✏️</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Structure Editor</h3>
-                        <p class="text-muted mb-3 lh-base">Interactive molecular structure drawing tool for custom compound design and mass calculation.</p>
-                        <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Chemical structure drawing</li>
-                            <li class="mb-2">Real-time mass calculation</li>
-                            <li class="mb-2">Export capabilities</li>
-                            <li class="mb-2">Integration with analysis modules</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 pt-0">
-                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open Editor</button>
                     </div>
                 </div>
             </div>

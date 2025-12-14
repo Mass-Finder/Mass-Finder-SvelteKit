@@ -4,16 +4,16 @@
         "link": "/manual"
     },
     {
+        "title": "My ncAAs",
+        "link": "/draw"
+    },
+    {
         "title": "Sequence to Mass",
         "link": "/stm"
     },
     {
         "title": "Mass to Sequence",
         "link": "/mts"
-    },
-    {
-        "title": "My ncAAs",
-        "link": "/draw"
     },
     {
         "title": "Potential Modification",
