@@ -1220,6 +1220,11 @@
   </div>
 
   <style>
+    .container {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
     .card {
       margin-bottom: 2rem;
       border-radius: 10px;
@@ -1242,5 +1247,106 @@
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Courier New', monospace;
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 767px) {
+      .container {
+        margin-top: 0 !important;
+        margin-bottom: 1rem !important;
+      }
+
+      .navbar {
+        padding: 0.5rem 1rem;
+      }
+
+      .navbar-brand {
+        font-size: 1rem;
+      }
+
+      .nav-link {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+      }
+
+      .card {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+      }
+
+      .card-body {
+        padding: 1rem;
+      }
+
+      .card-title {
+        font-size: 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      h6 {
+        font-size: 1rem;
+      }
+
+      .accordion-button {
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+      }
+
+      .accordion-body {
+        font-size: 0.9rem;
+        padding: 1rem;
+      }
+
+      .alert {
+        font-size: 0.9rem;
+        padding: 0.75rem;
+      }
+
+      .table {
+        font-size: 0.85rem;
+      }
+
+      code {
+        font-size: 0.85rem;
+        padding: 1px 4px;
+      }
+
+      ul, ol {
+        padding-left: 1.25rem;
+      }
+
+      .ms-3 {
+        margin-left: 0.75rem !important;
+      }
+    }
+
+    /* 태블릿 */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      .accordion-button {
+        font-size: 1rem;
+      }
+
+      .accordion-body {
+        font-size: 0.95rem;
+      }
+    }
+
+    /* 테이블 가로 스크롤 (모바일) */
+    @media (max-width: 767px) {
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .table {
+        min-width: 500px;
+      }
     }
   </style>

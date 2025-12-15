@@ -146,39 +146,92 @@
   .results-header {
     margin-top: 2rem;
   }
-  
+
   .max-result-selector {
     display: flex;
     align-items: center;
   }
-  
+
   .max-result-selector .form-select {
     width: auto;
     min-width: 80px;
   }
-  
-  @media (max-width: 768px) {
+
+  /* 모바일 반응형 */
+  @media (max-width: 767px) {
+    .results-header {
+      margin-top: 1rem;
+    }
+
     .d-flex.justify-content-end {
       flex-direction: column;
-      align-items: flex-end;
-      gap: 1rem;
+      align-items: stretch !important;
+      gap: 0.75rem !important;
     }
-    
+
     .d-flex.align-items-center.gap-3 {
       flex-direction: column;
-      align-items: flex-end;
-      gap: 0.5rem;
+      align-items: stretch !important;
+      gap: 0.75rem !important;
       width: 100%;
     }
-    
+
     .max-result-selector {
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.25rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
-    
+
+    .max-result-selector label {
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
     .max-result-selector .form-select {
-      width: 120px;
+      width: 100px;
+      font-size: 0.9rem;
+      padding: 0.375rem 0.5rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    /* 테이블 최적화 */
+    .table {
+      font-size: 0.85rem;
+    }
+
+    .table th, .table td {
+      padding: 0.5rem 0.25rem;
+      white-space: nowrap;
+    }
+
+    .table th:first-child, .table td:first-child {
+      padding-left: 0.5rem;
+    }
+
+    .table th:last-child, .table td:last-child {
+      padding-right: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.4rem;
+    }
+  }
+
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .table {
+      font-size: 0.9rem;
+    }
+
+    .max-result-selector .form-select {
+      width: 100px;
     }
   }
 </style>

@@ -536,6 +536,11 @@
 </div>
 
 <style>
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   .selector-row {
     display: flex;
     gap: 16px;
@@ -549,7 +554,16 @@
     max-width: 100%;
   }
 
-  @media (max-width: 768px) {
+  /* 모바일: 전체 너비, 여백 최소화 */
+  @media (max-width: 767px) {
+    .container {
+      margin-top: 1rem !important;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
     .selector-row {
       flex-direction: column;
       gap: 12px;
@@ -559,15 +573,37 @@
       min-width: 100%;
       max-width: 100%;
     }
+
+    .mb-3 {
+      margin-bottom: 1rem !important;
+    }
+
+    .alert {
+      font-size: 0.9rem;
+      padding: 0.75rem;
+    }
+
+    .btn {
+      padding: 0.75rem;
+      font-size: 1rem;
+    }
   }
 
-  @media (min-width: 769px) and (max-width: 1024px) {
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
     .selector-item {
       min-width: calc(50% - 8px);
     }
 
     .selector-item:last-child {
       flex-basis: 100%;
+    }
+  }
+
+  /* 데스크톱 */
+  @media (min-width: 1024px) {
+    .selector-item {
+      min-width: 280px;
     }
   }
 </style>

@@ -105,3 +105,111 @@ button:focus:not(:focus-visible) {
 	width: 1px;
 	white-space: nowrap;
 }
+
+/* 모바일 반응형 글로벌 스타일 */
+@media (max-width: 767px) {
+	/* 폼 요소 최적화 */
+	.form-control, .form-select {
+		font-size: 16px !important; /* iOS zoom 방지 */
+		padding: 0.75rem 0.75rem !important;
+	}
+
+	.form-label {
+		font-size: 0.95rem;
+		margin-bottom: 0.5rem;
+	}
+
+	/* 버튼 최적화 */
+	.btn {
+		font-size: 1rem;
+		padding: 0.75rem 1rem;
+	}
+
+	.btn-sm {
+		font-size: 0.875rem;
+		padding: 0.5rem 0.75rem;
+	}
+
+	/* 카드 최적화 */
+	.card {
+		margin-bottom: 1rem;
+	}
+
+	.card-body {
+		padding: 1rem;
+	}
+
+	/* Alert 최적화 */
+	.alert {
+		font-size: 0.9rem;
+		padding: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	/* 모달 최적화 */
+	.modal-dialog {
+		margin: 0.5rem;
+	}
+
+	.modal-content {
+		border-radius: 0.5rem;
+	}
+
+	.modal-header, .modal-footer {
+		padding: 1rem;
+	}
+
+	.modal-body {
+		padding: 1rem;
+	}
+
+	/* 체크박스/라디오 그룹 */
+	.form-check {
+		padding-left: 1.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.form-check-input {
+		width: 1.25rem;
+		height: 1.25rem;
+		margin-top: 0.125rem;
+	}
+
+	.form-check-label {
+		font-size: 0.95rem;
+		padding-left: 0.25rem;
+	}
+
+	/* 리스트 그룹 */
+	.list-group-item {
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
+	}
+
+	/* 배지 */
+	.badge {
+		font-size: 0.8rem;
+		padding: 0.35rem 0.5rem;
+	}
+
+	/* 입력 그룹 */
+	.input-group {
+		flex-wrap: nowrap;
+	}
+
+	.input-group-text {
+		font-size: 0.9rem;
+		padding: 0.5rem 0.75rem;
+	}
+}
+
+/* 태블릿 최적화 */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.form-control, .form-select {
+		font-size: 0.95rem;
+	}
+
+	.card-body {
+		padding: 1.5rem;
+	}
+}

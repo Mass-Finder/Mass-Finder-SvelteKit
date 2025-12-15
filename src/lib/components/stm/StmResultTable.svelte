@@ -266,7 +266,7 @@
   .text-danger {
     color: red;
   }
-  
+
   .letter {
     position: relative;
     display: inline;
@@ -283,5 +283,81 @@
     color: gray;
     user-select: none;
     pointer-events: none;
+  }
+
+  /* 모바일 반응형 */
+  @media (max-width: 767px) {
+    .filter-section {
+      padding: 0.75rem;
+    }
+
+    .filter-label {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .filter-options {
+      gap: 0.75rem;
+    }
+
+    .filter-checkbox {
+      gap: 0.4rem;
+    }
+
+    .filter-text {
+      font-size: 0.85rem;
+    }
+
+    input[type="checkbox"] {
+      width: 0.9rem;
+      height: 0.9rem;
+    }
+
+    .table {
+      font-size: 0.85rem;
+    }
+
+    .table th, .table td {
+      padding: 0.5rem 0.25rem;
+    }
+
+    .table th:first-child, .table td:first-child {
+      padding-left: 0.5rem;
+    }
+
+    .table th:last-child, .table td:last-child {
+      padding-right: 0.5rem;
+    }
+
+    .sortable-header {
+      font-size: 0.85rem;
+      padding-right: 1.25rem;
+    }
+
+    .sort-icon {
+      right: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .letter {
+      margin-right: 0.1em;
+      font-size: 0.9em;
+    }
+
+    .letter::before {
+      font-size: 0.45em;
+      top: -0.9em;
+    }
+  }
+
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .table {
+      font-size: 0.9rem;
+    }
+
+    .filter-text {
+      font-size: 0.85rem;
+    }
   }
 </style>

@@ -118,6 +118,79 @@
             color: var(--accent-color);
             font-weight: bold;
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 767px) {
+            .main-container {
+                padding: 1.5rem !important;
+                margin: 1rem;
+            }
+
+            h1.display-2 {
+                font-size: 2.5rem !important;
+            }
+
+            .lead {
+                font-size: 1rem;
+            }
+
+            .module-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 22px;
+            }
+
+            .module-card .p-4 {
+                padding: 1.25rem !important;
+            }
+
+            .h4 {
+                font-size: 1.25rem;
+            }
+
+            .module-features li {
+                font-size: 0.8rem;
+            }
+
+            .module-button {
+                padding: 0.75rem !important;
+                font-size: 0.95rem;
+            }
+
+            .row.g-4 {
+                gap: 1rem !important;
+            }
+
+            .col-lg-6 {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            .mt-5 {
+                margin-top: 2rem !important;
+            }
+
+            .pt-4 {
+                padding-top: 1.5rem !important;
+            }
+        }
+
+        /* 태블릿 */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .main-container {
+                padding: 2.5rem !important;
+            }
+
+            h1.display-2 {
+                font-size: 3rem;
+            }
+
+            .module-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 24px;
+            }
+        }
     </style>
 </svelte:head>
 

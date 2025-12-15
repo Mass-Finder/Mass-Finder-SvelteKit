@@ -72,8 +72,29 @@
 	.content-container {
 	  max-width: 1200px;
 	  margin: 0 auto;
-	  padding: 0 5rem; /* 화면 좌우 여백 */
+	  padding: 0 1rem; /* 기본 모바일 여백 */
 	  width: 100%;
+	}
+
+	/* 태블릿 이상 */
+	@media (min-width: 768px) {
+	  .content-container {
+		padding: 0 2rem;
+	  }
+	}
+
+	/* 데스크톱 */
+	@media (min-width: 1024px) {
+	  .content-container {
+		padding: 0 3rem;
+	  }
+	}
+
+	/* 큰 데스크톱 */
+	@media (min-width: 1440px) {
+	  .content-container {
+		padding: 0 5rem;
+	  }
 	}
 </style>
   

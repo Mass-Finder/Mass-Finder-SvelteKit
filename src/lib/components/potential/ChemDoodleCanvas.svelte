@@ -34,7 +34,24 @@
     // ChemDoodle 기본 설정
     ChemDoodle.ELEMENT['H'].jmolColor = 'black';
     ChemDoodle.ELEMENT['S'].jmolColor = '#B9A130';
-    sketcher = new ChemDoodle.SketcherCanvas('sketcher', 500, 300, {
+
+    // 반응형 캔버스 크기 계산
+    const getCanvasSize = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        // 모바일: 화면 너비에 맞춤 (여백 고려)
+        return { width: Math.min(width - 80, 400), height: 240 };
+      } else if (width < 1024) {
+        // 태블릿
+        return { width: 450, height: 270 };
+      } else {
+        // 데스크톱
+        return { width: 500, height: 300 };
+      }
+    };
+
+    const { width, height } = getCanvasSize();
+    sketcher = new ChemDoodle.SketcherCanvas('sketcher', width, height, {
       useServices: false,
       oneMolecule: true
     });
@@ -46,6 +63,20 @@
 
     // Load saved data from localStorage
     loadSavedData();
+
+    // 리사이즈 이벤트 핸들러
+    const handleResize = () => {
+      if (sketcher) {
+        const { width, height } = getCanvasSize();
+        sketcher.resize(width, height);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   });
 
   function loadSavedData() {
@@ -667,8 +698,8 @@ M  END`,
           Load Template
         </button>
       </div>
-      <div class="text-center">
-        <canvas id="sketcher" class="border border-secondary rounded shadow-sm" width="500" height="300"></canvas>
+      <div class="text-center canvas-wrapper">
+        <canvas id="sketcher" class="border border-secondary rounded shadow-sm"></canvas>
       </div>
     </div>
   </div>
@@ -834,6 +865,13 @@ M  END`,
   canvas {
     display: block;
     margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .canvas-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .canvas-container {
@@ -1027,5 +1065,116 @@ M  END`,
 
   .formula {
     font-family: 'Times New Roman', Times, serif;
+  }
+
+  /* 모바일 반응형 */
+  @media (max-width: 767px) {
+    .canvas-container {
+      padding: 10px;
+    }
+
+    .canvas-wrapper {
+      margin: 0 -10px;
+      padding: 0 10px;
+    }
+
+    .btn-load-template {
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      width: auto;
+    }
+
+    .results {
+      padding: 12px;
+      font-size: 0.9rem;
+    }
+
+    .results strong {
+      font-size: 0.9rem;
+    }
+
+    .delta-value {
+      font-size: 1em;
+    }
+
+    .delta-formula {
+      font-size: 0.85em;
+    }
+
+    .save-notice, .save-notice-crosslink {
+      font-size: 0.85rem;
+    }
+
+    /* 모달 최적화 */
+    .modal-content {
+      padding: 15px;
+      max-width: 95%;
+      max-height: 90vh;
+    }
+
+    .modal-header {
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+    }
+
+    .modal-body {
+      padding: 15px 0;
+    }
+
+    .nav-link {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .amino-acid-grid {
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 6px;
+    }
+
+    .amino-btn {
+      min-width: 60px;
+      padding: 6px 3px;
+      font-size: 0.9rem;
+    }
+
+    .amino-code-single {
+      font-size: 1em;
+    }
+
+    .amino-code-three {
+      font-size: 0.7em;
+    }
+
+    .template-item {
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+
+    .template-name {
+      font-size: 0.95rem;
+    }
+
+    .template-formula {
+      font-size: 0.8rem;
+    }
+  }
+
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .canvas-container {
+      padding: 12px;
+    }
+
+    .results {
+      font-size: 0.95rem;
+    }
+
+    .modal-content {
+      max-width: 90%;
+    }
   }
 </style>

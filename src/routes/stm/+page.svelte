@@ -258,3 +258,37 @@
         <StmResultTable {possibilities} {showNoteColumn} />
     {/if}
 </div>
+
+<style>
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* 모바일 반응형 */
+  @media (max-width: 767px) {
+    .container {
+      margin-top: 1rem !important;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .mb-3 {
+      margin-bottom: 1rem !important;
+    }
+
+    .btn {
+      padding: 0.75rem;
+      font-size: 1rem;
+    }
+  }
+
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    h1 {
+      font-size: 2rem;
+    }
+  }
+</style>

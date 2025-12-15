@@ -289,4 +289,62 @@
   :global(body) {
     background-color: #f8f9fa;
   }
+
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* 모바일 반응형 */
+  @media (max-width: 767px) {
+    .container {
+      margin-top: 1rem !important;
+      padding: 1rem !important;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem !important;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+    }
+
+    .card-body {
+      padding: 1rem;
+    }
+
+    .mb-3, .mb-4 {
+      margin-bottom: 1rem !important;
+    }
+
+    .btn {
+      padding: 0.75rem;
+      font-size: 1rem;
+    }
+
+    .list-group-item {
+      padding: 0.75rem;
+    }
+
+    .form-check {
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  /* 태블릿 */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .container {
+      padding: 2rem !important;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+  }
 </style>
