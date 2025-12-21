@@ -50,7 +50,7 @@ export interface CrosslinkingPotentialModification extends BasePotentialModifica
   distanceValue?: number; // Only for Distance condition
 }
 
-// Union type for all Potential Modifications
+// Union type for all Potential modifications
 export type PotentialModification = SingleSitePotentialModification | CrosslinkingPotentialModification;
 
 // ncAA (Non-Canonical Amino Acid) Interface

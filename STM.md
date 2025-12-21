@@ -86,7 +86,7 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 
 **장점**:
 - 사용자가 별도 설정 없이 즉시 사용 가능
-- 다른 사용자 정의 Potential Modifications와 함께 조합 가능
+- 다른 사용자 정의 Potential modifications와 함께 조합 가능
 - Power set 생성 시 Formylation 포함/미포함 모든 경우의 수 자동 계산
 
 #### E. Admidation (C-말단 아미드화) [DEPRECATED]
@@ -393,14 +393,14 @@ let selectedMonoisotopicAminos = { ...aminoMap };
 // 기본 질량 = Σ(아미노산 질량) - 물 손실량
 baseWeight = Σ(amino_weight) - water_loss
 
-// 최종 질량 = 기본 질량 + Potential Modifications + 이온 부가체
+// 최종 질량 = 기본 질량 + Potential modifications + 이온 부가체
 finalWeight = baseWeight + potentialModifications + adduct_weight
 ```
 
 **질량 구성 요소**:
 - **아미노산 질량**: 자연 AA 또는 ncAA monoisotopic weight
 - **물 손실**: 펩타이드 결합 형성으로 인한 손실
-- **Potential Modifications**:
+- **Potential modifications**:
   - **N-terminus**: +수식 질량 (추가 개념)
   - **C-terminus**: +수식 질량 (추가 개념)
   - **Side Chain**: -타겟 질량 + 수식 질량 (대체 개념)

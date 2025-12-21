@@ -174,7 +174,7 @@
                   aria-expanded="false"
                   aria-controls="stmCollapseThree"
                 >
-                  Step 3 – Used Amino Acids
+                  Step 3 – Amino acids used
                 </button>
               </h2>
               <div
@@ -521,7 +521,7 @@
                   aria-expanded="false"
                   aria-controls="mtsCollapseSix"
                 >
-                  Step 6 – Used Amino Acids
+                  Step 6 – Amino acids used
                 </button>
               </h2>
               <div
@@ -768,7 +768,7 @@
                 data-bs-parent="#drawAccordion"
               >
                 <div class="accordion-body">
-                  <p><strong>Click "save ncAA"</strong> to calculate molecular properties and save.</p>
+                  <p><strong>Click "Save ncAA"</strong> to calculate molecular properties and save.</p>
                   <p><strong>Automatically calculated:</strong></p>
                   <ul>
                     <li><strong>Molecular Formula:</strong> Chemical formula (e.g., C₁₁H₁₂N₂O₂)</li>
@@ -1051,7 +1051,7 @@
                   aria-expanded="false"
                   aria-controls="potentialCollapseFour"
                 >
-                  Using Load Template
+                  Using Load template
                 </button>
               </h2>
               <div
@@ -1061,13 +1061,13 @@
                 data-bs-parent="#potentialAccordion"
               >
                 <div class="accordion-body">
-                  <p><strong>Load Template</strong> allows you to reuse chemical structures you previously saved in the "Add ncAA" tab.</p>
+                  <p><strong>Load template</strong> allows you to reuse chemical structures you previously saved in the "Add ncAA" tab.</p>
 
                   <p class="mt-2"><strong>Workflow:</strong></p>
                   <ol>
                     <li>Go to "Add ncAA" tab and draw/save common structures (e.g., phospho-group, acetyl-group)</li>
                     <li>Return to Potential Modification tab</li>
-                    <li>Click "Load Template"</li>
+                    <li>Click "Load template"</li>
                     <li>Select the saved structure</li>
                     <li>The structure will load into the canvas</li>
                     <li>Add modification-specific information (target, condition, etc.)</li>
@@ -1115,7 +1115,7 @@
                     <li><strong>Preparation phase:</strong>
                       <ul>
                         <li>Define and save ncAAs (if using genetic code expansion)</li>
-                        <li>Define and save Potential Modifications (if modeling PTMs)</li>
+                        <li>Define and save Potential modifications (if modeling PTMs)</li>
                       </ul>
                     </li>
                     <li><strong>Prediction phase (STM):</strong>
@@ -1190,7 +1190,7 @@
                   <p><strong>STM returns too many results:</strong></p>
                   <ul>
                     <li>Deselect amino acids that weren't present in your experiment</li>
-                    <li>Limit the number of selected Potential Modifications</li>
+                    <li>Limit the number of selected Potential modifications</li>
                     <li>Check if ncAA codon assignments are correct</li>
                   </ul>
 

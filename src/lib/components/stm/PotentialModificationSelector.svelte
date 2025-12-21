@@ -89,7 +89,7 @@
 </script>
 
 <div class="container mt-4">
-    <label for="potential-selector" class="form-label fw-bold">Potential Modifications (Max {MAX_SELECTION})</label>
+    <label for="potential-selector" class="form-label fw-bold">Potential modifications (Max {MAX_SELECTION})</label>
     <div id="potential-selector" class="row g-3">
         {#each $selectedSlots as slot, index}
             <div class="col-md-3 col-sm-6">

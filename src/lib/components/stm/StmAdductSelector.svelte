@@ -41,9 +41,9 @@
 
 <div class="form-group">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <label class="form-label fw-bold mb-0">Adducts (Multiple Selection)</label>
+    <label class="form-label fw-bold mb-0">Adducts</label>
     <ColumnToggle
-      label="Potential Byproducts"
+      label="Potential byproducts"
       storageKey="stm-show-note-column"
       defaultValue={true}
       onChange={handleNoteColumnToggle}

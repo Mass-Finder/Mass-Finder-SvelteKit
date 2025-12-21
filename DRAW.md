@@ -210,7 +210,7 @@ function resetForm() {
 3. Calculate 버튼으로 분자 속성 계산
 
 ### 저장 단계
-1. "save ncAA" 버튼 클릭
+1. "Save ncAA" 버튼 클릭
 2. 타이틀 검증 (공백, 중복 체크)
 3. 분자 속성 검증 (계산 완료 확인)
 4. LocalStorage에 데이터 추가
@@ -280,7 +280,7 @@ const ncAAWeight = savedNcAA.find(item => item.title === 'B')?.monoisotopicWeigh
 
 **사용 방식**:
 1. Draw 페이지에서 화학 수식 구조 저장
-2. Potential Modification 페이지에서 Load Template로 불러오기
+2. Potential Modification 페이지에서 Load template로 불러오기
 3. 타겟 아미노산 설정 및 조건 추가
 4. Modification으로 저장
 
@@ -379,16 +379,16 @@ const ncAAWeight = savedNcAA.find(item => item.title === 'B')?.monoisotopicWeigh
 
 ### ncAA 저장 워크플로우
 1. Draw 페이지 접속
-2. "Saved Title"에 `B` 입력 (ncAA 식별자)
+2. "Name of ncAA"에 `B` 입력 (ncAA 식별자)
 3. ChemDoodle 캔버스에서 비표준 아미노산 구조 그리기
-4. "save ncAA" 버튼 클릭
+4. "Save ncAA" 버튼 클릭
 5. 분자 속성 자동 계산 및 저장 완료
-6. "Saved Molecule Data" 섹션에서 확인
+6. "Saved ncAA" 섹션에서 확인
 
 ### Potential Modification 저장 워크플로우
 1. Draw 페이지에서 화학 수식 구조 저장 (예: `d1`)
 2. Potential Modification 페이지로 이동
-3. Load Template에서 저장한 구조 선택
+3. Load template에서 저장한 구조 선택
 4. Single-site 또는 Crosslinking 설정
 5. Potential Modification으로 최종 저장
 

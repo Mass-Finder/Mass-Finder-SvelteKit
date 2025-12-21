@@ -184,7 +184,7 @@
     }
 
     if (!validateProteinSequence()) {
-      alert("Please enter the correct Protein Sequence");
+      alert("Please enter the correct Protein sequence");
       return false;
     }
 

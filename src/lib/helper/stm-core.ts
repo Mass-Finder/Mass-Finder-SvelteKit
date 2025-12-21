@@ -204,7 +204,7 @@ export class StmCore {
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
 
-        // Potential Modifications를 타입별로 분류
+        // Potential modifications를 타입별로 분류
         const singleSiteModifications = potentialModifications.filter(
             (mod): mod is SingleSitePotentialModification => mod.type === 'Single-site'
         );
@@ -343,7 +343,7 @@ export class StmCore {
                     let finalWeight = baseWeight;
                     let finalMolWeight = baseMolWeight;
 
-                    // Apply Single-site Potential Modifications (N-terminus and C-terminus only)
+                    // Apply Single-site Potential modifications (N-terminus and C-terminus only)
                     // Note: Side Chain modifications are handled separately after ionType generation
                     const appliedModifications: Array<{mod: SingleSitePotentialModification, position: number}> = [];
 
@@ -504,7 +504,7 @@ export class StmCore {
                         reasons.push("Ribosome skipping");
                     }
 
-                    // Single-site Potential Modifications를 reason에 추가
+                    // Single-site Potential modifications를 reason에 추가
                     appliedModifications.forEach(({mod}) => {
                         reasons.push(`${mod.name}`);
                     });

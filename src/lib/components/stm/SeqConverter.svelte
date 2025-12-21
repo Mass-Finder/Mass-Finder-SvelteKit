@@ -84,7 +84,7 @@
 <div class="row mb-3">
   <!-- 입력받는 input 필드 -->
   <div class="col-md-10">
-    <label for="sequence-input" class="form-label fw-bold">Input RNA Sequence</label>
+    <label for="sequence-input" class="form-label fw-bold">Input RNA sequence</label>
     <textarea
       id="sequence-input" 
       class="form-control"
@@ -175,7 +175,7 @@
   <div class="col-md-12">
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title text-primary">Protein Sequence</h5>
+        <h5 class="card-title text-primary">Protein sequence</h5>
         <!-- 단일 텍스트 노드처럼 연속된 문자를 출력.
              숫자는 ::before pseudo-element를 통해 표시되어, 복사/드래그 시 포함되지 않습니다. -->
         <p class="card-text">

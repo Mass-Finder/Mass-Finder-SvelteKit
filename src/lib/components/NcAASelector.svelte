@@ -87,7 +87,7 @@
   </script>
   
   <div class="container mt-4">
-    <label for="selector" class="form-label fw-bold">Used Non-Canonical Monomers</label>
+    <label for="selector" class="form-label fw-bold">non-canonical amino acids used</label>
     <div id="selector" class="row g-3">
       {#each keys as key}
         <div class="col-md-4">

@@ -8,7 +8,7 @@
 2. [Sequence to Mass (STM)](#sequence-to-mass-stm)
 3. [Mass to Sequence (MTS)](#mass-to-sequence-mts)
 4. [Add Non-Canonical Amino Acids (ncAA)](#add-non-canonical-amino-acids-ncaa)
-5. [Potential Modifications](#potential-modifications)
+5. [Potential modifications](#potential-modifications)
 6. [Tips & Best Practices](#tips--best-practices)
 
 ---
@@ -24,7 +24,7 @@ X-MAS is a specialized tool designed for biochemical researchers working with ma
 - **Sequence to Mass (STM)**: Predict masses from RNA sequences with support for translation phenomena (reinitiation, premature termination, ribosome skipping)
 - **Mass to Sequence (MTS)**: Reverse-engineer amino acid sequences from detected masses using simulated annealing algorithms
 - **Chemical Structure Drawing**: Design and calculate masses for non-canonical amino acids (ncAAs)
-- **Potential Modifications**: Model post-translational modifications (PTMs) and crosslinking events
+- **Potential modifications**: Model post-translational modifications (PTMs) and crosslinking events
 
 ### Who Should Use X-MAS?
 
@@ -47,7 +47,7 @@ STM converts nucleotide sequences into predicted amino acid sequences and their 
 
 ### Step-by-Step Guide
 
-#### Step 1: Input RNA Sequence
+#### Step 1: Input RNA sequence
 
 **What you need**: Your RNA sequence in standard nucleotide format (A, U, G, C)
 
@@ -97,7 +97,7 @@ STM converts nucleotide sequences into predicted amino acid sequences and their 
 
 **⚠️ Important**: Make sure you've already drawn and saved your ncAA structure in the "Add ncAA" section before configuring it here.
 
-#### Step 4: Configure Potential Modifications
+#### Step 4: Configure Potential modifications
 
 **What this does**: Models post-translational modifications (PTMs) and crosslinking events that may or may not occur in your sample.
 
@@ -185,7 +185,7 @@ MTS uses simulated annealing algorithms to search for amino acid sequences that 
 
 **💡 Tip**: Copy masses directly from your MS software export. Remove any extra columns or labels - just the numbers.
 
-#### Step 2: (Optional but Recommended) Input RNA Sequence
+#### Step 2: (Optional but Recommended) Input RNA sequence
 
 **Why this helps**: If you provide the RNA sequence that produced these masses, the algorithm can:
 - Use the expected amino acid composition as a starting point
@@ -211,7 +211,7 @@ Same as STM - define any ncAAs that might be present in your sequences.
 
 **⚠️ Important**: Only include ncAAs that you actually used in your experiment. Adding unnecessary ncAAs increases search space and reduces accuracy.
 
-#### Step 5: Configure Potential Modifications
+#### Step 5: Configure Potential modifications
 
 Same as STM - define any PTMs or crosslinking events that might be present.
 
@@ -290,7 +290,7 @@ Click "Calculate" to start the simulated annealing search.
 
 **💡 Tip**: Draw the complete structure of the amino acid residue as it would appear in a peptide chain (i.e., after condensation, without the separate -OH from COOH and -H from NH₂).
 
-**Templates available**: Click "Load Template" to choose from pre-drawn common ncAAs:
+**Templates available**: Click "Load template" to choose from pre-drawn common ncAAs:
 - para-azido-phenylalanine (pAF)
 - para-propargyloxy-phenylalanine (pPa)
 - Pyrrolysine (Pyl)
@@ -328,11 +328,11 @@ Click "Calculate Weight" to:
 
 ---
 
-## Potential Modifications
+## Potential modifications
 
 ### Overview
 
-**What are Potential Modifications?**
+**What are Potential modifications?**
 
 Potential modifications represent chemical changes that **may or may not occur** in your experimental samples. Unlike standard parameters, these modifications are probabilistic - the system calculates results for all possible combinations.
 
@@ -487,7 +487,7 @@ In real experiments, you often don't know which modifications actually occurred.
 2. **Identify modification states**: Determine which modifications are present based on which masses you observe
 3. **Complete coverage**: Ensure you don't miss any potential modification patterns
 
-### Load Template Feature
+### Load template Feature
 
 **What it does**: Quickly load pre-drawn modification structures from a template library.
 
@@ -500,7 +500,7 @@ In real experiments, you often don't know which modifications actually occurred.
 - And more...
 
 **How to use**:
-1. Click "Load Template" button in the modification editor
+1. Click "Load template" button in the modification editor
 2. Browse the template gallery
 3. Click on a template to load its structure
 4. Modify as needed or use as-is

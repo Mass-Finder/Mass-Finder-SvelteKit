@@ -677,7 +677,7 @@ M  END`,
 
 <div class="canvas-section mb-3">
   <div class="mb-3">
-    <label class="form-label fw-bold">Chemical Structure</label>
+    <label class="form-label fw-bold">Chemical structure</label>
 
     <!-- Structure Name Input (조건부 렌더링) -->
     {#if showStructureName}
@@ -695,7 +695,7 @@ M  END`,
     <div class="canvas-container">
       <div class="d-flex justify-content-end mb-2">
         <button class="btn btn-primary btn-load-template" on:click={openModal}>
-          Load Template
+          Load template
         </button>
       </div>
       <div class="text-center canvas-wrapper">
@@ -710,7 +710,7 @@ M  END`,
       on:click={calculateChemical}
       disabled={calculateDisabled}
     >
-    calculate molecular weight
+    Calculate molecular weight
     </button>
   </div>
 
@@ -776,7 +776,7 @@ M  END`,
   <div class="modal-overlay" on:click={closeModal}>
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
-        <h5 class="modal-title">Load Template</h5>
+        <h5 class="modal-title">Load template</h5>
         <button type="button" class="btn-close" on:click={closeModal}></button>
       </div>
 
@@ -803,7 +803,7 @@ M  END`,
             class="nav-link {activeTab === 'modifications' ? 'active' : ''}"
             on:click={() => activeTab = 'modifications'}
           >
-            Potential Modifications
+            Potential modifications
           </button>
         </li>
       </ul>

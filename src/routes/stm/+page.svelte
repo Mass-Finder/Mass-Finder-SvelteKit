@@ -87,7 +87,7 @@
         // ncaa가 선택이 되었으나 codon 값이 입력되지 않은 경우
         if (!checkCustomCodonTitles1()) {
             alert(
-                "Codon name was not entered in the selected Used Non-Canonical Monomers value.",
+                "Codon name was not entered in the selected non-canonical amino acids used value.",
             );
             return false;
         }
@@ -251,7 +251,7 @@
         class="btn btn-primary w-100"
         on:click={_onTapCalcButton}
     >
-        Predict Mass!
+    Calculate mass
     </button>
 
     {#if rnaSeq !== null && possibilities.length > 0}

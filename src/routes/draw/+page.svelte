@@ -95,13 +95,13 @@
 
     <!-- Title Input -->
     <div class="mb-3">
-      <label for="chemical-title" class="form-label fw-bold">Saved Title</label>
+      <label for="chemical-title" class="form-label fw-bold">Name of ncAA</label>
       <input
         type="text"
         id="chemical-title"
         bind:value={chemicalTitle}
         class="form-control"
-        placeholder="Enter title for saving"
+        placeholder="Enter title"
       />
     </div>
 
@@ -119,12 +119,12 @@
     <!-- Save Button -->
     <div class="mb-4">
       <button class="btn btn-primary btn-lg w-100" on:click={saveData}>
-        save ncAA
+        Save ncAA
       </button>
     </div>
 
-    <!-- Saved Molecule Data -->
-    <h2 class="text-start my-4">Saved Molecule Data</h2>
+    <!-- Saved ncAA -->
+    <h2 class="text-start my-4">Saved ncAA</h2>
     {#if $savedData.length > 0}
       <ul class="list-group">
         {#each $savedData as data, index (data.title)}
