@@ -201,8 +201,8 @@
                 X-MAS
             </h1>
             <p class="lead text-muted mt-4 lh-base">
-                Advanced Computational Platform for Mass Spectrometry Analysis<br>
-                and Protein Sequence Prediction
+                eXpanded-code Mass Analysis System<br>
+                for ncAA-containing peptides produced in cell-free systems
             </p>
         </div>
 
@@ -230,16 +230,15 @@
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">✏️</div>
                         <h3 class="h4 fw-semibold text-dark mb-3">My ncAAs</h3>
-                        <p class="text-muted mb-3 lh-base">Interactive molecular structure drawing tool for custom compound design and mass calculation.</p>
+                        <p class="text-muted mb-3 lh-base">My ncAAs allows users to incorporate novel substrates into their analyses by:</p>
                         <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Chemical structure drawing</li>
-                            <li class="mb-2">Real-time mass calculation</li>
-                            <li class="mb-2">Export capabilities</li>
-                            <li class="mb-2">Integration with analysis modules</li>
+                            <li class="mb-2">Drawing the molecular structure of an ncAA</li>
+                            <li class="mb-2">Automatically computing its molecular weight</li>
+                            <li class="mb-2">Saving the ncAA for seamless use throughout X-MAS, enabling peptide mass prediction and identification of byproducts containing that ncAA</li>
                         </ul>
                     </div>
                     <div class="p-4 pt-0">
-                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open Editor</button>
+                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open My ncAAs</button>
                     </div>
                 </div>
             </div>
@@ -248,13 +247,13 @@
                 <div class="module-card stm card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/stm')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/stm')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🧬</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Sequence to Mass (STM)</h3>
-                        <p class="text-muted mb-3 lh-base">Predict molecular masses from RNA sequences considering various biological variations and modifications.</p>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Sequence-to-Mass (STM)</h3>
+                        <p class="text-muted mb-3 lh-base">STM computes theoretical peptide masses based on the translational environment by allowing users to:</p>
                         <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Non-canonical amino acid incorporation</li>
-                            <li class="mb-2">Post-translational modifications</li>
-                            <li class="mb-2">Disulfide bond calculations</li>
-                            <li class="mb-2">Ion adduct analysis</li>
+                            <li class="mb-2">Enter DNA or mRNA template sequences</li>
+                            <li class="mb-2">Specify the amino acids present in the cell-free reaction</li>
+                            <li class="mb-2">Apply user-defined chemical or enzymatic modifications</li>
+                            <li class="mb-2">Load saved ncAAs and assign them to codons, enabling X-MAS to calculate theoretical masses for both intended products and possible byproducts containing ncAAs</li>
                         </ul>
                     </div>
                     <div class="p-4 pt-0">
@@ -267,17 +266,16 @@
                 <div class="module-card mts card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/mts')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/mts')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">⚖️</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Mass to Sequence (MTS)</h3>
-                        <p class="text-muted mb-3 lh-base">Determine optimal amino acid sequences from detected molecular masses using simulated annealing algorithms.</p>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Mass-to-Sequences (MTS)</h3>
+                        <p class="text-muted mb-3 lh-base">MTS enables users to resolve unexplained mass peaks by:</p>
                         <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Simulated annealing optimization</li>
-                            <li class="mb-2">Fixed sequence constraints</li>
-                            <li class="mb-2">RNA reference integration</li>
-                            <li class="mb-2">Formylation & adduct handling</li>
+                            <li class="mb-2">Entering an observed m/z value</li>
+                            <li class="mb-2">Specifying the set of canonical and non-canonical amino acids used in the reaction</li>
+                            <li class="mb-2">Predicting peptide sequences whose theoretical masses correspond to the observed peak</li>
                         </ul>
                     </div>
                     <div class="p-4 pt-0">
-                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/mts')}>Find Sequences</button>
+                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/mts')}>Identify unexpected products</button>
                     </div>
                 </div>
             </div>
@@ -286,13 +284,11 @@
                 <div class="module-card potential card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/potential')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/potential')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🔬</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Potential Modification</h3>
-                        <p class="text-muted mb-3 lh-base">Define and manage potential post-translational modifications with custom molecular structures and target specifications.</p>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Custom Enzymatic and Chemical Reactions</h3>
+                        <p class="text-muted mb-3 lh-base">X-MAS predicts the masses of peptides that may be produced through user-defined enzymatic and chemical reactions. Users can define these reactions by drawing the target product, including:</p>
                         <ul class="module-features ps-0 mb-0">
                             <li class="mb-2">Single-site modifications</li>
-                            <li class="mb-2">Crosslinking configurations</li>
-                            <li class="mb-2">Custom structure drawing</li>
-                            <li class="mb-2">Target amino acid selection</li>
+                            <li class="mb-2">Crosslinking modifications (e.g., disulfide bond formation)</li>
                         </ul>
                     </div>
                     <div class="p-4 pt-0">
