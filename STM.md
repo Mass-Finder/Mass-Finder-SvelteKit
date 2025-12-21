@@ -570,7 +570,8 @@ function checkCustomCodonTitles2() // :122-151
 #### A. 주요 컴포넌트
 - **SeqConverter**: RNA 시퀀스 입력/변환
 - **NcAACodonSelector**: ncAA와 코돈 매핑 설정
-- **StmAdductSelector**: 이온 부가체 다중 선택
+- **StmAdductSelector**: 이온 부가체 다중 선택. "Potential byproducts" 토글 기능이 포함되어 있습니다.
+- **Potential byproducts 토글**: 이 토글을 비활성화하면 결과 테이블에서 "Note"가 있는 모든 행(Byproducts)이 숨겨집니다. 기본값은 활성화입니다. "Note"는 `reasons` 배열에 내용이 있는 결과를 의미합니다.
 - **AminoMapSelector**: 표준 아미노산 선택
 - **PotentialModificationSelector**: 사용자 정의 수식 선택 (Single-site, Crosslinking)
   - N-terminus, C-terminus, Side Chain 수식 적용

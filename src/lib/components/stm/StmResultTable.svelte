@@ -2,7 +2,10 @@
   import { adductPrintName, aminoMap } from '$lib/helper/amino_mapper';
 
   export let possibilities = [];
-  export let showNoteColumn = true;
+  export let showByproducts = true;
+
+  // 필터링된 결과
+  let filteredPossibilities = [];
 
   // 선택된 필터를 객체로 관리
   let selectedFilters = {};
@@ -38,7 +41,7 @@
   $: noteOptions = Object.keys(selectedFilters);
 
   // 필터링 및 정렬 로직
-  $: filteredPossibilities = possibilities
+  $: internallyFiltered = possibilities
     .filter(solution => {
       const activeFilters = Object.entries(selectedFilters).filter(([_, isSelected]) => isSelected);
       if (activeFilters.length === 0) return true;
@@ -56,7 +59,7 @@
       } else if (sortState.monoisotopicWeight === 2) {
         return b.weight - a.weight;
       }
-      
+
       // Molecular Weight 정렬
       if (sortState.molecularWeight === 1) {
         return a.molecularWeight - b.molecularWeight;
@@ -72,9 +75,21 @@
       } else if (sortState.sequence === 2) {
         return bFilteredLength - aFilteredLength;
       }
-      
+
       return 0;
     });
+
+  // showByproducts와 internallyFiltered 변경에 반응
+  // 항상 새 배열을 생성하여 Svelte가 변경을 감지하도록 함
+  $: {
+    if (showByproducts) {
+      // 모두 표시 (byproducts 표시)
+      filteredPossibilities = [...internallyFiltered];
+    } else {
+      // Note가 없는 것만 표시 (byproducts 숨김)
+      filteredPossibilities = internallyFiltered.filter(p => !p.reasons || p.reasons.length === 0);
+    }
+  }
 
   function handleFilterChange(filter) {
     selectedFilters[filter] = !selectedFilters[filter];
@@ -135,75 +150,73 @@
     </div>
   </div>
 
-  <table class="table table-striped table-hover">
-    <thead class="table-light">
-      <tr>
-        <th scope="col">No.</th>
-        <th 
-          scope="col" 
-          class="sortable-header"
-          on:click={() => handleSort('monoisotopicWeight')}
-        >
-          Monoisotopic Weight
-          {#if sortState.monoisotopicWeight === 1}
-            <span class="sort-icon">↑</span>
-          {:else if sortState.monoisotopicWeight === 2}
-            <span class="sort-icon">↓</span>
-          {:else}
-            <span class="sort-icon">↕</span>
-          {/if}
-        </th>
-        <th 
-          scope="col"
-          class="sortable-header"
-          on:click={() => handleSort('molecularWeight')}
-        >
-          Molecular Weight
-          {#if sortState.molecularWeight === 1}
-            <span class="sort-icon">↑</span>
-          {:else if sortState.molecularWeight === 2}
-            <span class="sort-icon">↓</span>
-          {:else}
-            <span class="sort-icon">↕</span>
-          {/if}
-        </th>
-        <th 
-          scope="col"
-          class="sortable-header"
-          on:click={() => handleSort('sequence')}
-        >
-          Sequence
-          {#if sortState.sequence === 1}
-            <span class="sort-icon">↑</span>
-          {:else if sortState.sequence === 2}
-            <span class="sort-icon">↓</span>
-          {:else}
-            <span class="sort-icon">↕</span>
-          {/if}
-        </th>
-        <th scope="col">Adduct</th>
-        {#if showNoteColumn}
-          <th scope="col">Note</th>
-        {/if}
-      </tr>
-    </thead>
-    <tbody>
-      {#each filteredPossibilities as solution, index}
+  {#key showByproducts}
+    <table class="table table-striped table-hover">
+      <thead class="table-light">
         <tr>
-          <td>{index + 1}</td>
-          <td>{solution.weight.toFixed(3)}</td>
-          <td>{solution.molecularWeight.toFixed(3)}</td>
-          <td>
-            {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{#if item.letter.crosslinked && item.letter.crosslinkModification}{item.letter.crosslinkModification}{:else if item.letter.sideChainModified && item.letter.sideChainModification}{#if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'N-terminus'}{item.letter.singleSiteModification}{/if}{item.letter.sideChainModification}{#if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'C-terminus'}{item.letter.singleSiteModification}{/if}{:else if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'N-terminus'}{item.letter.singleSiteModification}{item.letter.letter}{:else if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'C-terminus'}{item.letter.letter}{item.letter.singleSiteModification}{:else}{item.letter.letter}{/if}</span>{/each}
-          </td>
-          <td>{adductPrintName(solution.adduct) || '-'}</td>
-          {#if showNoteColumn}
-            <td>{formatReasons(solution.reasons)}</td>
-          {/if}
+          <th scope="col">No.</th>
+          <th
+            scope="col"
+            class="sortable-header"
+            on:click={() => handleSort('monoisotopicWeight')}
+          >
+            Monoisotopic Weight
+            {#if sortState.monoisotopicWeight === 1}
+              <span class="sort-icon">↑</span>
+            {:else if sortState.monoisotopicWeight === 2}
+              <span class="sort-icon">↓</span>
+            {:else}
+              <span class="sort-icon">↕</span>
+            {/if}
+          </th>
+          <th
+            scope="col"
+            class="sortable-header"
+            on:click={() => handleSort('molecularWeight')}
+          >
+            Molecular Weight
+            {#if sortState.molecularWeight === 1}
+              <span class="sort-icon">↑</span>
+            {:else if sortState.molecularWeight === 2}
+              <span class="sort-icon">↓</span>
+            {:else}
+              <span class="sort-icon">↕</span>
+            {/if}
+          </th>
+          <th
+            scope="col"
+            class="sortable-header"
+            on:click={() => handleSort('sequence')}
+          >
+            Sequence
+            {#if sortState.sequence === 1}
+              <span class="sort-icon">↑</span>
+            {:else if sortState.sequence === 2}
+              <span class="sort-icon">↓</span>
+            {:else}
+              <span class="sort-icon">↕</span>
+            {/if}
+          </th>
+          <th scope="col">Adduct</th>
+          <th scope="col">Note</th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {#each filteredPossibilities as solution, index}
+          <tr>
+            <td>{index + 1}</td>
+            <td>{solution.weight.toFixed(3)}</td>
+            <td>{solution.molecularWeight.toFixed(3)}</td>
+            <td>
+              {#each solution.sequence.map((letter,idx)=>({letter,origIndex:idx})).filter(item=>item.letter.letter!=="") as item,visibleIndex}<span class="letter" class:text-danger={!item.letter.natural} data-index={visibleIndex%3===0?visibleIndex+1:undefined}>{#if item.letter.crosslinked && item.letter.crosslinkModification}{item.letter.crosslinkModification}{:else if item.letter.sideChainModified && item.letter.sideChainModification}{#if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'N-terminus'}{item.letter.singleSiteModification}{/if}{item.letter.sideChainModification}{#if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'C-terminus'}{item.letter.singleSiteModification}{/if}{:else if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'N-terminus'}{item.letter.singleSiteModification}{item.letter.letter}{:else if item.letter.singleSiteModified && item.letter.singleSiteModification && item.letter.singleSiteCondition === 'C-terminus'}{item.letter.letter}{item.letter.singleSiteModification}{:else}{item.letter.letter}{/if}</span>{/each}
+            </td>
+            <td>{adductPrintName(solution.adduct) || '-'}</td>
+            <td>{formatReasons(solution.reasons)}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/key}
 </div>
 
 <style>

@@ -20,7 +20,7 @@
 
     let ionTypes = ['+H']; // 배열로 변경
     let potentialModifications = []; // Potential modifications
-    let showNoteColumn = true; // Note 칼럼 표시 여부
+    let showByproducts = true; // Note가 있는 행(Byproducts) 표시 여부 (true: 표시, false: 숨김)
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
     let codonTitles = writable({
@@ -206,7 +206,7 @@
     }
 
     function handleNoteColumnToggle(e) {
-        showNoteColumn = e.detail;
+        showByproducts = e.detail;
     }
 </script>
 
@@ -255,7 +255,7 @@
     </button>
 
     {#if rnaSeq !== null && possibilities.length > 0}
-        <StmResultTable {possibilities} {showNoteColumn} />
+        <StmResultTable {possibilities} showByproducts={showByproducts} />
     {/if}
 </div>
 
@@ -263,7 +263,7 @@
   .container {
     padding-left: 0;
     padding-right: 0;
-  }
+  } 
 
   /* 모바일 반응형 */
   @media (max-width: 767px) {
