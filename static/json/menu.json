@@ -4,6 +4,10 @@
         "link": "/manual"
     },
     {
+        "title": "Potential Modification",
+        "link": "/potential"
+    },
+    {
         "title": "My ncAAs",
         "link": "/draw"
     },
@@ -14,9 +18,6 @@
     {
         "title": "Mass to Sequence",
         "link": "/mts"
-    },
-    {
-        "title": "Potential Modification",
-        "link": "/potential"
     }
+
 ]
