@@ -204,10 +204,6 @@
     function handlePotentialModificationChange(e) {
         potentialModifications = e.detail;
     }
-
-    function handleNoteColumnToggle(e) {
-        showByproducts = e.detail;
-    }
 </script>
 
 <div class="container mt-5">
@@ -228,7 +224,6 @@
     <div class="mb-3">
         <StmAdductSelector
             on:changeAdduct={handleAdductChange}
-            on:toggleNoteColumn={handleNoteColumnToggle}
         />
     </div>
 
@@ -246,13 +241,25 @@
         />
     </div>
 
-    <button
-        type="button"
-        class="btn btn-primary w-100"
-        on:click={_onTapCalcButton}
-    >
-    Calculate mass
-    </button>
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <button
+            type="button"
+            class="btn btn-primary flex-grow-1"
+            on:click={_onTapCalcButton}
+        >
+        Calculate mass
+        </button>
+        <div class="byproducts-toggle form-check form-switch d-flex align-items-center">
+            <label class="form-check-label me-2 mb-0" for="show-byproducts">Potential byproducts</label>
+            <input
+                type="checkbox"
+                class="form-check-input"
+                id="show-byproducts"
+                role="switch"
+                bind:checked={showByproducts}
+            />
+        </div>
+    </div>
 
     {#if rnaSeq !== null && possibilities.length > 0}
         <StmResultTable {possibilities} showByproducts={showByproducts} />
@@ -263,7 +270,22 @@
   .container {
     padding-left: 0;
     padding-right: 0;
-  } 
+  }
+
+  .byproducts-toggle {
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+
+  .byproducts-toggle label {
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  .byproducts-toggle .form-check-input {
+    margin-top: 0;
+    margin-left: 0;
+  }
 
   /* 모바일 반응형 */
   @media (max-width: 767px) {
@@ -282,6 +304,10 @@
     .btn {
       padding: 0.75rem;
       font-size: 1rem;
+    }
+
+    .byproducts-toggle label {
+      font-size: 0.85rem;
     }
   }
 

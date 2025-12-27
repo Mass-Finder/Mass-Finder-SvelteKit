@@ -1,10 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import ColumnToggle from './ColumnToggle.svelte';
 
   const dispatch = createEventDispatcher();
-
-  export let showNoteColumn = true;
 
   let selectedAdducts = ['+H']; // 기본값으로 +H 선택
 
@@ -27,28 +24,15 @@
       // 선택되지 않은 경우 추가
       selectedAdducts = [...selectedAdducts, adductValue];
     }
-    
+
     // 아무것도 선택되지 않은 경우 'none' 값을 전달
     const resultAdducts = selectedAdducts.length === 0 ? ['none'] : selectedAdducts;
     dispatch('changeAdduct', resultAdducts);
   }
-
-  function handleNoteColumnToggle(value) {
-    showNoteColumn = value;
-    dispatch('toggleNoteColumn', value);
-  }
 </script>
 
 <div class="form-group">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <label class="form-label fw-bold mb-0">Adducts</label>
-    <ColumnToggle
-      label="Potential byproducts"
-      storageKey="stm-show-note-column"
-      defaultValue={true}
-      onChange={handleNoteColumnToggle}
-    />
-  </div>
+  <div class="form-label fw-bold mb-2">Adducts</div>
   
   <div class="adduct-groups">
     <!-- Positive Group -->
