@@ -88,8 +88,8 @@
     });
 </script>
 
-<div class="container mt-4">
-    <label for="potential-selector" class="form-label fw-bold">Potential modifications (Max {MAX_SELECTION})</label>
+<div class="mt-4">
+    <label for="potential-selector" class="form-label fw-bold">Potential modifications</label>
     <div id="potential-selector" class="row g-3">
         {#each $selectedSlots as slot, index}
             <div class="col-md-3 col-sm-6">
@@ -144,5 +144,9 @@
     .select-btn:hover {
         background-color: #e9ecef;
         border-color: #6c757d;
+    }
+
+    #potential-selector {
+        margin: 0.5rem;
     }
 </style>

@@ -103,8 +103,8 @@
     const keys = Object.keys($selectedData);
   </script>
   
-  <div class="container mt-4">
-    <label for="selector" class="form-label fw-bold">non-canonical amino acids used</label>
+  <div class="mt-4">
+    <label for="selector" class="form-label fw-bold">Non-canonical amino acids used</label>
     <div id="selector" class="row g-3">
       {#each keys as key}
         <div class="col-md-4">
@@ -157,6 +157,10 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+  }
+
+  #selector {
+    margin: 0.5rem;
   }
   </style>
   

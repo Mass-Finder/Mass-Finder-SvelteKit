@@ -220,21 +220,15 @@
     </div>
 
     <div class="mb-3">
+        <AminoMapSelector
+            on:changeAminos={(e) => handleAminoMapChange(e.detail)}
+        />
+    </div>
+
+    <div class="mb-3">
         <StmAdductSelector
             on:changeAdduct={handleAdductChange}
             on:toggleNoteColumn={handleNoteColumnToggle}
-        />
-    </div>
-
-    <div class="mb-3">
-        <PotentialModificationSelector
-            on:change={handlePotentialModificationChange}
-        />
-    </div>
-
-    <div class="mb-3">
-        <AminoMapSelector
-            on:changeAminos={(e) => handleAminoMapChange(e.detail)}
         />
     </div>
 
@@ -243,6 +237,12 @@
             on:changeNcAA={handleNcAAChange}
             bind:codonTitles
             {onChangeCodonTitles}
+        />
+    </div>
+
+    <div class="mb-3">
+        <PotentialModificationSelector
+            on:change={handlePotentialModificationChange}
         />
     </div>
 

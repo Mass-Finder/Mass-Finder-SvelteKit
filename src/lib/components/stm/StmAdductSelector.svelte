@@ -110,6 +110,7 @@
     flex-direction: row;
     gap: 30px;
     align-items: flex-start;
+    margin: 0.5rem;
   }
 
   .adduct-group {
