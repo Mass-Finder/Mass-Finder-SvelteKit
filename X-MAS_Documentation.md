@@ -453,11 +453,11 @@ Select the computational intensity of the simulated annealing algorithm:
 |------|--------------|----------|
 | **Standard** | Balanced (10,000 initial temp) | Quick searches, low masses, or when RNA sequence is provided |
 | **Think** | Thorough (50,000 initial temp) | High masses or complex sequences |
-| **Deep Think** | Exhaustive (100,000 initial temp) | Maximum accuracy needed, or when other modes don't find good matches |
+| **Deep think** | Exhaustive (100,000 initial temp) | Maximum accuracy needed, or when other modes don't find good matches |
 
 **Result Count**: Choose how many top results to display (20, 50, or 100).
 
-💡 **Recommendation**: Start with Standard mode. If results aren't satisfactory, try Think or Deep Think.
+💡 **Recommendation**: Start with Standard mode. If results aren't satisfactory, try Think or Deep think.
 
 ### Step 9 – Calculate
 
@@ -517,7 +517,7 @@ You can export result tables to Excel for further analysis and record-keeping.
 - Check if ncAA codon assignments are correct
 
 ### MTS doesn't find good matches
-- Try a higher algorithm mode (Think or Deep Think)
+- Try a higher algorithm mode (Think or Deep think)
 - Verify the detected mass is accurate
 - Double-check the adduct selection
 - Provide RNA sequence if available

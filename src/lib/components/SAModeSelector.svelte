@@ -22,7 +22,7 @@
       saIterations: 100
     },
     deepthink: {
-      label: 'Deep Think',
+      label: 'Deep think',
       description: 'Advanced reasoning with profound exploration',
       initialTemperature: 100000,
       absoluteTemperature: 0.000001,
