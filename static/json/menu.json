@@ -4,12 +4,12 @@
         "link": "/manual"
     },
     {
-        "title": "Potential Modification",
-        "link": "/potential"
-    },
-    {
         "title": "My ncAAs",
         "link": "/draw"
+    },
+    {
+        "title": "Potential Modification",
+        "link": "/potential"
     },
     {
         "title": "Sequence to Mass",

@@ -84,9 +84,8 @@
         .module-icon {
             width: 64px;
             height: 64px;
-            background: var(--accent-color);
-            color: white;
-            font-size: 28px;
+            object-fit: cover;
+            display: block;
         }
 
         .module-button {
@@ -137,7 +136,6 @@
             .module-icon {
                 width: 48px;
                 height: 48px;
-                font-size: 22px;
             }
 
             .module-card .p-4 {
@@ -175,48 +173,66 @@
             }
         }
 
-        /* 플로팅 버튼 */
-        .floating-manual {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
+        /* 타이틀 영역 위치 설정 */
+        .title-area {
+            position: relative;
+        }
+
+        /* 우측 상단 매뉴얼 버튼 */
+        .manual-wrapper {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-manual-btn {
             background: #f39c12;
             color: white;
             border: none;
             border-radius: 0.5rem;
-            padding: 1rem 1.5rem;
+            width: 64px;
+            height: 64px;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
-            transition: all 0.3s ease;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+            transition: all 0.2s ease;
             cursor: pointer;
-            z-index: 1000;
-            font-weight: 600;
-            font-size: 1rem;
+            padding: 0;
         }
 
-        .floating-manual:hover {
+        .top-manual-btn:hover {
             background: color-mix(in srgb, #f39c12 85%, black);
-            transform: translateY(-4px);
-            box-shadow: 0 6px 16px rgba(243, 156, 18, 0.5);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
         }
 
-        .floating-manual .icon {
-            font-size: 1.5rem;
+        .top-manual-btn .icon {
+            font-size: 2rem;
             line-height: 1;
         }
 
+        .manual-text {
+            font-size: 0.875rem;
+            color: #424242;
+            font-weight: 500;
+        }
+
         @media (max-width: 767px) {
-            .floating-manual {
-                bottom: 1.5rem;
-                right: 1.5rem;
-                padding: 0.875rem 1.25rem;
-                font-size: 0.9rem;
+            .top-manual-btn {
+                width: 48px;
+                height: 48px;
             }
 
-            .floating-manual .icon {
-                font-size: 1.25rem;
+            .top-manual-btn .icon {
+                font-size: 1.5rem;
+            }
+
+            .manual-text {
+                font-size: 0.75rem;
             }
         }
 
@@ -233,7 +249,19 @@
             .module-icon {
                 width: 56px;
                 height: 56px;
-                font-size: 24px;
+            }
+
+            .top-manual-btn {
+                width: 56px;
+                height: 56px;
+            }
+
+            .top-manual-btn .icon {
+                font-size: 1.75rem;
+            }
+
+            .manual-text {
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -241,7 +269,19 @@
 
 <div class="d-flex align-items-center justify-content-center p-4" style="min-height: 100vh;">
     <div class="main-container rounded-4 shadow-lg p-5" style="width: 100%;">
-        <div class="text-center mb-5">
+        <div class="title-area text-center mb-5">
+            <div class="manual-wrapper">
+                <button
+                    class="top-manual-btn"
+                    on:click={() => navigateTo('/manual')}
+                    aria-label="Open Manual"
+                    title="Manual"
+                >
+                    <span class="icon">📖</span>
+                </button>
+                <div class="manual-text">Manual</div>
+            </div>
+
             <h1 class="display-2 fw-light text-dark mb-3 position-relative" style="letter-spacing: -0.02em;">
                 X-MAS
             </h1>
@@ -255,7 +295,7 @@
             <div class="col-lg-6">
                 <div class="module-card draw card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/draw')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/draw')}>
                     <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">✏️</div>
+                        <img src="/images/My%20ncAA.png" alt="My ncAAs" class="module-icon rounded-3 mb-3 shadow" />
                         <h3 class="h4 fw-semibold text-dark mb-3">My ncAAs</h3>
                         <p class="text-muted mb-3 lh-base">My ncAAs allows users to incorporate novel substrates into their analyses by:</p>
                         <ul class="module-features ps-0 mb-0">
@@ -273,7 +313,7 @@
             <div class="col-lg-6">
                 <div class="module-card potential card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/potential')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/potential')}>
                     <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🔬</div>
+                        <img src="/images/Modification.png" alt="Custom Enzymatic and Chemical Reactions" class="module-icon rounded-3 mb-3 shadow" />
                         <h3 class="h4 fw-semibold text-dark mb-3">Custom Enzymatic and Chemical Reactions</h3>
                         <p class="text-muted mb-3 lh-base">X-MAS predicts the masses of peptides that may be produced through user-defined enzymatic and chemical reactions. Users can define these reactions by drawing the target product, including:</p>
                         <ul class="module-features ps-0 mb-0">
@@ -290,7 +330,7 @@
             <div class="col-lg-6">
                 <div class="module-card stm card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/stm')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/stm')}>
                     <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🧬</div>
+                        <img src="/images/STM.png" alt="Sequence-to-Mass" class="module-icon rounded-3 mb-3 shadow" />
                         <h3 class="h4 fw-semibold text-dark mb-3">Sequence-to-Mass (STM)</h3>
                         <p class="text-muted mb-3 lh-base">STM computes theoretical peptide masses based on the translational environment by allowing users to:</p>
                         <ul class="module-features ps-0 mb-0">
@@ -309,7 +349,7 @@
             <div class="col-lg-6">
                 <div class="module-card mts card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/mts')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/mts')}>
                     <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">⚖️</div>
+                        <img src="/images/MTS.png" alt="Mass-to-Sequences" class="module-icon rounded-3 mb-3 shadow" />
                         <h3 class="h4 fw-semibold text-dark mb-3">Mass-to-Sequences (MTS)</h3>
                         <p class="text-muted mb-3 lh-base">MTS enables users to resolve unexplained mass peaks by:</p>
                         <ul class="module-features ps-0 mb-0">
@@ -330,14 +370,4 @@
         </div>
     </div>
 </div>
-
-<!-- 플로팅 Manual 버튼 -->
-<button
-    class="floating-manual"
-    on:click={() => navigateTo('/manual')}
-    aria-label="Open Manual"
->
-    <span class="icon">📖</span>
-    <span>Manual</span>
-</button>
 
