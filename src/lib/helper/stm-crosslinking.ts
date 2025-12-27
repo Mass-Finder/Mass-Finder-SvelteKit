@@ -226,10 +226,6 @@ function findValidCrosslinkingPairs(
 
             if (condition === CrosslinkingCondition.ADJACENT) {
                 isValid = distance === 0;
-            } else if (condition === CrosslinkingCondition.ADJACENT_1_TO_2) {
-                isValid = (idx2 === idx1 + 1);
-            } else if (condition === CrosslinkingCondition.ADJACENT_2_TO_1) {
-                isValid = (idx1 === idx2 + 1);
             } else if (condition === CrosslinkingCondition.DISTANCE) {
                 const operator = modification.distanceOperator;
                 const value = modification.distanceValue || 0;
@@ -346,18 +342,22 @@ function updateSequenceWithCrosslinking(
     pairs: Array<[number, number]>,
     modificationName: string
 ): void {
-    // Convert pairs to Set of affected indices
-    const affectedIndices = new Set<number>();
+    // For crosslinking, we replace TWO amino acids with TWO new structures (both shown as modification)
+    // Strategy: Mark both idx1 and idx2 as crosslinked structures
+    const crosslinkedIndices = new Set<number>();  // Indices that become the crosslinked structure
+
     pairs.forEach(([idx1, idx2]) => {
-        affectedIndices.add(idx1);
-        affectedIndices.add(idx2);
+        crosslinkedIndices.add(idx1);
+        crosslinkedIndices.add(idx2);
     });
 
     // Update sequence array
     possibility.sequence = possibility.sequence.map((item, idx) => {
-        if (affectedIndices.has(idx) && item.letter !== "") {
+        // Both amino acids of crosslinked pair: mark as crosslinked structure
+        if (crosslinkedIndices.has(idx) && item.letter !== "") {
             return {
                 ...item,
+                natural: false,  // Crosslinked amino acids are not natural (display in red)
                 crosslinked: true,
                 crosslinkModification: modificationName
             };
@@ -372,9 +372,25 @@ function updateSequenceWithCrosslinking(
             // Priority: Crosslinking > Side Chain > Single-site > base letter
             // Crosslinking and Side Chain: replacement (show modification only)
             if (item.crosslinked && item.crosslinkModification) {
+                // Check if this crosslinked amino acid also has N-terminus formylation
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                    return item.singleSiteModification + item.crosslinkModification;
+                }
+                // Check if this crosslinked amino acid also has C-terminus modification
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                    return item.crosslinkModification + item.singleSiteModification;
+                }
                 return item.crosslinkModification;
             }
             if (item.sideChainModified && item.sideChainModification) {
+                // Check if this side chain modified amino acid also has N-terminus formylation
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                    return item.singleSiteModification + item.sideChainModification;
+                }
+                // Check if this side chain modified amino acid also has C-terminus modification
+                if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                    return item.sideChainModification + item.singleSiteModification;
+                }
                 return item.sideChainModification;
             }
             // N-terminus: addition (modification + letter)

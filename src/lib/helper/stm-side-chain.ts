@@ -133,8 +133,28 @@ function generateSideChainVariants(
             newPoss.sequenceString = newPoss.sequence
                 .filter(item => item.letter !== "")
                 .map(item => {
+                    // Crosslinking: replace (show modification only) - highest priority
+                    if (item.crosslinked && item.crosslinkModification) {
+                        // Check if this crosslinked amino acid also has N-terminus formylation
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                            return item.singleSiteModification + item.crosslinkModification;
+                        }
+                        // Check if this crosslinked amino acid also has C-terminus modification
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                            return item.crosslinkModification + item.singleSiteModification;
+                        }
+                        return item.crosslinkModification;
+                    }
                     // Side Chain: replace (show modification only)
                     if (item.sideChainModified && item.sideChainModification) {
+                        // Check if this side chain modified amino acid also has N-terminus formylation
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'N-terminus') {
+                            return item.singleSiteModification + item.sideChainModification;
+                        }
+                        // Check if this side chain modified amino acid also has C-terminus modification
+                        if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
+                            return item.sideChainModification + item.singleSiteModification;
+                        }
                         return item.sideChainModification;
                     }
                     // N-terminus: add (modification + letter)
@@ -144,10 +164,6 @@ function generateSideChainVariants(
                     // C-terminus: add (letter + modification)
                     if (item.singleSiteModified && item.singleSiteModification && item.singleSiteCondition === 'C-terminus') {
                         return item.letter + item.singleSiteModification;
-                    }
-                    // Crosslinking: replace (show modification only)
-                    if (item.crosslinked && item.crosslinkModification) {
-                        return item.crosslinkModification;
                     }
                     return item.letter;
                 })
