@@ -102,13 +102,13 @@
     <div class="col-md-6">
       <label class="form-label fw-bold">Target 1 <span class="text-danger">*</span></label>
       <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(1)}>
-        {target1AminoAcid === '' ? 'Select Amino Acid' : target1AminoAcid}
+        {target1AminoAcid === '' ? 'Select canonical and non-canonical amino acid' : target1AminoAcid}
       </button>
     </div>
     <div class="col-md-6">
       <label class="form-label fw-bold">Target 2 <span class="text-danger">*</span></label>
       <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(2)}>
-        {target2AminoAcid === '' ? 'Select Amino Acid' : target2AminoAcid}
+        {target2AminoAcid === '' ? 'Select canonical and non-canonical amino acid' : target2AminoAcid}
       </button>
     </div>
   </div>

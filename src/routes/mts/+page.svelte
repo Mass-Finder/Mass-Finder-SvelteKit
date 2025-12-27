@@ -522,7 +522,8 @@
     class="btn btn-primary w-100"
     on:click={handleCalculate}
   >
-    Calculate{hasReferenceSequence ? " with Reference Sequence" : ""}!
+  Predict sequences
+
   </button>
 
 
