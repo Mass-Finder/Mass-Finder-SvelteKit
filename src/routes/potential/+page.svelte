@@ -50,12 +50,6 @@
       return;
     }
 
-    // Validation: Check for spaces in modification name
-    if (modificationName.includes(' ')) {
-      alert('Spaces cannot be entered in modification name.');
-      return;
-    }
-
     // Validation: Target amino acid(s)
     if (modificationType === 'Single-site') {
       if (!targetAminoAcid) {
