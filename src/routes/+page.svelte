@@ -175,6 +175,51 @@
             }
         }
 
+        /* 플로팅 버튼 */
+        .floating-manual {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .floating-manual:hover {
+            background: color-mix(in srgb, #f39c12 85%, black);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(243, 156, 18, 0.5);
+        }
+
+        .floating-manual .icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        @media (max-width: 767px) {
+            .floating-manual {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                padding: 0.875rem 1.25rem;
+                font-size: 0.9rem;
+            }
+
+            .floating-manual .icon {
+                font-size: 1.25rem;
+            }
+        }
+
         /* 태블릿 */
         @media (min-width: 768px) and (max-width: 1023px) {
             .main-container {
@@ -208,24 +253,6 @@
 
         <div class="row g-4 mt-4 mx-0">
             <div class="col-lg-6">
-                <div class="module-card manual card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/manual')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/manual')}>
-                    <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">📖</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Manual</h3>
-                        <p class="text-muted mb-3 lh-base">Comprehensive user guide and theoretical background for all computational modules.</p>
-                        <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Algorithm explanations</li>
-                            <li class="mb-2">Parameter guidelines</li>
-                            <li class="mb-2">Best practices</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 pt-0">
-                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/manual')}>Access Manual</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
                 <div class="module-card draw card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/draw')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/draw')}>
                     <div class="p-4 flex-grow-1">
                         <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">✏️</div>
@@ -239,6 +266,23 @@
                     </div>
                     <div class="p-4 pt-0">
                         <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/draw')}>Open My ncAAs</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="module-card potential card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/potential')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/potential')}>
+                    <div class="p-4 flex-grow-1">
+                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🔬</div>
+                        <h3 class="h4 fw-semibold text-dark mb-3">Custom Enzymatic and Chemical Reactions</h3>
+                        <p class="text-muted mb-3 lh-base">X-MAS predicts the masses of peptides that may be produced through user-defined enzymatic and chemical reactions. Users can define these reactions by drawing the target product, including:</p>
+                        <ul class="module-features ps-0 mb-0">
+                            <li class="mb-2">Single-site modifications</li>
+                            <li class="mb-2">Crosslinking modifications (e.g., disulfide bond formation)</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/potential')}>Define Modifications</button>
                     </div>
                 </div>
             </div>
@@ -279,23 +323,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="col-lg-6">
-                <div class="module-card potential card h-100 border shadow-sm d-flex flex-column" role="button" tabindex="0" on:click={() => navigateTo('/potential')} on:keydown={(e) => e.key === 'Enter' && navigateTo('/potential')}>
-                    <div class="p-4 flex-grow-1">
-                        <div class="module-icon rounded-3 d-flex align-items-center justify-content-center mb-3 shadow">🔬</div>
-                        <h3 class="h4 fw-semibold text-dark mb-3">Custom Enzymatic and Chemical Reactions</h3>
-                        <p class="text-muted mb-3 lh-base">X-MAS predicts the masses of peptides that may be produced through user-defined enzymatic and chemical reactions. Users can define these reactions by drawing the target product, including:</p>
-                        <ul class="module-features ps-0 mb-0">
-                            <li class="mb-2">Single-site modifications</li>
-                            <li class="mb-2">Crosslinking modifications (e.g., disulfide bond formation)</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 pt-0">
-                        <button class="module-button btn text-white w-100 py-3 rounded-3 fw-medium" on:click|stopPropagation={() => navigateTo('/potential')}>Define Modifications</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="text-center mt-5 pt-4 border-top">
@@ -303,4 +330,14 @@
         </div>
     </div>
 </div>
+
+<!-- 플로팅 Manual 버튼 -->
+<button
+    class="floating-manual"
+    on:click={() => navigateTo('/manual')}
+    aria-label="Open Manual"
+>
+    <span class="icon">📖</span>
+    <span>Manual</span>
+</button>
 
