@@ -214,25 +214,28 @@
     <h1>Potential Modification</h1>
   </div>
 
-  <!-- Name Input -->
-  <div class="mb-3">
-    <label for="modification-name" class="form-label fw-bold">Name <span class="text-danger">*</span></label>
-    <input
-      type="text"
-      id="modification-name"
-      bind:value={modificationName}
-      class="form-control"
-      placeholder="Enter modification name"
-    />
-  </div>
+  <!-- Name and Type in a row -->
+  <div class="row mb-3">
+    <!-- Name Input -->
+    <div class="col-md-6">
+      <label for="modification-name" class="form-label fw-bold">Name <span class="text-danger">*</span></label>
+      <input
+        type="text"
+        id="modification-name"
+        bind:value={modificationName}
+        class="form-control"
+        placeholder="Enter modification name"
+      />
+    </div>
 
-  <!-- Type Selector -->
-  <div class="mb-3">
-    <label for="modification-type" class="form-label fw-bold">Type</label>
-    <select id="modification-type" class="form-select" bind:value={modificationType}>
-      <option value="Single-site">Single-site</option>
-      <option value="Crosslinking">Crosslinking</option>
-    </select>
+    <!-- Type Selector -->
+    <div class="col-md-6">
+      <label for="modification-type" class="form-label fw-bold">Type</label>
+      <select id="modification-type" class="form-select" bind:value={modificationType}>
+        <option value="Single-site">Single-site</option>
+        <option value="Crosslinking">Crosslinking</option>
+      </select>
+    </div>
   </div>
 
   {#if modificationType === 'Single-site'}
