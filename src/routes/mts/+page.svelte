@@ -169,7 +169,7 @@
 
   function validate() {
     if (detectedMass === null) {
-      alert("Please Input Detected Mass");
+      alert("Please Input Detected mass");
       return false;
     }
 
@@ -401,14 +401,14 @@
 
   <div class="mb-3">
     <label for="detected-mass" class="form-label fw-bold"
-      >Detected Mass <span class="text-danger">*</span></label
+      >Detected mass <span class="text-danger">*</span></label
     >
     <input
       type="number"
       id="detected-mass"
       bind:value={detectedMass}
       class="form-control"
-      placeholder="Detected Mass"
+      placeholder="Detected mass"
     />
   </div>
 

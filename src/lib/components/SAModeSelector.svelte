@@ -21,8 +21,8 @@
       absoluteTemperature: 0.00001,
       saIterations: 100
     },
-    ultrathink: {
-      label: 'Ultra Think',
+    deepthink: {
+      label: 'Deep Think',
       description: 'Advanced reasoning with profound exploration',
       initialTemperature: 100000,
       absoluteTemperature: 0.000001,

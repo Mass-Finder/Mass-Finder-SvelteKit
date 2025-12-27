@@ -191,12 +191,12 @@ function checkSequenceOverlap(known, converted) {
 
 | 모드 | 초기 온도 | 최소 온도 | 반복 횟수 | 설명 |
 |------|-----------|-----------|-----------|------|
-| **Think** | 10,000 | 0.001 | 100 | 균형잡힌 계산, 적당한 탐색 범위 |
-| **Deep Think** | 50,000 | 0.00001 | 100 | 철저한 계산, 광범위한 탐색 |
-| **Ultra Think** | 100,000 | 0.000001 | 100 | 고급 추론, 매우 깊은 탐색 |
+| **Standard** | 10,000 | 0.001 | 100 | 균형잡힌 계산, 적당한 탐색 범위 |
+| **Think** | 50,000 | 0.00001 | 100 | 철저한 계산, 광범위한 탐색 |
+| **Deep Think** | 100,000 | 0.000001 | 100 | 고급 추론, 매우 깊은 탐색 |
 
 **특징**:
-- **기본값**: Think 모드
+- **기본값**: Standard 모드
 - **LocalStorage**: 사용자 선택이 자동 저장되어 다음 방문 시 유지
 - **반복 횟수**: 모든 모드에서 동일 (100회)
 - **탐색 제어**: 초기 온도와 최소 온도로 탐색 범위 조절
@@ -245,10 +245,10 @@ function handleSAModeChange(event) {
 ### 1. 초기화 조건
 ```typescript
 // 알고리즘 파라미터 (SA Mode에 따라 동적으로 설정)
-// Think 모드 예시:
+// Standard 모드 예시:
 const saIterations = 100;           // 반복 횟수 (모든 모드 고정)
-const initialTemperature = 10000;   // 초기 온도 (Think: 10,000 / Deep Think: 50,000 / Ultra Think: 100,000)
-const absoluteTemperature = 0.001;  // 최소 온도 (Think: 0.001 / Deep Think: 0.00001 / Ultra Think: 0.000001)
+const initialTemperature = 10000;   // 초기 온도 (Standard: 10,000 / Think: 50,000 / Deep Think: 100,000)
+const absoluteTemperature = 0.001;  // 최소 온도 (Standard: 0.001 / Think: 0.00001 / Deep Think: 0.000001)
 const coolingRate = 0.99;           // 냉각률 (고정값)
 ```
 
@@ -544,10 +544,10 @@ worker.onerror = (error) => {
 ```
 
 **전달 파라미터 상세**:
-- `saMode`: 사용자 선택 모드 ('think', 'deepthink', 'ultrathink')
+- `saMode`: 사용자 선택 모드 ('standard', 'think', 'deepthink')
 - `saIterations`: 반복 횟수 (모든 모드 100회 고정)
-- `initialTemperature`: 모드별 초기 온도 (Think: 10,000 / Deep Think: 50,000 / Ultra Think: 100,000)
-- `absoluteTemperature`: 모드별 최소 온도 (Think: 0.001 / Deep Think: 0.00001 / Ultra Think: 0.000001)
+- `initialTemperature`: 모드별 초기 온도 (Standard: 10,000 / Think: 50,000 / Deep Think: 100,000)
+- `absoluteTemperature`: 모드별 최소 온도 (Standard: 0.001 / Think: 0.00001 / Deep Think: 0.000001)
 - `coolingRate`: 냉각률 (0.99 고정)
 
 **참고**:

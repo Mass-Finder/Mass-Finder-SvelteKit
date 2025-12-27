@@ -9,7 +9,7 @@
 
   export let value = '';
   export let placeholder = 'Enter RNA sequence (e.g., AUGAAAGUGCUGUGGGCUGCUCUG)';
-  export let label = 'Used RNA sequence';
+  export let label = 'RNA sequence used';
 
   let showSaveDialog = false;
   let showLoadDialog = false;

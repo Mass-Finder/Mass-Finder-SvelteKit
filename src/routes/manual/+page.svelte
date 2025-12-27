@@ -806,7 +806,7 @@
                   aria-expanded="true"
                   aria-controls="mtsCollapseOne"
                 >
-                  Step 1 – Detected Mass
+                  Step 1 – Detected mass
                 </button>
               </h2>
               <div
@@ -1042,17 +1042,17 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td><strong>Think</strong></td>
+                        <td><strong>Standard</strong></td>
                         <td>Balanced (10,000 initial temp)</td>
                         <td>Quick searches, low masses, or when RNA sequence is provided</td>
                       </tr>
                       <tr>
-                        <td><strong>Deep Think</strong></td>
+                        <td><strong>Think</strong></td>
                         <td>Thorough (50,000 initial temp)</td>
                         <td>High masses or complex sequences</td>
                       </tr>
                       <tr>
-                        <td><strong>Ultra Think</strong></td>
+                        <td><strong>Deep Think</strong></td>
                         <td>Exhaustive (100,000 initial temp)</td>
                         <td>Maximum accuracy needed, or when other modes don't find good matches</td>
                       </tr>
@@ -1061,7 +1061,7 @@
 
                   <p class="mt-3"><strong>Result Count:</strong> Choose how many top results to display (20, 50, or 100).</p>
 
-                  <p class="mt-2"><strong>💡 Recommendation:</strong> Start with <strong>Think</strong> mode. If results aren't satisfactory, try <strong>Deep Think</strong> or <strong>Ultra Think</strong>.</p>
+                  <p class="mt-2"><strong>💡 Recommendation:</strong> Start with <strong>Standard</strong> mode. If results aren't satisfactory, try <strong>Think</strong> or <strong>Deep Think</strong>.</p>
                 </div>
               </div>
             </div>
@@ -1217,7 +1217,7 @@
 
                   <p class="mt-3"><strong>MTS doesn't find good matches:</strong></p>
                   <ul>
-                    <li>Try a higher algorithm mode (Deep Think or Ultra Think)</li>
+                    <li>Try a higher algorithm mode (Think or Deep Think)</li>
                     <li>Verify the detected mass is accurate</li>
                     <li>Double-check the adduct selection</li>
                     <li>Provide RNA sequence if available</li>
