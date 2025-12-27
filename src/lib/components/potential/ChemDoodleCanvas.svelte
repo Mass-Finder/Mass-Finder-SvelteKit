@@ -677,7 +677,7 @@ M  END`,
 
 <div class="canvas-section mb-3">
   <div class="mb-3">
-    <label class="form-label fw-bold">Chemical structure</label>
+    <label class="form-label fw-bold">Chemical structure <span class="text-danger">*</span></label>
 
     <!-- Structure Name Input (조건부 렌더링) -->
     {#if showStructureName}

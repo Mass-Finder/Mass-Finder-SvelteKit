@@ -95,7 +95,7 @@
 
     <!-- Title Input -->
     <div class="mb-3">
-      <label for="chemical-title" class="form-label fw-bold">Name of ncAA</label>
+      <label for="chemical-title" class="form-label fw-bold">Name of ncAA <span class="text-danger">*</span></label>
       <input
         type="text"
         id="chemical-title"

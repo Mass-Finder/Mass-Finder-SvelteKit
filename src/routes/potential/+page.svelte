@@ -212,7 +212,7 @@
 
   <!-- Name Input -->
   <div class="mb-3">
-    <label for="modification-name" class="form-label fw-bold">Name</label>
+    <label for="modification-name" class="form-label fw-bold">Name <span class="text-danger">*</span></label>
     <input
       type="text"
       id="modification-name"

@@ -66,7 +66,7 @@
   <div class="mb-3">
     <div class="row">
       <div class="col-md-6">
-        <label class="form-label fw-bold">Target</label>
+        <label class="form-label fw-bold">Target <span class="text-danger">*</span></label>
         <button class="btn btn-outline-primary w-100 target-btn" on:click={handleOpenDialog}>
           {targetAminoAcid === '' ? 'Select Amino Acid' : targetAminoAcid === 'All' ? 'All' : targetAminoAcid}
         </button>

@@ -65,7 +65,7 @@
 
 <div class="form-group">
   <label class="form-label fw-bold">Simulated Annealing Mode</label>
-  
+
   <div class="sa-mode-options">
     {#each Object.entries(saConfigs) as [mode, config]}
       <div class="form-check">

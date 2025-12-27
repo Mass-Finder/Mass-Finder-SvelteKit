@@ -100,13 +100,13 @@
   <!-- Target 1 and Target 2 -->
   <div class="row mb-3">
     <div class="col-md-6">
-      <label class="form-label fw-bold">Target 1</label>
+      <label class="form-label fw-bold">Target 1 <span class="text-danger">*</span></label>
       <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(1)}>
         {target1AminoAcid === '' ? 'Select Amino Acid' : target1AminoAcid}
       </button>
     </div>
     <div class="col-md-6">
-      <label class="form-label fw-bold">Target 2</label>
+      <label class="form-label fw-bold">Target 2 <span class="text-danger">*</span></label>
       <button class="btn btn-outline-primary w-100 target-btn" on:click={() => handleOpenDialog(2)}>
         {target2AminoAcid === '' ? 'Select Amino Acid' : target2AminoAcid}
       </button>

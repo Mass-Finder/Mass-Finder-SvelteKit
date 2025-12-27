@@ -400,7 +400,9 @@
   </div>
 
   <div class="mb-3">
-    <label for="detected-mass" class="form-label fw-bold">Detected Mass</label>
+    <label for="detected-mass" class="form-label fw-bold"
+      >Detected Mass <span class="text-danger">*</span></label
+    >
     <input
       type="number"
       id="detected-mass"
@@ -412,7 +414,7 @@
 
   <div class="mb-3">
     <label for="essential-sequence" class="form-label fw-bold"
-      >Fixed sequence (Optional)</label
+      >Fixed sequence</label
     >
     <input
       type="text"

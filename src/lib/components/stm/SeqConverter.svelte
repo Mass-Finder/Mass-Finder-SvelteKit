@@ -84,7 +84,7 @@
 <div class="row mb-3">
   <!-- 입력받는 input 필드 -->
   <div class="col-md-10">
-    <label for="sequence-input" class="form-label fw-bold">Input RNA sequence</label>
+    <label for="sequence-input" class="form-label fw-bold">Input RNA sequence <span class="text-danger">*</span></label>
     <textarea
       id="sequence-input" 
       class="form-control"
