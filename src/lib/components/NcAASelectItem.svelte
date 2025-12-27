@@ -28,29 +28,33 @@
  <div class="card-body text-center">
     <!-- Title Section -->
     <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
-    <!-- Molecular Info Section -->
-    <p class="card-text mb-1"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
-    <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
-    <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
     <!-- Canvas Section -->
     <canvas id={`canvas-ncaa-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
-    <!-- Delete Button -->
-    <button class="btn btn-danger btn-sm w-100 mt-3" on:click={() => onCancelSelectData(key)}>Cancel</button>
+    <!-- Molecular Info Section -->
+    <p class="card-text mb-1 mt-2"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
+    <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
+    <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
+    <!-- Remove Button -->
+    <button class="btn btn-danger btn-sm w-100 mt-3" on:click={() => onCancelSelectData(key)}>Remove</button>
   </div>
   
   <style>
     canvas {
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-  
+
     .card-title {
       font-size: 1.1rem;
     }
-  
+
+    .card-text {
+      font-size: 0.85rem;
+    }
+
     .card-body {
       padding: 10px;
     }
-  
+
     button {
       font-size: 0.875rem;
     }

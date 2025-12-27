@@ -47,38 +47,41 @@
 
 <div class="card-body text-center">
     <h5 class="card-title text-primary"><strong>{data.title}</strong></h5>
-    <p class="card-text mb-1"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
+    <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
+    <p class="card-text mb-1 mt-2"><strong>Molecular Formula:</strong> <span class="formula">{@html formatFormula(data.molecularFormula)}</span></p>
     <p class="card-text mb-1"><strong>Monoisotopic Weight:</strong> {data.monoisotopicWeight}</p>
     <p class="card-text mb-1"><strong>Molecular Weight:</strong> {data.molecularWeight}</p>
-    <canvas id={`canvas-ncaa-codon-${data.title}`} width="100" height="100" class="border rounded mt-2 mx-auto" />
-    <button class="btn btn-danger btn-sm w-100 mt-3" on:click={() => onCancelSelectData(key)}>Cancel</button>
-    
+
     <div class="mt-3">
-        <label class="form-label fw-bold">Codons:</label>
-        
-        <!-- 선택된 코돈들 표시 -->
-        <div class="selected-codons mb-2">
-          {#each customCodonTitles as codon}
-            <span class="badge bg-primary me-1 mb-1">
-              {codon}
-              <button 
-                type="button" 
-                class="btn-close btn-close-white ms-1" 
-                aria-label="Remove {codon}"
-                on:click={() => removeCodon(codon)}
-              ></button>
-            </span>
-          {/each}
+        <!-- Codons 레이블과 선택된 코돈들 -->
+        <div class="codons-container mb-2">
+          <label class="form-label fw-bold mb-0 me-2">Codons:</label>
+          <div class="selected-codons">
+            {#each customCodonTitles as codon}
+              <span class="badge bg-primary me-1 mb-1">
+                {codon}
+                <button
+                  type="button"
+                  class="btn-close btn-close-white ms-1"
+                  aria-label="Remove {codon}"
+                  on:click={() => removeCodon(codon)}
+                ></button>
+              </span>
+            {/each}
+          </div>
         </div>
-        
+
         <!-- 코돈 추가 버튼 -->
-        <button 
-          class="btn btn-outline-primary btn-sm w-100" 
+        <button
+          class="btn btn-outline-primary btn-sm w-100 mb-2"
           type="button"
           on:click={() => showCodonDialog = true}
         >
           Add Codon
         </button>
+
+        <!-- Remove 버튼 -->
+        <button class="btn btn-danger btn-sm w-100" on:click={() => onCancelSelectData(key)}>Remove</button>
     </div>
 </div>
 
@@ -91,17 +94,33 @@
     canvas {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-  
+
     .card-title {
         font-size: 1.1rem;
     }
-  
+
+    .card-text {
+        font-size: 0.85rem;
+    }
+
     .card-body {
         padding: 10px;
     }
-  
+
     button {
         font-size: 0.875rem;
+    }
+
+    .codons-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+    }
+
+    .codons-container label {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding-top: 4px;
     }
 
     .selected-codons {
@@ -109,6 +128,7 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        flex: 1;
     }
 
     .badge {
