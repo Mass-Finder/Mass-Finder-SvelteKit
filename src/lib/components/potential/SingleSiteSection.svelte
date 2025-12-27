@@ -166,11 +166,14 @@
 
 <style>
   .condition-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
     padding-left: 10px;
   }
 
   .form-check {
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
 
   .target-btn {

@@ -20,7 +20,8 @@
   // Crosslinking variables
   let target1AminoAcid = '';
   let target2AminoAcid = '';
-  let crosslinkingCondition = CrosslinkingCondition.EVERYWHERE;
+  let crosslinkingCondition = CrosslinkingCondition.ADJACENT;
+  let adjacentDirection = '1↔2';
   let distanceOperator = '>';
   let distanceValue = 1;
 
@@ -71,6 +72,12 @@
     // Validation: Distance value for crosslinking
     if (modificationType === 'Crosslinking' && crosslinkingCondition === CrosslinkingCondition.DISTANCE && distanceValue < 1) {
       alert('Distance value must be at least 1.');
+      return;
+    }
+
+    // Validation: Adjacent direction for crosslinking
+    if (modificationType === 'Crosslinking' && crosslinkingCondition === CrosslinkingCondition.ADJACENT && !adjacentDirection) {
+      alert('Please select adjacent direction.');
       return;
     }
 
@@ -141,6 +148,9 @@
             target1: target1AminoAcid,
             target2: target2AminoAcid,
             condition: crosslinkingCondition,
+            ...(crosslinkingCondition === CrosslinkingCondition.ADJACENT && {
+              adjacentDirection
+            }),
             ...(crosslinkingCondition === CrosslinkingCondition.DISTANCE && {
               distanceOperator,
               distanceValue
@@ -242,6 +252,7 @@
       bind:target1AminoAcid
       bind:target2AminoAcid
       bind:condition={crosslinkingCondition}
+      bind:adjacentDirection
       bind:distanceOperator
       bind:distanceValue
     />

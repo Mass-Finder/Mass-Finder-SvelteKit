@@ -15,10 +15,11 @@ export enum SingleSiteCondition {
 // Crosslinking Condition
 export enum CrosslinkingCondition {
   ADJACENT = 'Adjacent',
-  ADJACENT_1_TO_2 = 'Adjacent(Target 1→2)',
-  ADJACENT_2_TO_1 = 'Adjacent(Target 2→1)',
   DISTANCE = 'Distance'
 }
+
+// Adjacent Direction
+export type AdjacentDirection = '1→2' | '2→1' | '1↔2';
 
 // Distance Operator
 export type DistanceOperator = '>' | '=' | '<';
@@ -46,6 +47,7 @@ export interface CrosslinkingPotentialModification extends BasePotentialModifica
   target1: string; // Amino acid code
   target2: string; // Amino acid code
   condition: CrosslinkingCondition;
+  adjacentDirection?: AdjacentDirection; // Only for Adjacent condition
   distanceOperator?: DistanceOperator; // Only for Distance condition
   distanceValue?: number; // Only for Distance condition
 }

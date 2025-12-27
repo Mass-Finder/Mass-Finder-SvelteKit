@@ -1,13 +1,15 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher, tick } from 'svelte';
   import ProteinSelectDialog from './ProteinSelectDialog.svelte';
   import { CrosslinkingCondition } from '../../../type/Types';
+  import type { AdjacentDirection } from '../../../type/Types';
   import { aminoAcidMOL } from '$lib/helper/amino_mol';
   import { storage } from '$lib/services/storage.service';
 
   export let target1AminoAcid = '';
   export let target2AminoAcid = '';
   export let condition = CrosslinkingCondition.ADJACENT;
+  export let adjacentDirection: AdjacentDirection = '1↔2';
   export let distanceOperator = '>';
   export let distanceValue = 1;
 
@@ -48,6 +50,10 @@
 
   function handleConditionChange() {
     dispatch('conditionChange', condition);
+  }
+
+  function handleAdjacentDirectionChange() {
+    dispatch('adjacentDirectionChange', adjacentDirection);
   }
 
   function handleDistanceOperatorChange() {
@@ -155,6 +161,21 @@
             {conditionOption}
           </label>
 
+          {#if conditionOption === CrosslinkingCondition.ADJACENT && condition === CrosslinkingCondition.ADJACENT}
+            <div class="adjacent-options d-inline-flex align-items-center ms-3">
+              <select
+                class="form-select form-select-sm"
+                bind:value={adjacentDirection}
+                on:change={handleAdjacentDirectionChange}
+                style="width: 90px;"
+              >
+                <option value="1→2">1→2</option>
+                <option value="2→1">2→1</option>
+                <option value="1↔2">1↔2</option>
+              </select>
+            </div>
+          {/if}
+
           {#if conditionOption === CrosslinkingCondition.DISTANCE && condition === CrosslinkingCondition.DISTANCE}
             <div class="distance-options d-inline-flex align-items-center ms-3">
               <select
@@ -227,11 +248,14 @@
 
 <style>
   .condition-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
     padding-left: 10px;
   }
 
   .form-check {
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
 
   .distance-options {
