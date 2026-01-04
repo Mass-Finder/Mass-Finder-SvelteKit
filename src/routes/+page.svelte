@@ -276,7 +276,7 @@
             <div class="manual-wrapper">
                 <button
                     class="top-manual-btn"
-                    on:click={() => window.location.href = '/manual'}
+                    on:click={() => navigateTo('/manual')}
                     aria-label="Open Manual"
                     title="Manual"
                     type="button"
