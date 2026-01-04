@@ -187,6 +187,7 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
+            z-index: 10;
         }
 
         .top-manual-btn {
@@ -203,11 +204,13 @@
             transition: all 0.2s ease;
             cursor: pointer;
             padding: 0;
+            text-decoration: none;
         }
 
         .top-manual-btn:hover {
             background: color-mix(in srgb, #f39c12 85%, black);
             box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+            color: white;
         }
 
         .top-manual-btn .icon {
@@ -273,9 +276,10 @@
             <div class="manual-wrapper">
                 <button
                     class="top-manual-btn"
-                    on:click={() => navigateTo('/manual')}
+                    on:click={() => window.location.href = '/manual'}
                     aria-label="Open Manual"
                     title="Manual"
+                    type="button"
                 >
                     <span class="icon">📖</span>
                 </button>
