@@ -314,7 +314,7 @@ You can select up to 4 modifications from your saved library. The system will au
 
 ⚠️ **Note**: First define your modifications in the "Potential Modification" tab, then select them here. See the Potential Modification section for details.
 
-### Step 4 – Amino acids used for reaction
+### Step 4 – Amino acids set for reaction
 
 #### Brief description
 Select which of the 20 standard amino acids are available during translation.

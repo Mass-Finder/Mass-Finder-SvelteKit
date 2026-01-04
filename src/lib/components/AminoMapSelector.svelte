@@ -81,7 +81,7 @@
 
 <div class="amino-acids-header row">
     <div class="col-md-6">
-      <label class="form-label fw-bold mb-2" for="ncaa-btn">Amino acids used <span class="text-danger">*</span></label>
+      <label class="form-label fw-bold mb-2" for="ncaa-btn">Amino acids set <span class="text-danger">*</span></label>
     </div>
     <div class="buttons mb-2 text-end col-md-6" id="ncaa-btn">
       <button class="btn btn-primary" type="button" on:click={toggleAllAminos}>{buttonAllCheck ? 'All Uncheck' : 'All Check'}</button>
