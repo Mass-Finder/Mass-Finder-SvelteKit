@@ -65,7 +65,10 @@
                 class="btn btn-sm {selectedValue === 'All' ? 'btn-primary' : 'btn-outline-primary'} amino-btn all-btn"
                 on:click={() => handleSelect('All')}
               >
-                All
+                <div class="all-btn-content">
+                  <div class="all-btn-text">All</div>
+                  <div class="all-btn-subtext">(glycine example)</div>
+                </div>
               </button>
             {/if}
             {#each Object.keys(shortToLongMapper) as aminoCode}
@@ -118,10 +121,10 @@
   .modal-content {
     background-color: white;
     border-radius: 8px;
-    padding: 20px;
-    max-width: 600px;
+    padding: 30px;
+    max-width: 900px;
     width: 90%;
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
@@ -130,25 +133,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
     border-bottom: 1px solid #dee2e6;
   }
 
   .modal-title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: bold;
   }
 
   .btn-close {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 2rem;
     cursor: pointer;
     padding: 0;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     line-height: 1;
   }
 
@@ -169,9 +172,10 @@
     background: none;
     border: 1px solid transparent;
     border-radius: 0.25rem 0.25rem 0 0;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
+    font-size: 1rem;
   }
 
   .nav-link:hover {
@@ -185,47 +189,75 @@
   }
 
   .modal-body {
-    padding: 20px 0;
-    min-height: 200px;
+    padding: 25px 0;
+    min-height: 250px;
   }
 
   .amino-acid-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+    gap: 12px;
   }
 
   .amino-btn {
-    min-width: 50px;
+    min-width: 75px;
     font-weight: bold;
-    padding: 10px;
+    padding: 12px;
+    font-size: 1rem;
+    min-height: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .all-btn {
     font-weight: bold;
-    font-size: 0.9rem;
+    padding: 8px;
+    min-height: 60px;
+    height: 60px;
+  }
+
+  .all-btn-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .all-btn-text {
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .all-btn-subtext {
+    font-size: 0.7rem;
+    font-weight: normal;
+    opacity: 0.75;
+    line-height: 1.1;
   }
 
   /* ncAA Template List */
   .template-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
   }
 
   .template-item {
     text-align: left;
-    padding: 12px;
+    padding: 16px;
     width: 100%;
   }
 
   .template-name {
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    font-size: 1.05rem;
   }
 
   .template-formula {
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     color: #6c757d;
   }
 </style>
