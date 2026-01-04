@@ -681,11 +681,21 @@ M  END`,
 
     <!-- Structure Name Input (조건부 렌더링) -->
     {#if showStructureName}
-      <div class="mb-2">
+      <div class="mb-2 d-flex align-items-center gap-2">
+        <label for="structure-name" class="structure-name-label mb-0">
+          {#if modificationType === 'Single-site' && singleSiteCondition === 'N-terminus'}
+            Prefix:
+          {:else if modificationType === 'Single-site' && singleSiteCondition === 'C-terminus'}
+            Suffix:
+          {:else}
+            Name:
+          {/if}
+        </label>
         <input
+          id="structure-name"
           type="text"
           bind:value={structureName}
-          class="form-control"
+          class="form-control flex-grow-1"
           placeholder="Enter structure name (required)"
           required
         />
@@ -1067,8 +1077,19 @@ M  END`,
     font-family: 'Times New Roman', Times, serif;
   }
 
+  .structure-name-label {
+    min-width: 60px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
   /* 모바일 반응형 */
   @media (max-width: 767px) {
+    .structure-name-label {
+      min-width: 50px;
+      font-size: 0.9rem;
+    }
+
     .canvas-container {
       padding: 10px;
     }
