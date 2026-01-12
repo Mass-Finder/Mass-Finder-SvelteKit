@@ -6,6 +6,7 @@
     import PotentialModificationDialog from './PotentialModificationDialog.svelte';
     import PotentialModificationSelectItem from './PotentialModificationSelectItem.svelte';
     import { storage } from '$lib/services/storage.service';
+    import { showAlert } from '$lib/stores/alertStore.js';
 
     const dispatch = createEventDispatcher();
     const MAX_SELECTION = 4;
@@ -30,16 +31,16 @@
         }
     }
 
-    function openDialog(slotIndex: number) {
+    async function openDialog(slotIndex: number) {
         if ($savedModifications.length === 0) {
-            alert('There are no modifications created.');
+            await showAlert('There are no modifications created.', 'Information', 'info');
             return;
         }
         currentSlotIndex = slotIndex;
         showDialog = true;
     }
 
-    function handleSelect(event: CustomEvent<PotentialModification>) {
+    async function handleSelect(event: CustomEvent<PotentialModification>) {
         const selectedMod = event.detail;
 
         // 이미 다른 슬롯에 선택되어 있는지 확인
@@ -48,7 +49,7 @@
         );
 
         if (alreadySelected) {
-            alert('This modification is already selected in another slot.');
+            await showAlert('This modification is already selected in another slot.', 'Information', 'info');
             return;
         }
 

@@ -4,6 +4,7 @@
     import MolecularItem from '$lib/components/MolecularItem.svelte';
     import ChemDoodleCanvas from '$lib/components/potential/ChemDoodleCanvas.svelte';
     import { storage } from '$lib/services/storage.service';
+    import { showAlert } from '$lib/stores/alertStore.js';
 
     let molecularFormula = writable('');
     let monoisotopicWeight = writable('');
@@ -17,12 +18,12 @@
       loadSavedData();
     });
 
-    function saveData() {
-      if(!checkTitleValid()) return;
+    async function saveData() {
+      if(!await checkTitleValid()) return;
 
       // Validation: Molecular properties must be calculated
       if (!$molecularFormula || !$monoisotopicWeight || !$molecularWeight) {
-        alert('Please calculate molecular weight first.');
+        await showAlert('Please calculate molecular weight first.', 'Validation Error', 'warning');
         return;
       }
 
@@ -37,7 +38,7 @@
       storedData.push(dataSet);
       storage.save('moleculeData', storedData);
       loadSavedData();
-      alert('Data Saved!');
+      await showAlert('Data Saved!', 'Success', 'success');
       resetForm();
     }
 
@@ -65,18 +66,18 @@
     }
 
     /// 입력된 타이틀이 저장 가능한지 체크
-    function checkTitleValid(){
+    async function checkTitleValid(){
         if(!chemicalTitle) {
-            alert('Please enter a title to save.');
+            await showAlert('Please enter a title to save.', 'Validation Error', 'warning');
             return false;
         }
         const hasSpace = chemicalTitle.includes(' ');
         if(hasSpace) {
-            alert('Spaces cannot be entered.');
+            await showAlert('Spaces cannot be entered.', 'Validation Error', 'warning');
             return false;
         }
         if(checkTitleDuplicated()) {
-            alert('The name already exists.');
+            await showAlert('The name already exists.', 'Validation Error', 'warning');
             return false;
         }
         return true;
@@ -89,7 +90,10 @@
     }
   </script>
 
-  
+  <svelte:head>
+    <title>My ncAAs - X-MAS</title>
+  </svelte:head>
+
   <main class="container mt-5 p-4 bg-light rounded shadow">
     <h1 class="text-center mb-4">My ncAAs</h1>
 
@@ -102,6 +106,8 @@
         bind:value={chemicalTitle}
         class="form-control"
         placeholder="Enter title"
+        aria-required="true"
+        required
       />
     </div>
 

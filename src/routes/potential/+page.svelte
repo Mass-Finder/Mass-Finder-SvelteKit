@@ -9,6 +9,7 @@
   import { aminoMap, molecularWeightMap, aminoFormulaMap } from '$lib/helper/amino_mapper';
   import { storage } from '$lib/services/storage.service';
   import { formatFormulaSubtraction } from '$lib/helper/formula_util';
+  import { showAlert } from '$lib/stores/alertStore.js';
 
   let modificationName = '';
   let modificationType = 'Single-site';
@@ -43,53 +44,53 @@
     loadSavedModifications();
   });
 
-  function handleSave() {
+  async function handleSave() {
     // Validation: Modification name
     if (!modificationName.trim()) {
-      alert('Please enter a modification name.');
+      await showAlert('Please enter a modification name.', 'Validation Error', 'warning');
       return;
     }
 
     // Validation: Target amino acid(s)
     if (modificationType === 'Single-site') {
       if (!targetAminoAcid) {
-        alert('Please select a target amino acid.');
+        await showAlert('Please select a target amino acid.', 'Validation Error', 'warning');
         return;
       }
     } else {
       if (!target1AminoAcid || !target2AminoAcid) {
-        alert('Please select both target amino acids.');
+        await showAlert('Please select both target amino acids.', 'Validation Error', 'warning');
         return;
       }
     }
 
     // Validation: Distance value for crosslinking
     if (modificationType === 'Crosslinking' && crosslinkingCondition === CrosslinkingCondition.DISTANCE && distanceValue < 1) {
-      alert('Distance value must be at least 1.');
+      await showAlert('Distance value must be at least 1.', 'Validation Error', 'warning');
       return;
     }
 
     // Validation: Adjacent direction for crosslinking
     if (modificationType === 'Crosslinking' && crosslinkingCondition === CrosslinkingCondition.ADJACENT && !adjacentDirection) {
-      alert('Please select adjacent direction.');
+      await showAlert('Please select adjacent direction.', 'Validation Error', 'warning');
       return;
     }
 
     // Validation: Structure name
     if (!structureName.trim()) {
-      alert('Please enter a structure name.');
+      await showAlert('Please enter a structure name.', 'Validation Error', 'warning');
       return;
     }
 
     // Validation: Check for spaces in structure name
     if (structureName.includes(' ')) {
-      alert('Spaces cannot be entered in structure name.');
+      await showAlert('Spaces cannot be entered in structure name.', 'Validation Error', 'warning');
       return;
     }
 
     // Validation: Molecular properties must be calculated
     if (!$molecularFormula || !$monoisotopicWeight || !$molecularWeight) {
-      alert('Please calculate molecular weight first.');
+      await showAlert('Please calculate molecular weight first.', 'Validation Error', 'warning');
       return;
     }
 
@@ -97,7 +98,7 @@
     const storedData = storage.load('potentialModifications') || [];
     const isDuplicate = storedData.some(data => data.name === modificationName);
     if (isDuplicate) {
-      alert('The modification name already exists.');
+      await showAlert('The modification name already exists.', 'Validation Error', 'warning');
       return;
     }
 
@@ -165,7 +166,7 @@
     storage.save('potentialModifications', storedData);
 
     console.log('Saved Modification Data:', modificationData);
-    alert('Modification saved successfully!');
+    await showAlert('Modification saved successfully!', 'Success', 'success');
 
     // Reset form after saving
     resetForm();
@@ -209,6 +210,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Potential Modification - X-MAS</title>
+</svelte:head>
+
 <div class="container mt-5">
   <div class="text-center mb-4">
     <h1>Potential Modification</h1>
@@ -225,6 +230,8 @@
         bind:value={modificationName}
         class="form-control"
         placeholder="Enter modification name"
+        aria-required="true"
+        required
       />
     </div>
 
