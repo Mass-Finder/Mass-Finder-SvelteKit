@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, tick } from 'svelte';
-  import ProteinSelectDialog from './ProteinSelectDialog.svelte';
+  import PeptideSelectDialog from './PeptideSelectDialog.svelte';
   import { CrosslinkingCondition } from '../../../type/Types';
   import type { AdjacentDirection } from '../../../type/Types';
   import { aminoAcidMOL } from '$lib/helper/amino_mol';
@@ -239,7 +239,7 @@
   {/if}
 </div>
 
-<ProteinSelectDialog
+<PeptideSelectDialog
   bind:showDialog
   showAllOption={false}
   selectedValue={currentSelectedValue}

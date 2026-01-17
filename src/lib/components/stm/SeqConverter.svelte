@@ -17,7 +17,7 @@
   let showLoadDialog = false;
 
   // RNA 시퀀스를 변환할 때, 변환 결과를 문자 리스트로 반환합니다.
-  function translateRNAtoProtein(rna) {
+  function translateRNAtoPeptide(rna) {
     const codons = rna.match(/.{1,3}/g) || [];
     return codons.map((codon) => codonTableRtoS[codon] || "?");
   }
@@ -43,7 +43,7 @@
     
     // RNA 시퀀스를 3개씩 나누어 리스트로 저장
     rnaSeqList = inputValue.match(/.{1,3}/g) || [];
-    proteinSeqList = translateRNAtoProtein(inputValue);
+    proteinSeqList = translateRNAtoPeptide(inputValue);
     
     // rnaSeq를 업데이트
     rnaSeq = inputValue;
@@ -175,7 +175,7 @@
   <div class="col-md-12">
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title text-primary">Protein sequence</h5>
+        <h5 class="card-title text-primary">Peptide sequence</h5>
         <!-- 단일 텍스트 노드처럼 연속된 문자를 출력.
              숫자는 ::before pseudo-element를 통해 표시되어, 복사/드래그 시 포함되지 않습니다. -->
         <p class="card-text">

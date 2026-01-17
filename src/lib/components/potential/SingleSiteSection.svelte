@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher, onMount, afterUpdate, tick } from 'svelte';
-  import ProteinSelectDialog from './ProteinSelectDialog.svelte';
+  import PeptideSelectDialog from './PeptideSelectDialog.svelte';
   import { SingleSiteCondition } from '../../../type/Types';
   import { aminoAcidMOL } from '$lib/helper/amino_mol';
   import { storage } from '$lib/services/storage.service';
@@ -157,7 +157,7 @@
   </div>
 </div>
 
-<ProteinSelectDialog
+<PeptideSelectDialog
   bind:showDialog
   showAllOption={showAllOption}
   selectedValue={targetAminoAcid}

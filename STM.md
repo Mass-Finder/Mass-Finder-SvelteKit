@@ -293,7 +293,7 @@ for (let i = 0; i < sequence.length; i++) {
 - **CrosslinkingSection**: Crosslinking 타입 설정 (타겟1, 타겟2, 조건, 거리)
 - **ChemDoodleCanvas**: 화학 구조 그리기 및 분자량 계산
 - **ModificationItem**: 저장된 수식 항목 표시
-- **ProteinSelectDialog**: 타겟 아미노산 선택 모달 (Amino Acids, ncAA 탭)
+- **PeptideSelectDialog**: 타겟 아미노산 선택 모달 (Amino Acids, ncAA 탭)
 
 #### E. 시퀀스 데이터 구조
 **파일**: `src/lib/helper/stm_helper.ts:954-968`

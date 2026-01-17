@@ -108,7 +108,7 @@ function validateknownSequence() {
 #### 3. RNA Sequence 검증
 ```typescript
 // 조건: A,U,G,C만 허용 + 3의 배수 길이
-function validateProteinSequence() {
+function validatePeptideSequence() {
     if (proteinSequence === '') return true; // 빈 값은 유효
     
     const validRnaBases = ['A', 'U', 'G', 'C'];
@@ -266,7 +266,7 @@ let currentSolution = proteinSequence ?
     this.randomSolution(targetMass);
 ```
 
-#### Protein-based Solution 로직
+#### Peptide-based Solution 로직
 ```typescript
 // 조건: 선택된 아미노산만 사용, 원본 시퀀스 최대한 보존
 static proteinBasedSolution(inputSequence: string, targetMass: number) {

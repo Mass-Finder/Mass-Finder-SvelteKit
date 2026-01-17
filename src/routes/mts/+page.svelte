@@ -184,8 +184,8 @@
       return false;
     }
 
-    if (!validateProteinSequence()) {
-      await showAlert("Please enter the correct Protein sequence", "Validation Error", "warning");
+    if (!validatePeptideSequence()) {
+      await showAlert("Please enter the correct Peptide sequence", "Validation Error", "warning");
       return false;
     }
 
@@ -231,7 +231,7 @@
     return aminoSequence;
   }
 
-  async function validateProteinSequence() {
+  async function validatePeptideSequence() {
     // 빈 문자열인 경우 유효함 (선택사항)
     if (proteinSequence === "") return true;
 
@@ -252,7 +252,7 @@
     return true;
   }
 
-  function calculateProteinMass(rnaSequence) {
+  function calculatePeptideMass(rnaSequence) {
     if (!rnaSequence) return 0;
 
     // RNA 시퀀스를 아미노산으로 변환
@@ -273,7 +273,7 @@
     }, 0);
   }
 
-  $: proteinMass = calculateProteinMass(proteinSequence);
+  $: proteinMass = calculatePeptideMass(proteinSequence);
   $: massWarning =
     proteinSequence &&
     detectedMass &&
