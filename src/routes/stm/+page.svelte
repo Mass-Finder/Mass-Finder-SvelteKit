@@ -22,6 +22,7 @@
     let ionTypes = ['+H']; // 배열로 변경
     let potentialModifications = []; // Potential modifications
     let showByproducts = true; // Note가 있는 행(Byproducts) 표시 여부 (true: 표시, false: 숨김)
+    let noNcAASelected = false; // ncAA가 선택되지 않은 경우 경고 표시
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
     let codonTitles = writable({
@@ -56,9 +57,14 @@
         getSequenceBeforeStop();
         if (!await _validateCheck()) return loading.set(false);
         try {
+            const filteredNcAA = removeZeroValueNcAA();
+            // ncAA가 선택되지 않은 경우 체크
+            noNcAASelected = Object.keys(filteredNcAA).length === 0;
+
             possibilities = StmHelper.calc(
                 rnaSeq,
-                removeZeroValueNcAA(),
+                // @ts-ignore - ncAA 타입은 NcAACodonSelector에서 처리됨
+                filteredNcAA,
                 removeEmptyCodonTitles(),
                 selectedMonoisotopicAminos,
                 ionTypes,
@@ -270,6 +276,9 @@
     </div>
 
     {#if rnaSeq !== null && possibilities.length > 0}
+        {#if noNcAASelected}
+            <p class="no-ncaa-warning">No ncAA has been selected</p>
+        {/if}
         <StmResultTable {possibilities} showByproducts={showByproducts} />
     {/if}
 </div>
@@ -278,6 +287,16 @@
   .container {
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .no-ncaa-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
   }
 
   .byproducts-toggle {
