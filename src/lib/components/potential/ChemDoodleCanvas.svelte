@@ -5,6 +5,7 @@
   import { shortToLongMapper, aminoMap, molecularWeightMap, aminoFormulaMap } from '$lib/helper/amino_mapper';
   import { storage } from '$lib/services/storage.service';
   import { formatFormula, formatFormulaSubtraction } from '$lib/helper/formula_util';
+  import { showAlert } from '$lib/stores/alertStore.js';
 
   const dispatch = createEventDispatcher();
 
@@ -618,7 +619,7 @@ M  END`,
         closeModal();
       } catch (error) {
         console.error('Error loading amino acid structure:', error);
-        alert('Failed to load amino acid structure.');
+        showAlert('Failed to load amino acid structure.', 'Error', 'error');
       }
     }
   }
@@ -631,7 +632,7 @@ M  END`,
         closeModal();
       } catch (error) {
         console.error('Error loading ncAA structure:', error);
-        alert('Failed to load ncAA structure.');
+        showAlert('Failed to load ncAA structure.', 'Error', 'error');
       }
     }
   }
@@ -644,7 +645,7 @@ M  END`,
         closeModal();
       } catch (error) {
         console.error('Error loading modification structure:', error);
-        alert('Failed to load modification structure.');
+        showAlert('Failed to load modification structure.', 'Error', 'error');
       }
     }
   }
@@ -670,7 +671,7 @@ M  END`,
       });
     } catch (error) {
       console.error('Error calculating molecular properties:', error);
-      alert('Error calculating molecular properties. Please check your structure.');
+      showAlert('Error calculating molecular properties. Please check your structure.', 'Error', 'error');
     }
   }
 </script>

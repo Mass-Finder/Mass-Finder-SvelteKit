@@ -99,6 +99,7 @@
 <!-- Bootstrap Table -->
 <div class="table-responsive mt-3">
   <table class="table table-striped table-hover">
+    <caption class="visually-hidden">Mass to Sequence prediction results showing {bestSolutions.length} sequences</caption>
     <thead class="table-light">
       <tr>
         <th scope="col">No. </th>

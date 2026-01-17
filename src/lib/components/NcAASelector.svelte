@@ -7,6 +7,7 @@
     import NcAaSelectItem from './NcAASelectItem.svelte';
     import { get } from 'svelte/store';
     import { storage } from '$lib/services/storage.service';
+    import { showAlert } from '$lib/stores/alertStore.js';
 
 
     const dispatch = createEventDispatcher();
@@ -33,8 +34,11 @@
       savedData.set(storedData);
     }
   
-    function openModal(key) {
-      if ($savedData.length == 0) return alert('There is no ncAA created.');
+    async function openModal(key) {
+      if ($savedData.length == 0) {
+        await showAlert('There is no ncAA created.', 'Information', 'info');
+        return;
+      }
       selectedKey = key;
       showModal.set(true);
     }
@@ -52,11 +56,11 @@
       dispatch('changeNcAA', $selectedData);
     }
   
-    function onClickBody(index) {
+    async function onClickBody(index) {
       let _data = $savedData[index];
 
       if(_checkAlreadyExistValue(_data)){
-        alert('This value has already been added.');
+        await showAlert('This value has already been added.', 'Information', 'info');
         return;
       }
 

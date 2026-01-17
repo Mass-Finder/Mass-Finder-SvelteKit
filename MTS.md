@@ -417,7 +417,98 @@ static getWaterWeight(aminoLength: number) {
 }
 ```
 
-### 3. 이온 무게 추가
+### 3. Fixed Sequence와 추가 아미노산 간 펩타이드 결합 처리
+
+**파일**: `src/lib/helper/mass_finder_helper.ts:90-110`, `src/lib/helper/mass_finder_helper.ts:488-503`
+
+**개요**: Fixed sequence와 추가 아미노산 사이의 펩타이드 결합에서 발생하는 물 분자 증발량을 정확하게 계산합니다.
+
+**핵심 로직**:
+
+#### 3.1. Fixed Sequence 물 증발량 계산
+```typescript
+// src/lib/helper/mass_finder_helper.ts:488-503
+getInitAminoWeight(initAmino: string): { monoisotopicWeight: number, molecularWeight: number } {
+    // Fixed sequence 내부 펩타이드 결합에 대한 물 증발량만 계산
+    // (추가 아미노산과의 연결은 calc() 함수에서 별도 처리)
+    const initAminoWaterWeight = this.getWaterWeight(initAmino.length);
+    let initAminoMonoisotopicWeight = 0;
+    let initAminoMolecularWeight = 0;
+    if (initAmino) {
+        for (const i of initAmino.split('')) {
+            initAminoMonoisotopicWeight += this.dataMap[i] ?? 0;
+            initAminoMolecularWeight += this.moleMap[i] ?? 0;
+        }
+    }
+    return {
+        monoisotopicWeight: initAminoMonoisotopicWeight - initAminoWaterWeight,
+        molecularWeight: initAminoMolecularWeight - initAminoWaterWeight
+    };
+}
+```
+
+**조건**:
+- Fixed sequence 내부의 펩타이드 결합만 계산 (`length` 사용, `length + 1` 아님)
+- 추가 아미노산과의 연결 물 분자는 별도 처리
+
+#### 3.2. Fixed Sequence와 추가 아미노산 연결 물 분자 계산
+```typescript
+// src/lib/helper/mass_finder_helper.ts:90-110
+calc(...) {
+    // ... (초기화 로직)
+
+    const initAminoWeight = this.getInitAminoWeight(processedInitAminos);
+    targetMass -= initAminoWeight.monoisotopicWeight;
+
+    // targetMass가 매우 작거나 음수인 경우 (Fixed sequence만으로 충분한 경우)
+    // 추가 아미노산이 필요 없으므로 빈 시퀀스 반환
+    if (targetMass <= 1.0 && processedInitAminos) {
+        const emptyWeight = this.getMonoisotopicWeightSum("");
+        const emptyMolWeight = this.getMolecularWeightSum("");
+        bestSolutions.push(new AminoModel({ code: "", weight: emptyWeight, molecularWeight: emptyMolWeight }));
+    } else {
+        const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
+
+        for (let i = minRange; i < maxRange; i++) {
+            // i > 0일 때는 Fixed sequence와 추가 아미노산 사이의 펩타이드 결합 물 분자 추가
+            const connectionWater = (processedInitAminos && i > 0) ? CHEMICAL_CONSTANTS.WATER_WEIGHT : 0;
+            const addWeight = this.getWaterWeight(i) + connectionWater;
+            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, i, ...);
+            // ... (결과 처리)
+        }
+    }
+}
+```
+
+**조건**:
+1. **Fixed sequence만으로 충분한 경우** (`targetMass <= 1.0 && processedInitAminos`):
+   - 추가 아미노산이 필요 없음
+   - 빈 시퀀스(`""`) 반환
+
+2. **추가 아미노산이 필요한 경우**:
+   - `connectionWater`: Fixed sequence와 추가 아미노산 사이 펩타이드 결합 물 분자
+   - 조건: `processedInitAminos && i > 0` (Fixed sequence가 있고 추가 아미노산이 1개 이상)
+   - 값: `CHEMICAL_CONSTANTS.WATER_WEIGHT` (18.01056 Da)
+
+**물 분자 계산 구조**:
+```
+[Fixed Sequence] + [추가 아미노산들]
+
+물 증발량 = Fixed 내부 물 증발량 + 연결 물 분자 + 추가 아미노산 내부 물 증발량
+         = (Fixed 길이 - 1) × 18.01056  (getInitAminoWeight에서 계산)
+         + 18.01056                      (connectionWater, calc에서 계산)
+         + (추가 길이 - 1) × 18.01056    (getWaterWeight(i), calc에서 계산)
+```
+
+**예시**:
+- Fixed sequence: `ABC` (3개 아미노산)
+  - 내부 물 증발량: `(3-1) × 18.01056 = 36.02112 Da`
+- 추가 아미노산: `DE` (2개)
+  - 내부 물 증발량: `(2-1) × 18.01056 = 18.01056 Da`
+  - 연결 물 분자: `18.01056 Da`
+- 총 물 증발량: `36.02112 + 18.01056 + 18.01056 = 72.04224 Da`
+
+### 4. 이온 무게 추가
 ```typescript
 // 조건: 최종 단계에서 이온 무게 추가
 static calcByIonType(...) {

@@ -164,9 +164,10 @@ function generateCrosslinkingCombinations(
                 }
             }
 
-            // Mass change = (new structure × pair count) - original amino acids
-            newPoss.weight = newPoss.weight - originalMonoWeight + (modWeight * combo.length);
-            newPoss.molecularWeight = newPoss.molecularWeight - originalMolWeight + (modMolWeight * combo.length);
+            // Mass change = (new structure × pair count × 2) - original amino acids
+            // Each pair creates 2 crosslinked structures (e.g., Dm-W becomes AsuAsu)
+            newPoss.weight = newPoss.weight - originalMonoWeight + (modWeight * combo.length * 2);
+            newPoss.molecularWeight = newPoss.molecularWeight - originalMolWeight + (modMolWeight * combo.length * 2);
 
             // Update sequence (using structure name)
             updateSequenceWithCrosslinking(newPoss, combo, modification.structureName);

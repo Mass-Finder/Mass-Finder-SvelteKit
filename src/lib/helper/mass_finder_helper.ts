@@ -90,13 +90,24 @@ export class MassFinderHelper {
         const initAminoWeight = this.getInitAminoWeight(processedInitAminos);
         targetMass -= initAminoWeight.monoisotopicWeight;
 
-        const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
-        for (let i = minRange; i < maxRange; i++) {
-            const addWeight = this.getWaterWeight(i);
-            let solutions = this.calcByFType(this.formyType, targetMass + addWeight, i, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
-            solutions = removeDuplicates(solutions);
-            solutions = removeSingleFSequences(solutions);
-            bestSolutions = bestSolutions.concat(solutions);
+        // targetMass가 매우 작거나 음수인 경우 (Fixed sequence만으로 충분한 경우)
+        // 추가 아미노산이 필요 없으므로 빈 시퀀스 반환
+        if (targetMass <= 1.0 && processedInitAminos) {
+            const emptyWeight = this.getMonoisotopicWeightSum("");
+            const emptyMolWeight = this.getMolecularWeightSum("");
+            bestSolutions.push(new AminoModel({ code: "", weight: emptyWeight, molecularWeight: emptyMolWeight }));
+        } else {
+            const [minRange, maxRange] = this.getMinMaxRange(this.formyType, targetMass);
+
+            for (let i = minRange; i < maxRange; i++) {
+                // i > 0일 때는 Fixed sequence와 추가 아미노산 사이의 펩타이드 결합 물 분자 추가
+                const connectionWater = (processedInitAminos && i > 0) ? CHEMICAL_CONSTANTS.WATER_WEIGHT : 0;
+                const addWeight = this.getWaterWeight(i) + connectionWater;
+                let solutions = this.calcByFType(this.formyType, targetMass + addWeight, i, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
+                solutions = removeDuplicates(solutions);
+                solutions = removeSingleFSequences(solutions);
+                bestSolutions = bestSolutions.concat(solutions);
+            }
         }
 
         // 전체 결과에 대해 다시 한 번 중복 제거 (강화된 중복 제거)
@@ -475,8 +486,9 @@ export class MassFinderHelper {
 
     // 초기 입력된 아미노산의 총 무게에서 물 증발량을 제거한 값
     getInitAminoWeight(initAmino: string): { monoisotopicWeight: number, molecularWeight: number } {
-        // 초기 입력값의 물 증발량, 근데 init 의 물 증발량 구할떄는 길이에 -1 해주면 안됨 나중에 또 -1 해줄거라서
-        const initAminoWaterWeight = this.getWaterWeight(initAmino.length + 1);
+        // Fixed sequence 내부 펩타이드 결합에 대한 물 증발량만 계산
+        // (추가 아미노산과의 연결은 calc() 함수에서 별도 처리)
+        const initAminoWaterWeight = this.getWaterWeight(initAmino.length);
         let initAminoMonoisotopicWeight = 0;
         let initAminoMolecularWeight = 0;
         if (initAmino) {

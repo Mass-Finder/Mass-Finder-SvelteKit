@@ -8,6 +8,7 @@
   import SAModeSelector from "$lib/components/SAModeSelector.svelte";
   import { getContext, onDestroy } from "svelte";
   import { writable } from "svelte/store";
+  import { showAlert } from "$lib/stores/alertStore.js";
   import {
     aminoMap,
     molecularWeightMap,
@@ -45,9 +46,9 @@
   async function handleCalculate() {
     const startTime = performance.now();
     console.log("계산 시작:", new Date().toISOString());
-    
+
     loading.set(true);
-    if (!validate()) return loading.set(false);
+    if (!(await validate())) return loading.set(false);
 
     // topSolutionsCount는 인스턴스 변수이므로 worker에서 처리됨
 
@@ -111,14 +112,14 @@
         } else if (e.data.type === "error") {
           console.error("Worker error:", e.data.error);
           console.log(`계산 실패 시간: ${calculationTime.toFixed(2)}ms`);
-          alert("An error occurred while calculating");
+          showAlert("An error occurred while calculating", "Error", "error");
         }
         loading.set(false);
       };
 
       worker.onerror = (error) => {
         console.error("Worker error:", error);
-        alert("An error occurred while calculating");
+        showAlert("An error occurred while calculating", "Error", "error");
         loading.set(false);
       };
 
@@ -137,7 +138,7 @@
       });
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred while calculating");
+      showAlert("An error occurred while calculating", "Error", "error");
       loading.set(false);
     }
   }
@@ -167,24 +168,24 @@
     );
   }
 
-  function validate() {
+  async function validate() {
     if (detectedMass === null) {
-      alert("Please Input Detected mass");
+      await showAlert("Please Input Detected mass", "Validation Error", "warning");
       return false;
     }
 
     if (detectedMass > 10000) {
-      alert("The detected mass value is too large. Please enter a value below 10,000.");
+      await showAlert("The detected mass value is too large. Please enter a value below 10,000.", "Validation Error", "warning");
       return false;
     }
 
     if (!validateknownSequence()) {
-      alert("Please enter the correct KnownSequence");
+      await showAlert("Please enter the correct KnownSequence", "Validation Error", "warning");
       return false;
     }
 
     if (!validateProteinSequence()) {
-      alert("Please enter the correct Protein sequence");
+      await showAlert("Please enter the correct Protein sequence", "Validation Error", "warning");
       return false;
     }
 
@@ -230,7 +231,7 @@
     return aminoSequence;
   }
 
-  function validateProteinSequence() {
+  async function validateProteinSequence() {
     // 빈 문자열인 경우 유효함 (선택사항)
     if (proteinSequence === "") return true;
 
@@ -244,7 +245,7 @@
 
     // 3의 배수 길이 검증 (코돈 단위)
     if (proteinSequence.length % 3 !== 0) {
-      alert("RNA sequence length must be a multiple of 3 (codon units)");
+      await showAlert("RNA sequence length must be a multiple of 3 (codon units)", "Validation Error", "warning");
       return false;
     }
 
@@ -394,6 +395,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Mass to Sequence - X-MAS</title>
+</svelte:head>
+
 <div class="container mt-5">
   <div class="text-center mb-4">
     <h1>Mass to Sequence</h1>
@@ -409,6 +414,8 @@
       bind:value={detectedMass}
       class="form-control"
       placeholder="Detected mass"
+      aria-required="true"
+      required
     />
   </div>
 
@@ -469,6 +476,7 @@
           fill="currentColor"
           class="bi bi-exclamation-triangle me-2"
           viewBox="0 0 16 16"
+          aria-hidden="true"
         >
           <path
             d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-2.008 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"
@@ -496,6 +504,7 @@
           fill="currentColor"
           class="bi bi-info-circle me-2"
           viewBox="0 0 16 16"
+          aria-hidden="true"
         >
           <path
             d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"

@@ -10,6 +10,7 @@
     import { getContext } from "svelte";
     import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
     import PotentialModificationSelector from "$lib/components/stm/PotentialModificationSelector.svelte";
+    import { showAlert } from "$lib/stores/alertStore.js";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
     let rnaSeq = ""; // RNA 시퀀스로 변경
@@ -50,10 +51,10 @@
         $codonTitles[key] = codonArray;
     }
 
-    function _onTapCalcButton() {
+    async function _onTapCalcButton() {
         loading.set(true);
         getSequenceBeforeStop();
-        if (!_validateCheck()) return loading.set(false);
+        if (!await _validateCheck()) return loading.set(false);
         try {
             possibilities = StmHelper.calc(
                 rnaSeq,
@@ -68,36 +69,38 @@
         }
     }
 
-    function _validateCheck() {
+    async function _validateCheck() {
         // 입력값 없는 경우
         if (!rnaSeq) {
-            alert("Please enter RNA sequence.");
+            await showAlert("Please enter RNA sequence.", "Validation Error", "warning");
             return false;
         }
         // 잘못된 입력값 있는경우
         if (rnaSeq.includes("?")) {
-            alert("Please enter the correct sequence.");
+            await showAlert("Please enter the correct sequence.", "Validation Error", "warning");
             return false;
         }
         // RNA 시퀀스 길이가 3의 배수가 아닌 경우
         if (rnaSeq.length % 3 !== 0) {
-            alert("RNA sequence length must be a multiple of 3.");
+            await showAlert("RNA sequence length must be a multiple of 3.", "Validation Error", "warning");
             return false;
         }
         // ncaa가 선택이 되었으나 codon 값이 입력되지 않은 경우
         if (!checkCustomCodonTitles1()) {
-            alert(
+            await showAlert(
                 "Codon name was not entered in the selected non-canonical amino acids used value.",
+                "Validation Error",
+                "warning"
             );
             return false;
         }
         // ncaa 의 codon 으로 입력된 값이 codonTableRtoS 에 매핑되지 않을때
-        if (!checkCustomCodonTitles2()) {
+        if (!await checkCustomCodonTitles2()) {
             return false;
         }
         // adduct가 선택되지 않은 경우는 이제 허용 (none 값으로 처리)
         // if (ionTypes.length === 0) {
-        //     alert("Please select at least one adduct type.");
+        //     await showAlert("Please select at least one adduct type.", "Validation Error", "warning");
         //     return false;
         // }
 
@@ -120,7 +123,7 @@
         return true;
     }
 
-    function checkCustomCodonTitles2() {
+    async function checkCustomCodonTitles2() {
         // codonTitles의 현재 상태를 가져오기 위해 get 함수 사용
         let current = get(codonTitles);
 
@@ -145,7 +148,7 @@
             }
         });
         if (msg) {
-            alert(msg);
+            await showAlert(msg, "Validation Error", "warning");
             return false;
         }
         return true;
@@ -205,6 +208,10 @@
         potentialModifications = e.detail;
     }
 </script>
+
+<svelte:head>
+  <title>Sequence to Mass - X-MAS</title>
+</svelte:head>
 
 <div class="container mt-5">
     <div class="text-center mb-4">
