@@ -239,6 +239,7 @@
             on:changeNcAA={handleNcAAChange}
             bind:codonTitles
             {onChangeCodonTitles}
+            {rnaSeq}
         />
     </div>
 

@@ -14,6 +14,7 @@
   
     export let codonTitles;
     export let onChangeCodonTitles;
+    export let rnaSeq = "";
     /// 로컬 스토리지에 저장된 분자들
     let savedData = writable([]);
 
@@ -115,12 +116,13 @@
           <div class="card h-100">
             <div class="card-body d-flex align-items-center justify-content-center">
               {#if $selectedData[key]}
-                <NcAACodonSelectItem 
-                  data={$selectedData[key]} 
-                  {key} 
-                  {onCancelSelectData} 
-                  customCodonTitles={$codonTitles[key] || []} 
+                <NcAACodonSelectItem
+                  data={$selectedData[key]}
+                  {key}
+                  {onCancelSelectData}
+                  customCodonTitles={$codonTitles[key] || []}
                   onChangeTitle={onChangeTitles}
+                  {rnaSeq}
                 />
               {:else}
                 <button 

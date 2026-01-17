@@ -8,8 +8,20 @@
     export let onCancelSelectData;
     export let onChangeTitle;
     export let customCodonTitles;
+    export let rnaSeq = "";
 
     let showCodonDialog = false;
+
+    // RNA 시퀀스를 코돈 단위로 분할
+    function getRnaCodons(rna) {
+        if (!rna) return [];
+        return rna.match(/.{1,3}/g) || [];
+    }
+
+    // 선택된 코돈 중 RNA 시퀀스에 없는 것이 있는지 확인
+    $: rnaCodons = getRnaCodons(rnaSeq);
+    $: missingCodons = customCodonTitles.filter(codon => !rnaCodons.includes(codon));
+    $: hasWarning = missingCodons.length > 0 && customCodonTitles.length > 0;
 
     onMount(() => {
       let canvasId = `canvas-ncaa-codon-${data.title}`;
@@ -82,7 +94,16 @@
 
         <!-- Remove 버튼 -->
         <button class="btn btn-danger btn-sm w-100" on:click={() => onCancelSelectData(key)}>Remove</button>
+
     </div>
+
+    <!-- 코돈이 RNA 시퀀스에 없을 때 경고 문구 (버튼 영역 바깥에 배치) -->
+    {#if hasWarning}
+      <div class="codon-warning mt-2">
+        <small>The selected codon is not present in the RNA sequence.</small>
+        <strong>{missingCodons.join(', ')}</strong>
+      </div>
+    {/if}
 </div>
 
 <CodonSelectDialog
@@ -147,6 +168,24 @@
 
     .formula {
         font-family: 'Times New Roman', Times, serif;
+    }
+
+    .codon-warning {
+        text-align: center;
+        line-height: 1.3;
+    }
+
+    .codon-warning small {
+        display: block;
+        font-size: 0.65em;
+        color: #b8860b;
+    }
+
+    .codon-warning strong {
+        display: block;
+        font-size: 0.7em;
+        color: #b8860b;
+        margin-top: 2px;
     }
 </style>
   

@@ -331,6 +331,13 @@ let codonTitles = writable({
 - 코돈 할당은 다중 선택 가능 (1:N 매핑)
 - 동일 코돈을 여러 ncAA에 할당 가능
 
+**코돈 유효성 경고**:
+**파일**: `src/lib/components/stm/NcAACodonSelectItem.svelte:15-24`
+- ncAA에 선택된 코돈이 Input RNA sequence에 존재하지 않을 경우 경고 문구 표시
+- 경고 문구: "The selected codon is not present in the RNA sequence."
+- 누락된 코돈 목록이 bold 처리되어 표시됨 (예: `UAG, UAA`)
+- 주황색 텍스트로 가시성 확보, 버튼 레이아웃에 영향 없음
+
 #### B. Ion Adduct 타입 설정
 **파일**: `src/routes/stm/+page.svelte:21`
 ```javascript
