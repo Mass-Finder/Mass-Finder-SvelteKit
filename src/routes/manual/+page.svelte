@@ -12,7 +12,7 @@
 </svelte:head>
 
 <!-- Navigation Bar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary manual-nav">
   <div class="container-fluid">
     <a class="navbar-brand" href="#" on:click={(e) => {e.preventDefault(); goToSection('welcome')}}>X-MAS User Guide</a>
     <button
@@ -54,7 +54,7 @@
   <section id="welcome" class="mb-5">
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title">Welcome to X-MAS</h2>
+        <h2 class="section-title">Welcome to X-MAS</h2>
         <p class="card-text">
           <strong>X-MAS (eXpanded-code Mass Analysis System)</strong> is an analysis tool for mass spectrometry (MS) data of peptides containing non-canonical amino acids (ncAAs) produced in reconstituted cell-free translation systems (rCFSs).
         </p>
@@ -108,8 +108,7 @@
   <section id="ncaa" class="mb-5">
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title">My ncAAs</h2>
-
+        <h2 class="section-title">My ncAAs</h2>
         <div class="text-center my-3">
           <img src="/manual/image2.png" alt="My ncAAs" class="img-fluid rounded" />
         </div>
@@ -235,8 +234,7 @@
   <section id="potential" class="mb-5">
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title">Potential Modification</h2>
-
+        <h2 class="section-title">Potential Modification</h2>
         <div class="text-center my-3">
           <img src="/manual/image20.png" alt="Potential Modification" class="img-fluid rounded" />
         </div>
@@ -500,8 +498,7 @@
   <section id="s2m" class="mb-5">
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title">Sequence to Mass (S2M)</h2>
-
+        <h2 class="section-title">Sequence to Mass (S2M)</h2>
         <div class="text-center my-3">
           <img src="/manual/image36.png" alt="S2M" class="img-fluid rounded" />
         </div>
@@ -742,8 +739,7 @@
   <section id="m2s" class="mb-5">
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title">Mass to Sequence (M2S)</h2>
-
+        <h2 class="section-title">Mass to Sequence (M2S)</h2>
         <div class="text-center my-3">
           <img src="/manual/image52.png" alt="M2S" class="img-fluid rounded" />
         </div>
@@ -1102,14 +1098,29 @@
     height: auto;
   }
 
-  .sticky-top {
+  .manual-nav {
     position: sticky;
-    top: 0;
-    z-index: 1020;
+    top: 56px; /* 사이트 메인 네비게이션 높이 아래에 위치 */
+    z-index: 1010; /* 메인 네비게이션(1020)보다 낮게 설정 */
+  }
+
+  .section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0d6efd;
+    border-bottom: 3px solid #0d6efd;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
   }
 
   /* Mobile responsive */
   @media (max-width: 767px) {
+    .section-title {
+      font-size: 1.5rem;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
     .container {
       margin-top: 0 !important;
       margin-bottom: 1rem !important;
