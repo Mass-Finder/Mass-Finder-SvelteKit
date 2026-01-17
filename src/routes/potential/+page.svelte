@@ -174,20 +174,8 @@
   }
 
   function resetForm() {
-    modificationName = '';
-    targetAminoAcid = '';
-    target1AminoAcid = '';
-    target2AminoAcid = '';
-    structureName = '';
-    molecularFormula.set('');
-    monoisotopicWeight.set('');
-    molecularWeight.set('');
-    moleculeJson.set({});
-
-    // Clear the ChemDoodle canvas
-    if (chemDoodleCanvas) {
-      chemDoodleCanvas.clearCanvas();
-    }
+    // 페이지 새로고침으로 ChemDoodle sketcher를 완전히 초기화
+    window.location.reload();
   }
 
   function loadSavedModifications() {

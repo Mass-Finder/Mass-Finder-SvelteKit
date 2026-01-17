@@ -55,14 +55,8 @@
     }
 
     function resetForm() {
-      chemicalTitle = '';
-      molecularFormula.set('');
-      monoisotopicWeight.set('');
-      molecularWeight.set('');
-      moleculeJson.set({});
-      if (chemDoodleCanvas) {
-        chemDoodleCanvas.clearCanvas();
-      }
+      // 페이지 새로고침으로 ChemDoodle sketcher를 완전히 초기화
+      window.location.reload();
     }
 
     /// 입력된 타이틀이 저장 가능한지 체크
