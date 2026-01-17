@@ -16,7 +16,8 @@
 
   function handleInput(event) {
     const input = event.target;
-    value = input.value.toUpperCase();
+    // T를 U로 자동 변환 (DNA → RNA)
+    value = input.value.toUpperCase().replace(/T/g, 'U');
     dispatch('input', { value });
   }
 
