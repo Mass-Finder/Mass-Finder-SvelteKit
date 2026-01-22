@@ -233,13 +233,20 @@ for (let i = 0; i < sequence.length; i++) {
 
 **질량 계산**:
 ```javascript
-// 두 아미노산을 수식으로 대체
+// 두 아미노산이 하나의 crosslinking 구조로 결합됨
+// 예: M-W 인접 쌍이 하나의 B 구조로 대체됨
 최종 질량 = 원래 질량 - 타겟1 질량 - 타겟2 질량 + 수식 질량
+
+// 중요: 화면에는 BB로 표시되지만, B의 질량은 한 번만 추가됨
+// (두 아미노산이 물리적으로 하나의 crosslinked 구조를 형성하기 때문)
 ```
 
 **표시**:
-- 수식명만 표시 (두 아미노산 모두 수식명으로 대체)
-- 예시: `MCCCRRC` + Crosslinking `XL` (C-C) → `MXLCRRC`
+- 시퀀스 표시: 두 위치 모두 수식명으로 표시 (예: BB)
+- 질량 계산: 수식 질량은 한 번만 적용 (한 쌍 = 하나의 crosslinked 구조)
+- 예시: `MWSHPQFEKST` + Crosslinking `B` (M-W, Adjacent) → `BBSHPQFEKST`
+  - 화면 표시: BB 두 글자로 보임
+  - 질량 계산: -M 질량 - W 질량 + B 질량 (B는 한 번만)
 
 **저장 데이터 구조**:
 ```javascript
