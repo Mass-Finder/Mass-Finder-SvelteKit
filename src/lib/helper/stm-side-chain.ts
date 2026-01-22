@@ -106,18 +106,34 @@ function generateSideChainVariants(
             const modWeight = parseFloat(modification.monoisotopicWeight);
             const modMolWeight = parseFloat(modification.molecularWeight);
 
-            // Get target amino acid weight
-            const targetAA = modification.target;
-            const targetMonoisotopicWeight = aminoMap[targetAA] || 0;
-            const targetMolecularWeight = molecularWeightMap[targetAA] || 0;
+            // Track total mass to subtract (may vary per position for ncAA)
+            let totalTargetMonoWeight = 0;
+            let totalTargetMolWeight = 0;
 
             // Apply modification to applyCount amino acids from left to right
             for (let i = 0; i < applyCount; i++) {
                 const idx = targetIndices[i];
+                const seqItem = newPoss.sequence[idx];
+
+                // Get target amino acid weight
+                // For ncAA (non-natural), get weight from candidate object
+                // For natural amino acids, get weight from aminoMap
+                if (seqItem.natural) {
+                    totalTargetMonoWeight += aminoMap[seqItem.letter] || 0;
+                    totalTargetMolWeight += molecularWeightMap[seqItem.letter] || 0;
+                } else if (seqItem.candidate) {
+                    // ncAA: get weight from candidate
+                    totalTargetMonoWeight += parseFloat(seqItem.candidate.monoisotopicWeight);
+                    totalTargetMolWeight += parseFloat(seqItem.candidate.molecularWeight);
+                } else {
+                    // Fallback to aminoMap (should not happen normally)
+                    totalTargetMonoWeight += aminoMap[seqItem.letter] || 0;
+                    totalTargetMolWeight += molecularWeightMap[seqItem.letter] || 0;
+                }
 
                 // Mark sequence
                 newPoss.sequence[idx] = {
-                    ...newPoss.sequence[idx],
+                    ...seqItem,
                     sideChainModified: true,
                     sideChainModification: modification.structureName
                 };
@@ -126,8 +142,8 @@ function generateSideChainVariants(
             // Update mass (REPLACE: subtract target mass and add mod mass)
             // Side Chain modifications are stored as absolute values,
             // so we subtract target weight and add mod weight
-            newPoss.weight = newPoss.weight - (targetMonoisotopicWeight * applyCount) + (modWeight * applyCount);
-            newPoss.molecularWeight = newPoss.molecularWeight - (targetMolecularWeight * applyCount) + (modMolWeight * applyCount);
+            newPoss.weight = newPoss.weight - totalTargetMonoWeight + (modWeight * applyCount);
+            newPoss.molecularWeight = newPoss.molecularWeight - totalTargetMolWeight + (modMolWeight * applyCount);
 
             // Regenerate sequenceString
             newPoss.sequenceString = newPoss.sequence

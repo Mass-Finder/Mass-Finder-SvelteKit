@@ -122,9 +122,12 @@ STM 페이지는 입력된 RNA 시퀀스를 기반으로 다양한 생물학적 
 
 3. **Side Chain** (측쇄):
    - **개념**: 타겟 아미노산을 수식으로 **완전 대체**
-   - **예시**: `MCCCRRC` + Side Chain `d1` (target: C) → `Md1CCRRC`
+   - **예시 1**: `MCCCRRC` + Side Chain `d1` (target: C) → `Md1CCRRC`
+   - **예시 2**: ncAA 타겟 - `DmWSHPQFEKST` + Side Chain `D` (target: Dm) → `DWSHPQFEKST`
    - **질량 계산**: `최종 질량 = 원래 질량 - 타겟 질량 + 수식 질량`
-   - **표시**: 수식명만 (예: `d1`)
+     - 자연 아미노산 타겟: aminoMap에서 질량 조회
+     - ncAA 타겟: candidate 객체의 monoisotopicWeight에서 질량 조회
+   - **표시**: 수식명만 (예: `d1`, `D`)
    - **조합 생성**: 재귀적으로 0개, 1개, 2개, ... N개 적용 가능성 생성
 
 **적용 조건**:
