@@ -148,7 +148,7 @@
   
   {#if value && aminoSequence}
     <div class="mt-2">
-      <small class="text-muted">
+      <small class="text-muted" style="word-break: break-all; overflow-wrap: anywhere; display: block;">
         Converted amino acid sequence: <span class="fw-bold">{aminoSequence}</span>
       </small>
     </div>

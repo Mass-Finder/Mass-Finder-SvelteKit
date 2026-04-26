@@ -18,6 +18,7 @@
   let dragZoneIndex = -1;
   let dragSide = ''; // 'left' | 'right'
   let dragStartX = 0;
+  let dragStartY = 0;
   let dragStartCount = 0;
 
   const DEFAULT_YELLOW_COUNT = 3;
@@ -156,7 +157,9 @@
     dragZoneIndex = zoneIndex;
     dragSide = side;
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
     dragStartX = clientX;
+    dragStartY = clientY;
     dragStartCount = side === 'left'
       ? ncaaZones[zoneIndex].leftYellowCount
       : ncaaZones[zoneIndex].rightYellowCount;
@@ -172,25 +175,34 @@
     event.preventDefault();
 
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-    // 한 타일의 대략적 너비 (px)
-    const tileWidth = 36;
-    const diff = clientX - dragStartX;
-    if (Math.abs(diff) > 4) dragMoved = true;
-    const tileDiff = Math.round(diff / tileWidth);
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    const dx = clientX - dragStartX;
+    const dy = clientY - dragStartY;
+    if (Math.sqrt(dx * dx + dy * dy) > 4) dragMoved = true;
+
+    // 마우스 아래 타일을 찾아 절대 인덱스 기반으로 노란 영역 갱신 (줄바꿈 대응)
+    const el = document.elementFromPoint(clientX, clientY);
+    const tileEl = el && el.closest ? el.closest('.tile') : null;
+    if (!tileEl) return;
+    const hoverIndexAttr = tileEl.getAttribute('data-index');
+    if (hoverIndexAttr === null) return;
+    const hoverIndex = parseInt(hoverIndexAttr, 10);
+    if (Number.isNaN(hoverIndex)) return;
 
     const zone = ncaaZones[dragZoneIndex];
 
+    // 다른 ncAA(빨간 영역) 위에서는 갱신하지 않음 (자기 자신의 ncaaIndex 는 허용 -> 카운트 0 까지 축소 가능)
+    if (hoverIndex !== zone.ncaaIndex && positionStates[hoverIndex] === 'red') return;
+
     if (dragSide === 'left') {
-      // 왼쪽 드래그: 왼쪽으로 드래그하면 노란 영역 확장
-      const newCount = Math.max(0, dragStartCount - tileDiff);
+      const newCount = Math.max(0, zone.ncaaIndex - hoverIndex);
       const maxLeft = getMaxYellowLeft(zone.ncaaIndex);
       ncaaZones[dragZoneIndex] = {
         ...zone,
         leftYellowCount: Math.min(newCount, maxLeft),
       };
     } else {
-      // 오른쪽 드래그: 오른쪽으로 드래그하면 노란 영역 확장
-      const newCount = Math.max(0, dragStartCount + tileDiff);
+      const newCount = Math.max(0, hoverIndex - zone.ncaaIndex);
       const maxRight = getMaxYellowRight(zone.ncaaIndex);
       ncaaZones[dragZoneIndex] = {
         ...zone,
@@ -310,6 +322,7 @@
         <div
           class="tile tile-{state}"
           class:tile-drag-handle={handle !== null}
+          data-index={index}
           role="button"
           tabindex="0"
           aria-label="Position {index + 1}: {amino} ({state})"
