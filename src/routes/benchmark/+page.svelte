@@ -1,9 +1,11 @@
 <script lang="ts">
   import NcAASelector from "$lib/components/NcAASelector.svelte";
   import SAModeSelector from "$lib/components/SAModeSelector.svelte";
+  import InitialRnaInput from "$lib/components/InitialRnaInput.svelte";
+  import PeptideSequenceSelector from "$lib/components/PeptideSequenceSelector.svelte";
   import { onDestroy } from "svelte";
   import { showAlert } from "$lib/stores/alertStore.js";
-  import { aminoMap, molecularWeightMap } from "$lib/helper/amino_mapper";
+  import { aminoMap, molecularWeightMap, codonTableRtoS } from "$lib/helper/amino_mapper";
   import {
     findCompositionMatch,
     computeBenchmarkStats,
@@ -20,6 +22,8 @@
   // ────────────────────────────────────────────────────────────────────────
   let detectedMass: number | null = null;
   let targetSequence: string = "";
+  let rnaSequence: string = ""; // RNA 시퀀스 (선택, A/U/G/C, 길이 3 의 배수)
+  let sequenceTemplate: any = null; // PeptideSequenceSelector 가 만든 fixed/gap 구조
 
   // ncAA: 기존 NcAASelector 재사용 (B/J/O/U/X/Z 6슬롯)
   let fullNcAA: Record<string, any> = {
@@ -43,7 +47,6 @@
   const FIXED_FORMYLATION = "unknown" as const;
   const FIXED_ADDUCT = "+H" as const;
   const FIXED_AMINO_MAP = { ...aminoMap };
-  const FIXED_RNA_SEQUENCE = ""; // RNA 미사용
 
   // ────────────────────────────────────────────────────────────────────────
   // 실행 상태
@@ -121,7 +124,7 @@
     );
     const molecularMap = { ...ncMolBase, ...filteredMolWeights };
 
-    return {
+    const base: Record<string, unknown> = {
       detectedMass,
       formylation: FIXED_FORMYLATION,
       adduct: FIXED_ADDUCT,
@@ -130,10 +133,77 @@
       initialTemperature: saConfig.initialTemperature,
       absoluteTemperature: saConfig.absoluteTemperature,
       saIterations: saConfig.saIterations,
-      knownSequence: "",
-      proteinSequence: FIXED_RNA_SEQUENCE,
+    };
+
+    if (sequenceTemplate && sequenceTemplate.gapTotalLength > 0) {
+      // Template 모드: fixed/gap 세그먼트 기반 calc
+      base.sequenceTemplate = sequenceTemplate;
+    } else {
+      // 일반 모드: RNA 를 reference 로 사용 (없으면 빈 문자열 → mass-only SA)
+      base.knownSequence = "";
+      base.proteinSequence = rnaSequence;
+    }
+    return base;
+  }
+
+  function handleTemplateChange(e: CustomEvent) {
+    const { fullSequence, positionStates, fixedSegments, gapSegments } = e.detail;
+    if (!fullSequence) {
+      sequenceTemplate = null;
+      return;
+    }
+    const gapTotalLength = gapSegments.reduce(
+      (sum: number, g: { length: number }) => sum + g.length,
+      0,
+    );
+    sequenceTemplate = {
+      fullSequence,
+      positionStates,
+      fixedSegments,
+      gapSegments,
+      totalLength: fullSequence.length,
+      gapTotalLength,
     };
   }
+
+  // RNA 시퀀스 검증: A/U/G/C only, 길이 3 의 배수 (빈 문자열은 OK)
+  function validateRnaSequence(seq: string): { ok: boolean; message: string } {
+    if (!seq) return { ok: true, message: "" };
+    const validBases = /^[AUGC]+$/;
+    if (!validBases.test(seq)) {
+      return { ok: false, message: "RNA must contain only A, U, G, C" };
+    }
+    if (seq.length % 3 !== 0) {
+      return {
+        ok: false,
+        message: "RNA length must be a multiple of 3 (codon units)",
+      };
+    }
+    return { ok: true, message: "" };
+  }
+
+  // RNA → amino acid 변환 (UI 미리보기 + 검증 보조)
+  function convertRnaToAminoAcids(seq: string): string {
+    if (!seq) return "";
+    const codons = seq.match(/.{1,3}/g) ?? [];
+    let out = "";
+    for (const codon of codons) {
+      if (codon.length === 3) {
+        const aa = (codonTableRtoS as Record<string, string>)[codon];
+        if (aa && aa !== "[Stop]") out += aa;
+        else if (aa === "[Stop]") break;
+      }
+    }
+    return out;
+  }
+
+  $: rnaConverted = convertRnaToAminoAcids(rnaSequence);
+  $: rnaValidation = validateRnaSequence(rnaSequence);
+  $: fixedSegmentsLabel = sequenceTemplate?.fixedSegments?.length
+    ? sequenceTemplate.fixedSegments
+        .map((s: { sequence: string }) => `"${s.sequence}"`)
+        .join(", ")
+    : "None";
 
   // ────────────────────────────────────────────────────────────────────────
   // 입력 검증
@@ -157,6 +227,11 @@
         "Validation Error",
         "warning",
       );
+      return false;
+    }
+    const rnaCheck = validateRnaSequence(rnaSequence);
+    if (!rnaCheck.ok) {
+      await showAlert(rnaCheck.message, "Validation Error", "warning");
       return false;
     }
     if (!Number.isInteger(benchmarkRuns) || benchmarkRuns < 1) {
@@ -267,8 +342,18 @@
 
   function handleTargetInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    // 대문자 정규화하면서 맨 앞 'F' 만 formylation 표기인 'f' 로 보존
-    targetSequence = input.value.toUpperCase().replace(/^F/, "f");
+    const value = input.value;
+    if (value.length === 0) {
+      targetSequence = "";
+      return;
+    }
+    // 첫 글자 'f' 만 Formylation prefix 로 보존하고, 나머지는 모두 대문자.
+    // 대문자 'F' 는 Phe(페닐알라닌) 를 의미하므로 그대로 둔다.
+    if (value[0] === "f") {
+      targetSequence = "f" + value.slice(1).toUpperCase();
+    } else {
+      targetSequence = value.toUpperCase();
+    }
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -296,7 +381,7 @@
 
   function handleDownloadDetailed() {
     if (runs.length === 0) return;
-    const csv = runsToCSV(runs, targetSequence, detectedMass);
+    const csv = runsToCSV(runs, targetSequence, detectedMass, rnaSequence);
     const safeTarget = targetSequence.replace(/[^A-Za-z0-9]/g, "_") || "target";
     downloadFile(
       csv,
@@ -318,6 +403,45 @@
     (sum, r) => sum + (r.solutions?.length ?? 0),
     0,
   );
+
+  // 진단: 100x100 SA 솔루션 중 ncAA letter 가 실제로 등장한 비율
+  $: ncAAStats = (() => {
+    const ncAALetters = Object.keys(fullNcAA).filter(
+      (k) => fullNcAA[k] !== null,
+    );
+    if (ncAALetters.length === 0 || runs.length === 0) return null;
+
+    let totalSolutions = 0;
+    let solutionsWithNcAA = 0;
+    const perLetterCounts: Record<string, number> = {};
+    for (const l of ncAALetters) perLetterCounts[l] = 0;
+
+    for (const run of runs) {
+      if (!run.solutions) continue;
+      for (const sol of run.solutions) {
+        totalSolutions++;
+        const code = sol.code ?? "";
+        let hasAny = false;
+        for (const letter of ncAALetters) {
+          if (code.includes(letter)) {
+            perLetterCounts[letter]++;
+            hasAny = true;
+          }
+        }
+        if (hasAny) solutionsWithNcAA++;
+      }
+    }
+    return {
+      ncAALetters,
+      totalSolutions,
+      solutionsWithNcAA,
+      percentage:
+        totalSolutions > 0
+          ? (solutionsWithNcAA / totalSolutions) * 100
+          : 0,
+      perLetterCounts,
+    };
+  })();
 
   function handleSAModeChange(e: CustomEvent) {
     saConfig = e.detail;
@@ -369,17 +493,50 @@
     <input
       type="text"
       id="bm-target-seq"
-      class="form-control text-uppercase"
-      placeholder="e.g. ACDEFG (optional 'f' prefix for formylation)"
+      class="form-control"
+      placeholder="e.g. ACDEFG · 'fACDE' (formyl) · 'FACDE' (Phe-Ala-...)"
       bind:value={targetSequence}
       on:input={handleTargetInput}
       disabled={isRunning}
     />
     <small class="text-muted d-block mt-1">
-      비교는 시퀀스 순서와 무관하게 구성(composition) 일치로 판정합니다. formylation
-      <code>f</code> prefix 는 비교 시 무시됩니다.
+      대문자 <code>F</code> = <strong>Phe</strong>(페닐알라닌), 소문자
+      <code>f</code> 는 <strong>맨 앞에 올 때만 Formylation prefix</strong> 로
+      처리됩니다. 비교는 시퀀스 순서와 무관한 구성(composition) 일치로 판정하며,
+      맨 앞 소문자 <code>f</code> 는 비교 시 제외되어 Formylation 유무는 일치
+      여부에 영향을 주지 않습니다.
     </small>
   </div>
+
+  <!-- RNA sequence (optional, used as similarity reference / template anchor) -->
+  <fieldset disabled={isRunning} class="rna-fieldset">
+    <InitialRnaInput
+      bind:value={rnaSequence}
+      on:input={(e) => (rnaSequence = e.detail.value)}
+    />
+
+    <!-- Narrow search space: ncAA 위치 클릭 → fixed/variable 영역 분할 -->
+    <PeptideSequenceSelector
+      aminoSequence={rnaConverted}
+      on:change={handleTemplateChange}
+    />
+  </fieldset>
+
+  {#if sequenceTemplate && sequenceTemplate.gapTotalLength > 0}
+    <div class="alert alert-warning py-2 small mb-3">
+      <strong>Template mode active</strong> — Fixed:
+      {fixedSegmentsLabel} |
+      Variable: {sequenceTemplate.gapTotalLength} positions to predict.
+      SA 가 위 fixed 부분을 그대로 두고 변동 영역만 탐색합니다.
+    </div>
+  {:else if rnaSequence && rnaValidation.ok && rnaConverted}
+    <div class="alert alert-info py-2 small mb-3">
+      RNA reference active — converted: <span class="fw-bold">{rnaConverted}</span>.
+      SA fitness 가 mass 80% + sequence similarity 20% 로 계산되어 이 reference 와
+      유사한 시퀀스가 우선됩니다. (펩타이드 타일을 클릭하면 일부 위치만 자유롭게
+      두는 Template 모드로 전환됩니다.)
+    </div>
+  {/if}
 
   <!-- SA Mode -->
   <div class="mb-3">
@@ -430,7 +587,6 @@
       <li>Formylation: <code>{FIXED_FORMYLATION}</code></li>
       <li>Adduct: <code>{FIXED_ADDUCT}</code></li>
       <li>Amino acid set: All 20 standard amino acids</li>
-      <li>RNA sequence used: <em>none</em></li>
     </ul>
   </div>
 
@@ -518,6 +674,37 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ncAA usage diagnostic -->
+  {#if ncAAStats}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6 card-title mb-2">
+          ncAA inclusion in SA solutions
+        </h2>
+        <p class="small text-muted mb-2">
+          전체 {ncAAStats.totalSolutions.toLocaleString()} 개 SA 솔루션 중
+          <strong class="text-dark">{ncAAStats.solutionsWithNcAA.toLocaleString()}</strong>
+          개가 선택한 ncAA letter 를 1개 이상 포함했습니다 (<strong>{ncAAStats.percentage.toFixed(1)}%</strong>).
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          {#each ncAAStats.ncAALetters as letter}
+            <span class="badge bg-info text-dark">
+              <code>{letter}</code> ・ {ncAAStats.perLetterCounts[letter].toLocaleString()} 회
+            </span>
+          {/each}
+        </div>
+        {#if ncAAStats.percentage === 0}
+          <small class="text-warning d-block mt-2">
+            ⚠ ncAA letter 가 한 번도 등장하지 않았습니다. RNA reference 가 입력된
+            경우 SA 가 reference 시퀀스의 표준 20 아미노산에 강하게 편향되며
+            sortAmino 가 ncAA 포함 결과를 top-100 밖으로 밀어낼 수 있습니다.
+            ncAA 등장을 보려면 RNA 를 비우고 다시 실행해 보세요.
+          </small>
+        {/if}
       </div>
     </div>
   {/if}

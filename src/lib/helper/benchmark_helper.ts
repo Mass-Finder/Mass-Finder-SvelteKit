@@ -157,6 +157,7 @@ export function runsToCSV(
   runs: BenchmarkRun[],
   targetSequence: string,
   detectedMass: number | null,
+  rnaSequence: string = '',
 ): string {
   const targetComp = getComposition(targetSequence);
   const headers = [
@@ -175,6 +176,7 @@ export function runsToCSV(
     'Adduct',
     'Target sequence',
     'Detected mass',
+    'RNA sequence',
   ];
   const lines: string[] = [headers.map(escapeCsvField).join(',')];
 
@@ -198,6 +200,7 @@ export function runsToCSV(
           '',
           targetSequence,
           detectedMass ?? '',
+          rnaSequence,
         ]
           .map(escapeCsvField)
           .join(','),
@@ -224,6 +227,7 @@ export function runsToCSV(
           sol.ionType ?? '',
           targetSequence,
           detectedMass ?? '',
+          rnaSequence,
         ]
           .map(escapeCsvField)
           .join(','),
