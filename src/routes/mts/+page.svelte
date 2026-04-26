@@ -6,6 +6,7 @@
   import ResultTable from "$lib/components/ResultTable.svelte";
   import InitialRnaInput from "$lib/components/InitialRnaInput.svelte";
   import SAModeSelector from "$lib/components/SAModeSelector.svelte";
+  import PeptideSequenceSelector from "$lib/components/PeptideSequenceSelector.svelte";
   import { getContext, onDestroy } from "svelte";
   import { writable } from "svelte/store";
   import { showAlert } from "$lib/stores/alertStore.js";
@@ -17,7 +18,6 @@
 
   // 상태 관리 변수들
   let detectedMass = null;
-  let knownSequence = "";
   let proteinSequence = "";
   let formylation = "unknown";
   let adduct = "+H";
@@ -36,6 +36,9 @@
   let maxResultCount = 20; // 표시할 최대 결과 개수
   let worker;
 
+  // Template 상태 (PeptideSequenceSelector에서 전달)
+  let sequenceTemplate = null;
+
   onDestroy(() => {
     if (worker) {
       worker.terminate();
@@ -49,8 +52,6 @@
 
     loading.set(true);
     if (!(await validate())) return loading.set(false);
-
-    // topSolutionsCount는 인스턴스 변수이므로 worker에서 처리됨
 
     try {
       // 선택된 NCAA 값들
@@ -102,7 +103,7 @@
       worker.onmessage = (e) => {
         const endTime = performance.now();
         const calculationTime = endTime - startTime;
-        
+
         if (e.data.type === "success") {
           allSolutions = e.data.solutions;
           bestSolutions = allSolutions.slice(0, maxResultCount);
@@ -124,10 +125,8 @@
       };
 
       // Worker에 데이터 전송
-      worker.postMessage({
+      const workerData = {
         detectedMass,
-        knownSequence,
-        proteinSequence,
         formylation,
         adduct,
         monoisotopicMap,
@@ -135,7 +134,18 @@
         initialTemperature: saConfig.initialTemperature,
         absoluteTemperature: saConfig.absoluteTemperature,
         saIterations: saConfig.saIterations,
-      });
+      };
+
+      if (sequenceTemplate && sequenceTemplate.gapTotalLength > 0) {
+        // Template 모드: ncAA 선택이 있어서 갭이 존재하는 경우
+        workerData.sequenceTemplate = sequenceTemplate;
+      } else {
+        // ncAA 미선택 또는 RNA 미입력: 기존 방식 (RNA를 참조 시퀀스로 사용)
+        workerData.knownSequence = "";
+        workerData.proteinSequence = proteinSequence;
+      }
+
+      worker.postMessage(workerData);
     } catch (error) {
       console.error("Error:", error);
       showAlert("An error occurred while calculating", "Error", "error");
@@ -155,7 +165,6 @@
     saConfig = newConfig;
   }
 
-
   function handleNcAAChange(e) {
     fullNcAA = e.detail;
   }
@@ -166,6 +175,25 @@
         .filter(([key, value]) => value)
         .map(([key]) => [key, aminoMap[key]]),
     );
+  }
+
+  // PeptideSequenceSelector에서 전달받은 템플릿 정보 처리
+  function handleTemplateChange(e) {
+    const { fullSequence, positionStates, fixedSegments, gapSegments } = e.detail;
+
+    if (!fullSequence) {
+      sequenceTemplate = null;
+      return;
+    }
+
+    sequenceTemplate = {
+      fullSequence,
+      positionStates,
+      fixedSegments,
+      gapSegments,
+      totalLength: fullSequence.length,
+      gapTotalLength: gapSegments.reduce((sum, g) => sum + g.length, 0),
+    };
   }
 
   async function validate() {
@@ -179,35 +207,12 @@
       return false;
     }
 
-    if (!validateknownSequence()) {
-      await showAlert("Please enter the correct KnownSequence", "Validation Error", "warning");
-      return false;
-    }
-
     if (!validatePeptideSequence()) {
       await showAlert("Please enter the correct Peptide sequence", "Validation Error", "warning");
       return false;
     }
 
     return true;
-  }
-
-  function validateknownSequence() {
-    let filteredNcAA = Object.fromEntries(
-      Object.entries(fullNcAA).filter(([key, value]) => value !== null),
-    );
-
-    for (let char of knownSequence) {
-      if (!aminoMap[char] && !filteredNcAA[char]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  function handleknownSequenceInput(event) {
-    const input = event.target;
-    knownSequence = input.value.toUpperCase();
   }
 
   function convertRnaToAminoAcids(rnaSequence) {
@@ -252,146 +257,14 @@
     return true;
   }
 
-  function calculatePeptideMass(rnaSequence) {
-    if (!rnaSequence) return 0;
-
-    // RNA 시퀀스를 아미노산으로 변환
-    const aminoSequence = convertRnaToAminoAcids(rnaSequence);
-    if (!aminoSequence) return 0;
-
-    let filteredNcAA = Object.fromEntries(
-      Object.entries(fullNcAA).filter(([key, value]) => value !== null),
-    );
-
-    return aminoSequence.split("").reduce((sum, char) => {
-      if (selectedMonoisotopicAminos[char]) {
-        return sum + selectedMonoisotopicAminos[char];
-      } else if (filteredNcAA[char]) {
-        return sum + parseFloat(filteredNcAA[char].monoisotopicWeight);
-      }
-      return sum;
-    }, 0);
-  }
-
-  $: proteinMass = calculatePeptideMass(proteinSequence);
-  $: massWarning =
-    proteinSequence &&
-    detectedMass &&
-    Math.abs(proteinMass - detectedMass) > detectedMass * 0.5;
   $: convertedAminoSequence = proteinSequence
     ? convertRnaToAminoAcids(proteinSequence)
     : "";
   $: hasReferenceSequence = proteinSequence && proteinSequence.trim() !== "";
-  $: overlapInfo = checkSequenceOverlap(knownSequence, convertedAminoSequence);
 
-  function checkSequenceOverlap(known, converted) {
-    if (!known || !converted) {
-      return { hasOverlap: false, message: "" };
-    }
-
-    // Fixed sequence가 RNA 변환 시퀀스에 포함되어 있는지 확인
-    if (converted.indexOf(known) !== -1) {
-      return {
-        hasOverlap: true,
-        message: `Fixed sequence "${known}" is already included in the RNA sequence. Duplicate portion will be automatically removed.`,
-      };
-    }
-
-    // RNA 변환 시퀀스가 Fixed sequence에 포함되어 있는지 확인
-    if (known.indexOf(converted) !== -1) {
-      return {
-        hasOverlap: true,
-        message: `RNA sequence is already included in Fixed sequence "${known}". Only Fixed sequence will be used.`,
-      };
-    }
-
-    // 부분 중복 확인
-    for (let i = 1; i <= Math.min(known.length, converted.length); i++) {
-      const knownSuffix = known.substring(known.length - i);
-      const convertedPrefix = converted.substring(0, i);
-
-      if (knownSuffix === convertedPrefix) {
-        return {
-          hasOverlap: true,
-          message: `Partial overlap detected: "${knownSuffix}" appears at the end of Fixed sequence and start of RNA sequence. Duplicate will be automatically removed.`,
-        };
-      }
-
-      const convertedSuffix = converted.substring(converted.length - i);
-      const knownPrefix = known.substring(0, i);
-
-      if (convertedSuffix === knownPrefix) {
-        return {
-          hasOverlap: true,
-          message: `Partial overlap detected: "${convertedSuffix}" appears at the end of RNA sequence and start of Fixed sequence. Duplicate will be automatically removed.`,
-        };
-      }
-    }
-
-    return { hasOverlap: false, message: "" };
-  }
-
-  // 참조 시퀀스와 유사하게 결과 시퀀스를 재배열하는 함수
-  function rearrangeSequenceToMatch(resultSequence, referenceSequence) {
-    if (!resultSequence || !referenceSequence) return resultSequence;
-
-    // 포밀화 처리
-    const hasFormylation = resultSequence.startsWith("f");
-    const cleanResult = hasFormylation
-      ? resultSequence.slice(1)
-      : resultSequence;
-    const cleanReference = referenceSequence.replace(/^f/, "");
-
-    if (!cleanResult || !cleanReference) return resultSequence;
-
-    // 결과 시퀀스의 아미노산 개수 계산
-    const resultCount = {};
-    for (const amino of cleanResult) {
-      resultCount[amino] = (resultCount[amino] || 0) + 1;
-    }
-
-    // 참조 시퀀스 순서를 따라 재배열
-    let rearranged = "";
-    const usedCount = {};
-
-    // 1단계: 참조 시퀀스 순서대로 매칭되는 아미노산 배치
-    for (const refAmino of cleanReference) {
-      const used = usedCount[refAmino] || 0;
-      const available = resultCount[refAmino] || 0;
-
-      if (used < available) {
-        rearranged += refAmino;
-        usedCount[refAmino] = used + 1;
-      }
-    }
-
-    // 2단계: 참조 시퀀스에 없거나 남은 아미노산들을 뒤에 추가
-    for (const [amino, count] of Object.entries(resultCount)) {
-      const used = usedCount[amino] || 0;
-      const remaining = count - used;
-
-      for (let i = 0; i < remaining; i++) {
-        rearranged += amino;
-      }
-    }
-
-    // 포밀화가 있었다면 다시 추가
-    return hasFormylation ? "f" + rearranged : rearranged;
-  }
-
-  // maxResultCount가 변경될 때마다 결과를 다시 필터링하고 재배열
+  // maxResultCount가 변경될 때마다 결과를 다시 필터링
   $: if (allSolutions.length > 0) {
-    let processedSolutions = allSolutions.slice(0, maxResultCount);
-
-    // 참조 시퀀스가 있는 경우 시퀀스 재배열
-    if (hasReferenceSequence && convertedAminoSequence) {
-      processedSolutions = processedSolutions.map((solution) => ({
-        ...solution,
-        code: rearrangeSequenceToMatch(solution.code, convertedAminoSequence),
-      }));
-    }
-
-    bestSolutions = processedSolutions;
+    bestSolutions = allSolutions.slice(0, maxResultCount);
   }
 </script>
 
@@ -419,23 +292,15 @@
     />
   </div>
 
-  <div class="mb-3">
-    <label for="essential-sequence" class="form-label fw-bold"
-      >Fixed sequence</label
-    >
-    <input
-      type="text"
-      id="essential-sequence"
-      bind:value={knownSequence}
-      class="form-control"
-      placeholder="Fixed sequence"
-      on:input={handleknownSequenceInput}
-    />
-  </div>
-
   <InitialRnaInput
     bind:value={proteinSequence}
     on:input={(e) => (proteinSequence = e.detail.value)}
+  />
+
+  <!-- RNA 번역 펩타이드 시퀀스 맵: ncAA 위치 선택 및 Fixed/Variable 영역 시각화 -->
+  <PeptideSequenceSelector
+    aminoSequence={convertedAminoSequence}
+    on:change={handleTemplateChange}
   />
 
   <div class="mb-3">
@@ -465,36 +330,34 @@
     <NcAASelector on:changeNcAA={handleNcAAChange} />
   </div>
 
-  <!-- 시퀀스 중복 경고 -->
-  {#if overlapInfo.hasOverlap}
-    <div class="alert alert-warning mb-3">
+  <!-- 참조 시퀀스 정보 표시 -->
+  {#if hasReferenceSequence && sequenceTemplate && sequenceTemplate.gapTotalLength > 0}
+    <div class="alert alert-info mb-3">
       <div class="d-flex align-items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
           height="16"
           fill="currentColor"
-          class="bi bi-exclamation-triangle me-2"
+          class="bi bi-info-circle me-2"
           viewBox="0 0 16 16"
           aria-hidden="true"
         >
           <path
-            d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-2.008 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"
+            d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
           />
           <path
-            d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z"
+            d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"
           />
         </svg>
-        <strong>Sequence Overlap Detected</strong>
+        <strong>Template Mode Active</strong>
       </div>
       <small class="text-muted mt-1 d-block">
-        {overlapInfo.message}
+        Fixed: {sequenceTemplate.fixedSegments.map(s => `"${s.sequence}"`).join(', ') || 'None'} |
+        Variable: {sequenceTemplate.gapTotalLength} positions to predict
       </small>
     </div>
-  {/if}
-
-  <!-- 참조 시퀀스 정보 표시 -->
-  {#if hasReferenceSequence}
+  {:else if hasReferenceSequence}
     <div class="alert alert-info mb-3">
       <div class="d-flex align-items-center">
         <svg
@@ -520,7 +383,7 @@
           class="fw-bold">{convertedAminoSequence}</span
         >
         <br />
-        Results will be optimized for both mass accuracy and sequence similarity.
+        Click amino acids above to mark ncAA positions and define fixed regions.
       </small>
     </div>
   {/if}

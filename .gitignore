@@ -22,3 +22,4 @@ vite.config.ts.timestamp-*
 
 # Memory Bank
 memory-bank
+.omc/

@@ -1,6 +1,7 @@
 import { AminoModel } from '../model/AminoModel';
 
 import type { IonType, FormyType } from '../../type/Types';
+import type { FixedSegment, GapSegment } from '../../type/SequenceTemplate';
 
 import { calculateSimilarity, calculateSequenceSimilarity, calculateSequenceSimilarityWithCounts, sortAmino, removeDuplicates, removeSingleFSequences, processKnownSequenceOverlap } from './mass_util';
 import { getIonWeight, codonTableRtoS } from './amino_mapper';
@@ -567,5 +568,301 @@ export class MassFinderHelper {
     static setSequenceSimilarity(bestSolutions: AminoModel[]): AminoModel[] {
         const instance = new MassFinderHelper();
         return instance.setSequenceSimilarity(bestSolutions);
+    }
+
+    // ============================================================
+    // Template-based calculation (다중 고정 세그먼트 + 갭)
+    // ============================================================
+
+    /**
+     * Template 기반 계산의 진입점 (이온 타입 처리 포함)
+     * RNA에서 번역된 펩타이드의 고정/변경 영역 정보를 받아서 갭 위치만 SA로 탐색
+     */
+    calcByIonTypeWithTemplate(
+        targetMass: number,
+        templateData: {
+            fullSequence: string;
+            positionStates: string[];
+            fixedSegments: FixedSegment[];
+            gapSegments: GapSegment[];
+            totalLength: number;
+            gapTotalLength: number;
+        },
+        fomyType: FormyType,
+        ionType: IonType,
+        aminoMap: { [key: string]: number },
+        molecularMap: { [key: string]: number },
+        initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE,
+        absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE,
+        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS
+    ): AminoModel[] {
+        this.ionType = ionType;
+        const ionWeight = getIonWeight(this.ionType);
+
+        let bestSolutions = this.calcWithTemplate(
+            targetMass - ionWeight,
+            templateData,
+            fomyType,
+            aminoMap,
+            molecularMap,
+            initialTemperature,
+            absoluteTemperature,
+            saIterations
+        ).map(e => new AminoModel({
+            ...e,
+            weight: (e.weight ?? 0) + ionWeight,
+            molecularWeight: (e.molecularWeight ?? 0) + ionWeight,
+            similarity: calculateSimilarity(targetMass, (e.weight ?? 0) + ionWeight)
+        }));
+
+        return bestSolutions;
+    }
+
+    // Static wrapper
+    static calcByIonTypeWithTemplate(
+        targetMass: number,
+        templateData: {
+            fullSequence: string;
+            positionStates: string[];
+            fixedSegments: FixedSegment[];
+            gapSegments: GapSegment[];
+            totalLength: number;
+            gapTotalLength: number;
+        },
+        fomyType: FormyType,
+        ionType: IonType,
+        aminoMap: { [key: string]: number },
+        molecularMap: { [key: string]: number },
+        initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE,
+        absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE,
+        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS
+    ): AminoModel[] {
+        const instance = new MassFinderHelper();
+        return instance.calcByIonTypeWithTemplate(targetMass, templateData, fomyType, ionType, aminoMap, molecularMap, initialTemperature, absoluteTemperature, saIterations);
+    }
+
+    /**
+     * Template 기반 핵심 계산
+     *
+     * 기존 calc()와 동일하게 갭 길이를 min~max 범위로 반복하며 SA를 실행.
+     * 갭 영역의 아미노산 개수는 고정이 아니라, 남은 질량에 따라 가변.
+     *
+     * 수식:
+     *   totalMass = fixedRawMass + gapRawSum - (fixedCount + gapLen - 1) * WATER [+ formylation]
+     *   gapRawSum = targetMass + (fixedCount + gapLen - 1) * WATER - fixedRawMass
+     */
+    calcWithTemplate(
+        targetMass: number,
+        templateData: {
+            fullSequence: string;
+            positionStates: string[];
+            fixedSegments: FixedSegment[];
+            gapSegments: GapSegment[];
+            totalLength: number;
+            gapTotalLength: number;
+        },
+        fomyType: FormyType,
+        aminoMap: { [key: string]: number },
+        molecularMap: { [key: string]: number },
+        initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE,
+        absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE,
+        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS
+    ): AminoModel[] {
+        this.formyType = fomyType;
+        this.dataMap = { ...aminoMap };
+        this.moleMap = { ...molecularMap };
+
+        // 고정 세그먼트 분석
+        let fixedRawMass = 0;
+        let fixedCount = 0;
+        for (const segment of templateData.fixedSegments) {
+            for (const amino of segment.sequence) {
+                fixedRawMass += this.dataMap[amino] ?? 0;
+                fixedCount++;
+            }
+        }
+
+        // 각 고정 세그먼트 내부의 물 증발량 합산
+        let totalFixedInternalWater = 0;
+        for (const segment of templateData.fixedSegments) {
+            totalFixedInternalWater += this.getWaterWeight(segment.sequence.length);
+        }
+        const fixedNetMass = fixedRawMass - totalFixedInternalWater;
+
+        // 갭 참조 시퀀스: SA가 원본 갭 아미노산 조성을 참고하도록
+        const gapReferenceSequence = templateData.gapSegments.map(g => g.originalSequence).join('');
+        this.referenceSequence = gapReferenceSequence;
+
+        // Edge case: 갭 세그먼트가 정의되지 않으면 원본 시퀀스 그대로 반환
+        if (templateData.gapSegments.length === 0) {
+            const fullCode = templateData.fullSequence;
+            const weight = this.getMonoisotopicWeightSum(fullCode);
+            const molecularWeight = this.getMolecularWeightSum(fullCode);
+            return [new AminoModel({ code: fullCode, weight, molecularWeight })];
+        }
+
+        // 남은 질량 = targetMass - 고정 세그먼트의 순 질량 (기존 calc의 adjustedTarget과 동일)
+        const adjustedTarget = targetMass - fixedNetMass;
+
+        // 기존 calc()와 동일하게 가능한 갭 길이 범위를 계산하여 반복
+        const [minGapLen, maxGapLen] = this.getMinMaxRange(this.formyType, adjustedTarget);
+
+        let bestSolutions: AminoModel[] = [];
+
+        // Edge case: 고정 질량이 목표를 초과하면 갭 없이 고정만으로 반환
+        if (adjustedTarget <= 1.0 && fixedCount > 0) {
+            const fixedOnlyCode = templateData.fixedSegments.map(s => s.sequence).join('');
+            const weight = this.getMonoisotopicWeightSum(fixedOnlyCode);
+            const molecularWeight = this.getMolecularWeightSum(fixedOnlyCode);
+            bestSolutions.push(new AminoModel({ code: '', weight, molecularWeight }));
+        }
+
+        for (let gapLen = minGapLen; gapLen < maxGapLen; gapLen++) {
+            if (gapLen < 0) continue;
+
+            // gapLen=0이면 갭 아미노산 없이 고정 세그먼트만으로 구성
+            if (gapLen === 0 && fixedCount > 0) {
+                const fixedOnlyCode = templateData.fixedSegments.map(s => s.sequence).join('');
+                const emptyWeight = this.getMonoisotopicWeightSum(fixedOnlyCode);
+                const emptyMolWeight = this.getMolecularWeightSum(fixedOnlyCode);
+                bestSolutions.push(new AminoModel({ code: '', weight: emptyWeight, molecularWeight: emptyMolWeight }));
+                continue;
+            }
+
+            // SA 목표 질량 계산
+            // 전체 시퀀스 길이 = fixedCount + gapLen
+            // 전체 물 증발 = (fixedCount + gapLen - 1) * WATER
+            // addWeight = 전체 물 증발 - 고정 내부 물 증발
+            //           = (gapLen - 1 + numFixedSegments) * WATER
+            // (다중 고정 세그먼트의 연결 수를 정확히 반영)
+            const totalWater = this.getWaterWeight(fixedCount + gapLen);
+            const addWeight = totalWater - totalFixedInternalWater;
+            const saTargetMass = adjustedTarget + addWeight;
+
+            if (saTargetMass <= 0) continue;
+
+            let solutions = this.calcByFType(
+                this.formyType,
+                saTargetMass,
+                gapLen,
+                gapReferenceSequence,
+                initialTemperature,
+                absoluteTemperature,
+                saIterations
+            );
+            solutions = removeDuplicates(solutions);
+            solutions = removeSingleFSequences(solutions);
+            bestSolutions = bestSolutions.concat(solutions);
+        }
+
+        // 전체 결과 중복 제거 및 정렬
+        bestSolutions = removeDuplicates(bestSolutions);
+        bestSolutions = sortAmino(bestSolutions, adjustedTarget, this.referenceSequence)
+            .slice(0, this.topSolutionsCount);
+
+        // 템플릿 재조립: 고정 세그먼트 사이에 SA 결과를 비례 분배
+        bestSolutions = this.assembleTemplateResult(bestSolutions, templateData, fixedNetMass);
+
+        // 전체 시퀀스 기준으로 유사도 재계산
+        this.referenceSequence = templateData.fullSequence;
+        const fixedSeqDisplay = templateData.fixedSegments.map(s => s.sequence).join('~');
+        bestSolutions = this.setMetaData(bestSolutions, this.formyType, this.ionType, fixedSeqDisplay);
+        bestSolutions = this.setSequenceSimilarity(bestSolutions);
+
+        bestSolutions.forEach(solution => {
+            logger.debug(`Template SA Result: sequence=${solution.code}, weight=${solution.weight}`);
+        });
+
+        return bestSolutions;
+    }
+
+    /**
+     * SA 결과를 템플릿에 맞게 전체 시퀀스로 재조립
+     *
+     * 갭 길이가 가변이므로, SA가 찾은 아미노산을 각 갭 세그먼트에 비례 분배.
+     * 예: 원래 갭 [3, 3] + SA 결과 4개 → [2, 2]로 분배
+     */
+    assembleTemplateResult(
+        solutions: AminoModel[],
+        templateData: {
+            fullSequence: string;
+            positionStates: string[];
+            fixedSegments: FixedSegment[];
+            gapSegments: GapSegment[];
+            totalLength: number;
+        },
+        fixedNetMass: number
+    ): AminoModel[] {
+        const gaps = templateData.gapSegments;
+        const fixed = templateData.fixedSegments;
+        const totalOriginalGapLen = gaps.reduce((sum, g) => sum + g.length, 0);
+
+        // 고정/갭 세그먼트를 startIndex 순서로 정렬된 파트 목록 생성
+        const parts: Array<{ type: 'fixed' | 'gap'; index: number; startIndex: number }> = [];
+        fixed.forEach((f, i) => parts.push({ type: 'fixed', index: i, startIndex: f.startIndex }));
+        gaps.forEach((g, i) => parts.push({ type: 'gap', index: i, startIndex: g.startIndex }));
+        parts.sort((a, b) => a.startIndex - b.startIndex);
+
+        return solutions.map(solution => {
+            const gapAminos = solution.code || '';
+            const hasFormylation = gapAminos.startsWith('f');
+            const cleanGapAminos = hasFormylation ? gapAminos.slice(1) : gapAminos;
+            const totalGapAminos = cleanGapAminos.length;
+
+            // 갭 아미노산을 원래 갭 크기 비율로 분배
+            let distributed = 0;
+            const gapDistribution = gaps.map((g, idx) => {
+                if (totalOriginalGapLen === 0 || totalGapAminos === 0) return 0;
+                if (idx === gaps.length - 1) {
+                    return totalGapAminos - distributed; // 마지막 갭이 나머지 흡수
+                }
+                const share = Math.round(totalGapAminos * g.length / totalOriginalGapLen);
+                distributed += share;
+                return share;
+            });
+
+            // 파트 순서대로 조립
+            let fullCode = '';
+            let gapOffset = 0;
+
+            for (const part of parts) {
+                if (part.type === 'fixed') {
+                    fullCode += fixed[part.index].sequence;
+                } else {
+                    const count = gapDistribution[part.index] || 0;
+                    fullCode += cleanGapAminos.substring(gapOffset, gapOffset + count);
+                    gapOffset += count;
+                }
+            }
+
+            if (hasFormylation) {
+                fullCode = 'f' + fullCode;
+            }
+
+            // 전체 시퀀스 기준으로 질량 재계산
+            const weight = this.getMonoisotopicWeightSum(fullCode);
+            const molecularWeight = this.getMolecularWeightSum(fullCode);
+
+            return new AminoModel({ ...solution, code: fullCode, weight, molecularWeight });
+        });
+    }
+
+    /**
+     * 다중 고정 세그먼트의 순 질량 계산 (각 세그먼트 내부 물 증발 포함)
+     * 기존 getInitAminoWeight와 동일한 역할, 다중 세그먼트 대응
+     */
+    getMultiSegmentFixedWeight(fixedSegments: FixedSegment[]): { monoisotopicWeight: number, molecularWeight: number } {
+        let monoWeight = 0;
+        let molWeight = 0;
+        for (const segment of fixedSegments) {
+            const internalWater = this.getWaterWeight(segment.sequence.length);
+            for (const amino of segment.sequence) {
+                monoWeight += this.dataMap[amino] ?? 0;
+                molWeight += this.moleMap[amino] ?? 0;
+            }
+            monoWeight -= internalWater;
+            molWeight -= internalWater;
+        }
+        return { monoisotopicWeight: monoWeight, molecularWeight: molWeight };
     }
 }
