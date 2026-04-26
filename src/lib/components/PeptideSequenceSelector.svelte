@@ -14,6 +14,7 @@
 
   // 드래그 상태
   let dragging = false;
+  let dragMoved = false;
   let dragZoneIndex = -1;
   let dragSide = ''; // 'left' | 'right'
   let dragStartX = 0;
@@ -39,6 +40,11 @@
   // 아미노산 클릭: 빨간색 토글
   function handleAminoClick(index) {
     if (dragging) return;
+    if (dragMoved) {
+      // 드래그 직후 발생한 click 이벤트는 무시 (실제 이동이 있었던 경우)
+      dragMoved = false;
+      return;
+    }
 
     const existingZoneIdx = ncaaZones.findIndex(z => z.ncaaIndex === index);
 
@@ -146,6 +152,7 @@
   function handleDragStart(event, zoneIndex, side) {
     event.preventDefault();
     dragging = true;
+    dragMoved = false;
     dragZoneIndex = zoneIndex;
     dragSide = side;
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
@@ -168,6 +175,7 @@
     // 한 타일의 대략적 너비 (px)
     const tileWidth = 36;
     const diff = clientX - dragStartX;
+    if (Math.abs(diff) > 4) dragMoved = true;
     const tileDiff = Math.round(diff / tileWidth);
 
     const zone = ncaaZones[dragZoneIndex];
@@ -209,22 +217,24 @@
   function getDragHandle(index) {
     for (let zi = 0; zi < ncaaZones.length; zi++) {
       const zone = ncaaZones[zi];
-      // 왼쪽 경계: ncaaIndex - leftYellowCount 위치
+      // 왼쪽 노란 경계 (안쪽으로 줄이기)
       const leftBoundary = zone.ncaaIndex - zone.leftYellowCount;
       if (index === leftBoundary && zone.leftYellowCount > 0) {
         return { zoneIndex: zi, side: 'left' };
       }
-      // 왼쪽 노란이 0인 경우: 빨간 바로 왼쪽 초록이 핸들
-      if (zone.leftYellowCount === 0 && index === zone.ncaaIndex - 1 && index >= 0 && positionStates[index] === 'green') {
+      // 왼쪽 노란 바깥의 초록 (바깥으로 늘리기). leftYellowCount === 0 케이스도 자연스럽게 포함됨.
+      const leftOuter = zone.ncaaIndex - zone.leftYellowCount - 1;
+      if (index === leftOuter && index >= 0 && positionStates[index] === 'green') {
         return { zoneIndex: zi, side: 'left' };
       }
-      // 오른쪽 경계: ncaaIndex + rightYellowCount 위치
+      // 오른쪽 노란 경계 (안쪽으로 줄이기)
       const rightBoundary = zone.ncaaIndex + zone.rightYellowCount;
       if (index === rightBoundary && zone.rightYellowCount > 0) {
         return { zoneIndex: zi, side: 'right' };
       }
-      // 오른쪽 노란이 0인 경우: 빨간 바로 오른쪽 초록이 핸들
-      if (zone.rightYellowCount === 0 && index === zone.ncaaIndex + 1 && index < aminoSequence.length && positionStates[index] === 'green') {
+      // 오른쪽 노란 바깥의 초록 (바깥으로 늘리기)
+      const rightOuter = zone.ncaaIndex + zone.rightYellowCount + 1;
+      if (index === rightOuter && index < aminoSequence.length && positionStates[index] === 'green') {
         return { zoneIndex: zi, side: 'right' };
       }
     }
@@ -299,17 +309,17 @@
         {@const handle = getDragHandle(index)}
         <div
           class="tile tile-{state}"
-          class:tile-drag-handle={handle !== null && state === 'yellow'}
+          class:tile-drag-handle={handle !== null}
           role="button"
           tabindex="0"
           aria-label="Position {index + 1}: {amino} ({state})"
           on:click={() => handleAminoClick(index)}
           on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAminoClick(index); }}
-          on:mousedown={(e) => { if (handle && state === 'yellow') handleDragStart(e, handle.zoneIndex, handle.side); }}
-          on:touchstart={(e) => { if (handle && state === 'yellow') handleDragStart(e, handle.zoneIndex, handle.side); }}
+          on:mousedown={(e) => { if (handle) handleDragStart(e, handle.zoneIndex, handle.side); }}
+          on:touchstart={(e) => { if (handle) handleDragStart(e, handle.zoneIndex, handle.side); }}
         >
-          <span class="tile-amino">{amino}</span>
           <span class="tile-index">{index + 1}</span>
+          <span class="tile-amino">{amino}</span>
         </div>
       {/each}
     </div>
@@ -402,8 +412,17 @@
 
   .tile-drag-handle {
     cursor: ew-resize;
+  }
+
+  .tile-yellow.tile-drag-handle {
     border-style: dashed;
     border-width: 2px;
+  }
+
+  .tile-green.tile-drag-handle:hover {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: #2e7d32;
   }
 
   .tile-amino {
