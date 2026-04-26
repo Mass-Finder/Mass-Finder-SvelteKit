@@ -755,16 +755,21 @@ export class MassFinderHelper {
             bestSolutions = bestSolutions.concat(solutions);
         }
 
-        // 전체 결과 중복 제거 및 정렬
+        // 전체 결과 중복 제거
         bestSolutions = removeDuplicates(bestSolutions);
-        bestSolutions = sortAmino(bestSolutions, adjustedTarget, this.referenceSequence)
-            .slice(0, this.topSolutionsCount);
 
         // 템플릿 재조립: 고정 세그먼트 사이에 SA 결과를 비례 분배
+        // (이 단계에서 weight가 full sequence 기준으로 재계산됨)
         bestSolutions = this.assembleTemplateResult(bestSolutions, templateData, fixedNetMass);
 
-        // 전체 시퀀스 기준으로 유사도 재계산
+        // 재조립된 full code 기준으로 중복 제거 및 정렬
+        // gap weight 기준으로 미리 정렬하면 numSegments*WATER offset 때문에
+        // 화면에 보이는 Difference 순서와 어긋나므로 반드시 재조립 이후에 정렬한다
+        bestSolutions = removeDuplicates(bestSolutions);
         this.referenceSequence = templateData.fullSequence;
+        bestSolutions = sortAmino(bestSolutions, targetMass, this.referenceSequence)
+            .slice(0, this.topSolutionsCount);
+
         const fixedSeqDisplay = templateData.fixedSegments.map(s => s.sequence).join('~');
         bestSolutions = this.setMetaData(bestSolutions, this.formyType, this.ionType, fixedSeqDisplay);
         bestSolutions = this.setSequenceSimilarity(bestSolutions);
