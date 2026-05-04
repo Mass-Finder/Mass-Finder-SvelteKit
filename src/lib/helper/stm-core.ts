@@ -222,20 +222,14 @@ export class StmCore {
         // RNA 시퀀스를 3개씩 나누어 코돈 배열로 변환
         const codons = rnaSeq.match(/.{1,3}/g) || [];
 
-        // ncAA에 할당된 codon은 stop 처리에서 bypass
-        const ncAACodonSet = new Set<string>();
-        for (const titles of Object.values(codonTitles)) {
-            (titles || []).forEach(c => ncAACodonSet.add(c));
-        }
+        // Active stop 코돈(release factor로 선택됨)을 만나면 그 이전까지만 처리
+        // RF가 켜진 stop 코돈은 ncAA 할당 여부와 무관하게 termination 우선
         const activeStopSet = new Set(activeStopCodons);
-
-        // Active stop 코돈을 만나면 그 이전까지만 처리
-        // 단, ncAA로 할당된 코돈은 stop으로 취급하지 않음 (suppressor tRNA로 read-through)
         let effectiveCodons: string[] = [];
         for (let i = 0; i < codons.length; i++) {
             const codon = codons[i];
-            if (activeStopSet.has(codon) && !ncAACodonSet.has(codon)) {
-                break; // 활성 stop 코돈 → 여기서 중단
+            if (activeStopSet.has(codon)) {
+                break;
             }
             effectiveCodons.push(codon);
         }

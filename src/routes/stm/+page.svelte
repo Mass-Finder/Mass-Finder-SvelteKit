@@ -185,21 +185,12 @@
         return filtedData;
     }
 
-    // RNA에서 Stop 코돈(UAG, UAA, UGA)이 존재할 수 있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
-    // Release factor로 선택된 코돈만 자르며, ncAA로 할당된 코돈은 stop으로 취급하지 않음 (suppressor tRNA read-through)
+    // RNA에서 Stop 코돈이 존재할 수 있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영
+    // Release factor로 선택된(activeStopCodons) 코돈에서만 trim — ncAA 할당 여부와 무관
     // 입력값을 변경하지 않고 잘라낸 결과를 반환 (사용자가 RF 토글 후 재계산할 수 있도록)
     function getSequenceBeforeStop(seq) {
         const stopCodons = activeStopCodons;
         if (stopCodons.length === 0) return seq;
-
-        // ncAA에 할당된 codon은 trim에서 bypass
-        const currentCodonTitles = $codonTitles;
-        const ncAASet = new Set();
-        for (const titles of Object.values(currentCodonTitles)) {
-            (titles || []).forEach(c => ncAASet.add(c));
-        }
-        const effectiveStops = stopCodons.filter(c => !ncAASet.has(c));
-        if (effectiveStops.length === 0) return seq;
 
         // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
         const codons = seq.match(/.{1,3}/g) || [];
@@ -207,7 +198,7 @@
         // 첫 번째 Stop 코돈의 인덱스 찾기
         let stopIndex = -1;
         for (let i = 0; i < codons.length; i++) {
-            if (effectiveStops.includes(codons[i])) {
+            if (stopCodons.includes(codons[i])) {
                 stopIndex = i;
                 break;
             }
