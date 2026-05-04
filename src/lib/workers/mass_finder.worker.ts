@@ -12,6 +12,9 @@ self.onmessage = (e) => {
     initialTemperature = 10000,
     absoluteTemperature = 0.00001,
     saIterations = 100,
+    coolingRate,
+    evaluateWeights,
+    sortWeights,
     sequenceTemplate
   } = e.data;
 
@@ -29,7 +32,10 @@ self.onmessage = (e) => {
         molecularMap,
         initialTemperature,
         absoluteTemperature,
-        saIterations
+        saIterations,
+        coolingRate,
+        evaluateWeights,
+        sortWeights
       );
     } else {
       // 기존 계산: 단일 고정 시퀀스 (하위 호환)
@@ -43,7 +49,10 @@ self.onmessage = (e) => {
         proteinSequence,
         initialTemperature,
         absoluteTemperature,
-        saIterations
+        saIterations,
+        coolingRate,
+        evaluateWeights,
+        sortWeights
       );
     }
 

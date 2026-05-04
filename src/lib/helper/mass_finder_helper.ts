@@ -11,7 +11,12 @@ import {
     CHEMICAL_CONSTANTS,
     REFERENCE_SEQUENCE_CONFIG,
 } from '../config/algorithm.config';
-import { SA_EVALUATE_WEIGHTS } from '../config/scoring.config';
+import { SA_EVALUATE_WEIGHTS, SORT_WEIGHTS } from '../config/scoring.config';
+
+export interface FixedSeqWeights {
+    massDiff: number;
+    seqDiff: number;
+}
 
 /**
  * 매스 파인더 핵심로직
@@ -28,6 +33,15 @@ export class MassFinderHelper {
     private formyType: FormyType = 'unknown';
     private ionType: IonType = 'unknown';
     private topSolutionsCount: number = SIMULATED_ANNEALING_CONFIG.TOP_SOLUTIONS_COUNT;
+    private coolingRate: number = SIMULATED_ANNEALING_CONFIG.COOLING_RATE;
+    private evaluateWeights: FixedSeqWeights = {
+        massDiff: SA_EVALUATE_WEIGHTS.NORMALIZED_MASS_DIFF,
+        seqDiff: SA_EVALUATE_WEIGHTS.SEQUENCE_DIFF,
+    };
+    private sortWeights: FixedSeqWeights = {
+        massDiff: SORT_WEIGHTS.MASS_ACCURACY,
+        seqDiff: SORT_WEIGHTS.SEQUENCE_SIMILARITY,
+    };
 
     // 이온 타입이 적용된 이후 생긴 함수
     // [targetMass] : 목표 무게
@@ -40,7 +54,10 @@ export class MassFinderHelper {
     // [absoluteTemperature] : 시뮬레이티드 어닐링 최소 온도
     // [saIterations] : 시뮬레이티드 어닐링 반복 횟수
     // 최종적으로 AminoModel의 리스트를 리턴함
-    calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
+    calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS, coolingRate?: number, evaluateWeights?: FixedSeqWeights, sortWeights?: FixedSeqWeights): AminoModel[] {
+        if (coolingRate !== undefined) this.coolingRate = coolingRate;
+        if (evaluateWeights) this.evaluateWeights = evaluateWeights;
+        if (sortWeights) this.sortWeights = sortWeights;
         this.ionType = ionType;
         let bestSolutions: AminoModel[] = [];
         bestSolutions = this.calc(targetMass - getIonWeight(this.ionType), initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence, initialTemperature, absoluteTemperature, saIterations)
@@ -54,9 +71,9 @@ export class MassFinderHelper {
     }
 
     // Static wrapper for backward compatibility
-    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
+    static calcByIonType(targetMass: number, initAminos: string, fomyType: FormyType, ionType: IonType, aminoMap: { [key: string]: number }, molecularMap: { [key: string]: number }, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS, coolingRate?: number, evaluateWeights?: FixedSeqWeights, sortWeights?: FixedSeqWeights): AminoModel[] {
         const instance = new MassFinderHelper();
-        return instance.calcByIonType(targetMass, initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
+        return instance.calcByIonType(targetMass, initAminos, fomyType, ionType, aminoMap, molecularMap, proteinSequence, initialTemperature, absoluteTemperature, saIterations, coolingRate, evaluateWeights, sortWeights);
     }
 
     /// calcByIonType 함수에서 이온값에따라 알아서 구분되어 호출되는 함수
@@ -113,7 +130,7 @@ export class MassFinderHelper {
 
         // 전체 결과에 대해 다시 한 번 중복 제거 (강화된 중복 제거)
         bestSolutions = removeDuplicates(bestSolutions);
-        bestSolutions = sortAmino(bestSolutions, targetMass, this.referenceSequence).slice(0, this.topSolutionsCount);
+        bestSolutions = sortAmino(bestSolutions, targetMass, this.referenceSequence, this.sortWeights).slice(0, this.topSolutionsCount);
         bestSolutions = this.setInitAminoToResult(bestSolutions, processedInitAminos, initAminoWeight);
         bestSolutions = this.setMetaData(bestSolutions, this.formyType, ionType, processedInitAminos);
         bestSolutions = this.setSequenceSimilarity(bestSolutions);
@@ -203,7 +220,7 @@ export class MassFinderHelper {
                 bestEnergy = currentEnergy;
             }
 
-            temperature *= SIMULATED_ANNEALING_CONFIG.COOLING_RATE;
+            temperature *= this.coolingRate;
         }
 
         return { [bestSolution.join('')]: bestEnergy };
@@ -383,7 +400,7 @@ export class MassFinderHelper {
             const normalizedMassDiff = massDifference / targetMass;
 
             // 복합 평가 점수 계산 - difference 값 우선시
-            return normalizedMassDiff * SA_EVALUATE_WEIGHTS.NORMALIZED_MASS_DIFF + sequenceDifference * SA_EVALUATE_WEIGHTS.SEQUENCE_DIFF;
+            return normalizedMassDiff * this.evaluateWeights.massDiff + sequenceDifference * this.evaluateWeights.seqDiff;
         }
 
         // 참조 시퀀스가 없는 경우 기존 방식대로 분자량 차이만 고려
@@ -594,8 +611,14 @@ export class MassFinderHelper {
         molecularMap: { [key: string]: number },
         initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE,
         absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE,
-        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS
+        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS,
+        coolingRate?: number,
+        evaluateWeights?: FixedSeqWeights,
+        sortWeights?: FixedSeqWeights
     ): AminoModel[] {
+        if (coolingRate !== undefined) this.coolingRate = coolingRate;
+        if (evaluateWeights) this.evaluateWeights = evaluateWeights;
+        if (sortWeights) this.sortWeights = sortWeights;
         this.ionType = ionType;
         const ionWeight = getIonWeight(this.ionType);
 
@@ -635,10 +658,13 @@ export class MassFinderHelper {
         molecularMap: { [key: string]: number },
         initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE,
         absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE,
-        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS
+        saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS,
+        coolingRate?: number,
+        evaluateWeights?: FixedSeqWeights,
+        sortWeights?: FixedSeqWeights
     ): AminoModel[] {
         const instance = new MassFinderHelper();
-        return instance.calcByIonTypeWithTemplate(targetMass, templateData, fomyType, ionType, aminoMap, molecularMap, initialTemperature, absoluteTemperature, saIterations);
+        return instance.calcByIonTypeWithTemplate(targetMass, templateData, fomyType, ionType, aminoMap, molecularMap, initialTemperature, absoluteTemperature, saIterations, coolingRate, evaluateWeights, sortWeights);
     }
 
     /**
@@ -767,7 +793,7 @@ export class MassFinderHelper {
         // 화면에 보이는 Difference 순서와 어긋나므로 반드시 재조립 이후에 정렬한다
         bestSolutions = removeDuplicates(bestSolutions);
         this.referenceSequence = templateData.fullSequence;
-        bestSolutions = sortAmino(bestSolutions, targetMass, this.referenceSequence)
+        bestSolutions = sortAmino(bestSolutions, targetMass, this.referenceSequence, this.sortWeights)
             .slice(0, this.topSolutionsCount);
 
         const fixedSeqDisplay = templateData.fixedSegments.map(s => s.sequence).join('~');

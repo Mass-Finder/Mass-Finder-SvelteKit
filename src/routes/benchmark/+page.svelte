@@ -35,7 +35,15 @@
     initialTemperature: 10000,
     absoluteTemperature: 0.001,
     saIterations: 100,
+    coolingRate: 0.99,
   };
+
+  // Fixed Seq 가중치 (RNA reference / template 모드일 때만 적용)
+  let evaluateMassDiff = 0.95;
+  let evaluateSeqDiff = 0.05;
+  let sortMassDiff = 0.9;
+  let sortSeqDiff = 0.1;
+  const WEIGHT_SUM_TOLERANCE = 0.001;
 
   // 벤치마크 변수 (UI 노출, 변경 가능)
   let benchmarkRuns: number = 100; // 전체 반복 횟수
@@ -133,6 +141,9 @@
       initialTemperature: saConfig.initialTemperature,
       absoluteTemperature: saConfig.absoluteTemperature,
       saIterations: saConfig.saIterations,
+      coolingRate: saConfig.coolingRate,
+      evaluateWeights: { massDiff: evaluateMassDiff, seqDiff: evaluateSeqDiff },
+      sortWeights: { massDiff: sortMassDiff, seqDiff: sortSeqDiff },
     };
 
     if (sequenceTemplate && sequenceTemplate.gapTotalLength > 0) {
@@ -245,6 +256,83 @@
     if (averageWindow > benchmarkRuns) {
       await showAlert(
         "Average window N must be less than or equal to total iterations",
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    // SA 파라미터 검증
+    if (
+      !Number.isFinite(saConfig.initialTemperature) ||
+      !Number.isFinite(saConfig.absoluteTemperature) ||
+      !Number.isFinite(saConfig.coolingRate) ||
+      !Number.isInteger(saConfig.saIterations)
+    ) {
+      await showAlert("SA parameters must be valid numbers", "Validation Error", "warning");
+      return false;
+    }
+    if (saConfig.initialTemperature <= 0 || saConfig.absoluteTemperature <= 0) {
+      await showAlert("Temperatures must be greater than 0", "Validation Error", "warning");
+      return false;
+    }
+    if (saConfig.absoluteTemperature >= saConfig.initialTemperature) {
+      await showAlert(
+        "Absolute temperature must be less than initial temperature",
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    if (saConfig.coolingRate <= 0 || saConfig.coolingRate >= 1) {
+      await showAlert(
+        "Cooling rate must be between 0 and 1 (exclusive). Recommended: 0.5 ~ 0.999",
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    if (saConfig.saIterations < 1) {
+      await showAlert("SA iterations must be at least 1", "Validation Error", "warning");
+      return false;
+    }
+    // Fixed Seq 가중치 검증 (각 그룹 합 = 1.0)
+    if (
+      !Number.isFinite(evaluateMassDiff) ||
+      !Number.isFinite(evaluateSeqDiff) ||
+      evaluateMassDiff < 0 ||
+      evaluateSeqDiff < 0
+    ) {
+      await showAlert(
+        "SA Evaluate weights must be non-negative numbers",
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    if (Math.abs(evaluateMassDiff + evaluateSeqDiff - 1.0) > WEIGHT_SUM_TOLERANCE) {
+      await showAlert(
+        `SA Evaluate weights must sum to 1.0 (current sum: ${(evaluateMassDiff + evaluateSeqDiff).toFixed(3)})`,
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    if (
+      !Number.isFinite(sortMassDiff) ||
+      !Number.isFinite(sortSeqDiff) ||
+      sortMassDiff < 0 ||
+      sortSeqDiff < 0
+    ) {
+      await showAlert(
+        "Sort weights must be non-negative numbers",
+        "Validation Error",
+        "warning",
+      );
+      return false;
+    }
+    if (Math.abs(sortMassDiff + sortSeqDiff - 1.0) > WEIGHT_SUM_TOLERANCE) {
+      await showAlert(
+        `Sort weights must sum to 1.0 (current sum: ${(sortMassDiff + sortSeqDiff).toFixed(3)})`,
         "Validation Error",
         "warning",
       );
@@ -540,7 +628,97 @@
 
   <!-- SA Mode -->
   <div class="mb-3">
-    <SAModeSelector on:change={handleSAModeChange} />
+    <SAModeSelector customizable={true} on:change={handleSAModeChange} />
+  </div>
+
+  <!-- Fixed Seq Weights (RNA reference / template 모드일 때만 적용) -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h2 class="h6 card-title mb-2">Fixed Sequence Weights</h2>
+      <p class="text-muted small mb-3">
+        RNA reference 또는 fixed sequence template 활성 시에만 사용됩니다. 각 그룹의 가중치 합은 반드시 <strong>1.0</strong>이 되어야 합니다.
+      </p>
+
+      <div class="weight-group mb-3">
+        <div class="weight-group-header">
+          <span class="weight-group-label">SA Evaluate (탐색 중 점수)</span>
+          <span
+            class="weight-sum"
+            class:text-danger={Math.abs(evaluateMassDiff + evaluateSeqDiff - 1.0) > WEIGHT_SUM_TOLERANCE}
+          >
+            sum: {(evaluateMassDiff + evaluateSeqDiff).toFixed(3)}
+          </span>
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="param-label" for="bm-eval-mass">Mass diff</label>
+            <input
+              id="bm-eval-mass"
+              type="number"
+              class="form-control form-control-sm"
+              min="0"
+              max="1"
+              step="0.01"
+              bind:value={evaluateMassDiff}
+              disabled={isRunning}
+            />
+          </div>
+          <div class="col-6">
+            <label class="param-label" for="bm-eval-seq">Sequence diff</label>
+            <input
+              id="bm-eval-seq"
+              type="number"
+              class="form-control form-control-sm"
+              min="0"
+              max="1"
+              step="0.01"
+              bind:value={evaluateSeqDiff}
+              disabled={isRunning}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="weight-group">
+        <div class="weight-group-header">
+          <span class="weight-group-label">Sort (결과 정렬)</span>
+          <span
+            class="weight-sum"
+            class:text-danger={Math.abs(sortMassDiff + sortSeqDiff - 1.0) > WEIGHT_SUM_TOLERANCE}
+          >
+            sum: {(sortMassDiff + sortSeqDiff).toFixed(3)}
+          </span>
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="param-label" for="bm-sort-mass">Mass diff</label>
+            <input
+              id="bm-sort-mass"
+              type="number"
+              class="form-control form-control-sm"
+              min="0"
+              max="1"
+              step="0.01"
+              bind:value={sortMassDiff}
+              disabled={isRunning}
+            />
+          </div>
+          <div class="col-6">
+            <label class="param-label" for="bm-sort-seq">Sequence diff</label>
+            <input
+              id="bm-sort-seq"
+              type="number"
+              class="form-control form-control-sm"
+              min="0"
+              max="1"
+              step="0.01"
+              bind:value={sortSeqDiff}
+              disabled={isRunning}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ncAA (최대 6개) -->
@@ -825,6 +1003,39 @@
     border-radius: 6px;
     border: 1px solid #e9ecef;
     font-size: 0.9rem;
+  }
+
+  .weight-group {
+    padding: 10px 12px;
+    background: #fafafa;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+  }
+
+  .weight-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .weight-group-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #424242;
+  }
+
+  .weight-sum {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .param-label {
+    font-size: 0.75rem;
+    color: #555;
+    margin-bottom: 4px;
+    display: block;
   }
 
   @media (max-width: 767px) {
