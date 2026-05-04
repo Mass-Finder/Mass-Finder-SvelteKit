@@ -192,6 +192,7 @@ export class StmCore {
      * @param aminoMapParam - Map of amino acids to monoisotopic weights
      * @param ionTypes - Array of ion adduct types
      * @param potentialModifications - Array of potential modifications to apply
+     * @param activeStopCodons - Stop 코돈 중 실제 trim에 사용할 codon (release factor 선택에 따름)
      * @returns Array of all possible sequence possibilities with calculated masses
      */
     static calc(
@@ -200,7 +201,8 @@ export class StmCore {
         codonTitles: { [key: string]: string[] },
         aminoMapParam: { [key: string]: number },
         ionTypes: IonType[],
-        potentialModifications: PotentialModification[] = []
+        potentialModifications: PotentialModification[] = [],
+        activeStopCodons: string[] = ['UAA', 'UAG', 'UGA']
     ): Possibility[] {
         const memo = new Map<string, PossibilityLetter[][]>();
 
@@ -220,13 +222,20 @@ export class StmCore {
         // RNA 시퀀스를 3개씩 나누어 코돈 배열로 변환
         const codons = rnaSeq.match(/.{1,3}/g) || [];
 
-        // Stop 코돈을 찾아서 그 이전까지만 처리
+        // ncAA에 할당된 codon은 stop 처리에서 bypass
+        const ncAACodonSet = new Set<string>();
+        for (const titles of Object.values(codonTitles)) {
+            (titles || []).forEach(c => ncAACodonSet.add(c));
+        }
+        const activeStopSet = new Set(activeStopCodons);
+
+        // Active stop 코돈을 만나면 그 이전까지만 처리
+        // 단, ncAA로 할당된 코돈은 stop으로 취급하지 않음 (suppressor tRNA로 read-through)
         let effectiveCodons: string[] = [];
         for (let i = 0; i < codons.length; i++) {
             const codon = codons[i];
-            const naturalAmino = codonTableRtoS[codon];
-            if (naturalAmino === '[Stop]') {
-                break; // Stop 코돈을 만나면 여기서 중단
+            if (activeStopSet.has(codon) && !ncAACodonSet.has(codon)) {
+                break; // 활성 stop 코돈 → 여기서 중단
             }
             effectiveCodons.push(codon);
         }

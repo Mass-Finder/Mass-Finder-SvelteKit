@@ -56,40 +56,41 @@
 
     async function _onTapCalcButton() {
         loading.set(true);
-        getSequenceBeforeStop();
-        if (!await _validateCheck()) return loading.set(false);
+        const calcSeq = getSequenceBeforeStop(rnaSeq);
+        if (!await _validateCheck(calcSeq)) return loading.set(false);
         try {
             const filteredNcAA = removeZeroValueNcAA();
             // ncAA가 선택되지 않은 경우 체크
             noNcAASelected = Object.keys(filteredNcAA).length === 0;
 
             possibilities = StmHelper.calc(
-                rnaSeq,
+                calcSeq,
                 // @ts-ignore - ncAA 타입은 NcAACodonSelector에서 처리됨
                 filteredNcAA,
                 removeEmptyCodonTitles(),
                 selectedMonoisotopicAminos,
                 ionTypes,
-                potentialModifications
+                potentialModifications,
+                activeStopCodons
             );
         } finally {
             loading.set(false);
         }
     }
 
-    async function _validateCheck() {
+    async function _validateCheck(seq) {
         // 입력값 없는 경우
-        if (!rnaSeq) {
+        if (!seq) {
             await showAlert("Please enter RNA sequence.", "Validation Error", "warning");
             return false;
         }
         // 잘못된 입력값 있는경우
-        if (rnaSeq.includes("?")) {
+        if (seq.includes("?")) {
             await showAlert("Please enter the correct sequence.", "Validation Error", "warning");
             return false;
         }
         // RNA 시퀀스 길이가 3의 배수가 아닌 경우
-        if (rnaSeq.length % 3 !== 0) {
+        if (seq.length % 3 !== 0) {
             await showAlert("RNA sequence length must be a multiple of 3.", "Validation Error", "warning");
             return false;
         }
@@ -185,28 +186,38 @@
     }
 
     // RNA에서 Stop 코돈(UAG, UAA, UGA)이 존재할 수 있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
-    // Release factor로 선택된 코돈만 자르며, 아무것도 선택되지 않으면 자르지 않음
-    function getSequenceBeforeStop() {
+    // Release factor로 선택된 코돈만 자르며, ncAA로 할당된 코돈은 stop으로 취급하지 않음 (suppressor tRNA read-through)
+    // 입력값을 변경하지 않고 잘라낸 결과를 반환 (사용자가 RF 토글 후 재계산할 수 있도록)
+    function getSequenceBeforeStop(seq) {
         const stopCodons = activeStopCodons;
-        if (stopCodons.length === 0) return;
+        if (stopCodons.length === 0) return seq;
+
+        // ncAA에 할당된 codon은 trim에서 bypass
+        const currentCodonTitles = $codonTitles;
+        const ncAASet = new Set();
+        for (const titles of Object.values(currentCodonTitles)) {
+            (titles || []).forEach(c => ncAASet.add(c));
+        }
+        const effectiveStops = stopCodons.filter(c => !ncAASet.has(c));
+        if (effectiveStops.length === 0) return seq;
 
         // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
-        const codons = rnaSeq.match(/.{1,3}/g) || [];
-        
+        const codons = seq.match(/.{1,3}/g) || [];
+
         // 첫 번째 Stop 코돈의 인덱스 찾기
         let stopIndex = -1;
         for (let i = 0; i < codons.length; i++) {
-            if (stopCodons.includes(codons[i])) {
+            if (effectiveStops.includes(codons[i])) {
                 stopIndex = i;
                 break;
             }
         }
-        
+
         // Stop 코돈이 없는 경우 전체 시퀀스 유지
-        if (stopIndex === -1) return;
-        
-        // Stop 코돈 이전까지의 코돈들만 다시 합쳐서 RNA 시퀀스 생성
-        rnaSeq = codons.slice(0, stopIndex).join('');
+        if (stopIndex === -1) return seq;
+
+        // Stop 코돈 이전까지의 코돈들만 다시 합쳐서 반환
+        return codons.slice(0, stopIndex).join('');
     }
 
     function handleAdductChange(e) {
