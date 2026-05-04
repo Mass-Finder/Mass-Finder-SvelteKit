@@ -202,10 +202,10 @@
       return false;
     }
 
-    if (detectedMass > 10000) {
-      await showAlert("The detected mass value is too large. Please enter a value below 10,000.", "Validation Error", "warning");
-      return false;
-    }
+    // if (detectedMass > 10000) {
+    //   await showAlert("The detected mass value is too large. Please enter a value below 10,000.", "Validation Error", "warning");
+    //   return false;
+    // }
 
     if (!validatePeptideSequence()) {
       await showAlert("Please enter the correct Peptide sequence", "Validation Error", "warning");
