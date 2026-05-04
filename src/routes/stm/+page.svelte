@@ -10,6 +10,7 @@
     import { getContext } from "svelte";
     import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
     import PotentialModificationSelector from "$lib/components/stm/PotentialModificationSelector.svelte";
+    import ReleaseFactorSelector from "$lib/components/stm/ReleaseFactorSelector.svelte";
     import { showAlert } from "$lib/stores/alertStore.js";
     let selectedMonoisotopicAminos = { ...aminoMap };
 
@@ -21,6 +22,7 @@
 
     let ionTypes = ['+H']; // 배열로 변경
     let potentialModifications = []; // Potential modifications
+    let activeStopCodons = ['UAA', 'UAG', 'UGA']; // Release factor로 활성화된 stop 코돈 (기본: RF1+RF2)
     let showByproducts = true; // Note가 있는 행(Byproducts) 표시 여부 (true: 표시, false: 숨김)
     let noNcAASelected = false; // ncAA가 선택되지 않은 경우 경고 표시
 
@@ -183,10 +185,11 @@
     }
 
     // RNA에서 Stop 코돈(UAG, UAA, UGA)이 존재할 수 있음, 그중 가장 앞에있는 stop의 앞까지만 잘라서 계산에 반영 해야함
+    // Release factor로 선택된 코돈만 자르며, 아무것도 선택되지 않으면 자르지 않음
     function getSequenceBeforeStop() {
-        // Stop 코돈들
-        const stopCodons = ['UAG', 'UAA', 'UGA'];
-        
+        const stopCodons = activeStopCodons;
+        if (stopCodons.length === 0) return;
+
         // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
         const codons = rnaSeq.match(/.{1,3}/g) || [];
         
@@ -213,6 +216,10 @@
     function handlePotentialModificationChange(e) {
         potentialModifications = e.detail;
     }
+
+    function handleReleaseFactorChange(e) {
+        activeStopCodons = e.detail;
+    }
 </script>
 
 <svelte:head>
@@ -231,6 +238,12 @@
     <div class="mb-3">
         <AminoMapSelector
             on:changeAminos={(e) => handleAminoMapChange(e.detail)}
+        />
+    </div>
+
+    <div class="mb-3">
+        <ReleaseFactorSelector
+            on:change={handleReleaseFactorChange}
         />
     </div>
 
