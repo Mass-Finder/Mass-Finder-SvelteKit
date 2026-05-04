@@ -7,7 +7,7 @@
     import { codonTableRtoS } from "$lib/helper/amino_mapper";
     import { StmHelper } from "$lib/helper/stm_helper";
     import StmResultTable from "$lib/components/stm/StmResultTable.svelte";
-    import { getContext } from "svelte";
+    import { getContext, tick } from "svelte";
     import StmAdductSelector from "$lib/components/stm/StmAdductSelector.svelte";
     import PotentialModificationSelector from "$lib/components/stm/PotentialModificationSelector.svelte";
     import ReleaseFactorSelector from "$lib/components/stm/ReleaseFactorSelector.svelte";
@@ -25,6 +25,7 @@
     let activeStopCodons = ['UAA', 'UAG', 'UGA']; // Release factor로 활성화된 stop 코돈 (기본: RF1+RF2)
     let showByproducts = true; // Note가 있는 행(Byproducts) 표시 여부 (true: 표시, false: 숨김)
     let noNcAASelected = false; // ncAA가 선택되지 않은 경우 경고 표시
+    let runtimeMs = 0; // Calculate 클릭부터 결과 노출까지 소요시간(ms)
 
     /// 선택된 ncaa를 어떤 코돈들과 매핑할지 적어주는 부분 (배열로 변경)
     let codonTitles = writable({
@@ -56,6 +57,7 @@
 
     async function _onTapCalcButton() {
         loading.set(true);
+        const startTime = performance.now();
         const calcSeq = getSequenceBeforeStop(rnaSeq);
         if (!await _validateCheck(calcSeq)) return loading.set(false);
         try {
@@ -73,6 +75,8 @@
                 potentialModifications,
                 activeStopCodons
             );
+            await tick(); // 결과 DOM 반영까지 대기
+            runtimeMs = performance.now() - startTime;
         } finally {
             loading.set(false);
         }
@@ -294,7 +298,7 @@
         {#if noNcAASelected}
             <p class="no-ncaa-warning">No ncAA has been selected</p>
         {/if}
-        <StmResultTable {possibilities} showByproducts={showByproducts} />
+        <StmResultTable {possibilities} showByproducts={showByproducts} {runtimeMs} />
     {/if}
 </div>
 
