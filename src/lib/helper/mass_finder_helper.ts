@@ -150,27 +150,28 @@ export class MassFinderHelper {
 
     // calc 함수에서 호출되는 함수
     // FormyType 값에 따라 솔루션을 각각 구해와서 전달하는 역할을 한다.
-    calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
+    // preserveLength: SA 가 길이를 유지해야 하는지 여부 (template/gap 모드 전용)
+    calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS, preserveLength: boolean = false): AminoModel[] {
         const bestSolutions: AminoModel[] = [];
         for (let i = 0; i < saIterations; i++) {
             switch (fType) {
                 case 'no': // 포밀레이스 없으면 무게 안빼고 계산해도됨
-                    const solutionNo = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionNo = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature, preserveLength);
                     const seqsN = Object.keys(solutionNo)[0];
                     const weightN = this.getMonoisotopicWeightSum(seqsN);
                     const molecularWeightN = this.getMolecularWeightSum(seqsN);
                     bestSolutions.push(new AminoModel({ code: Object.keys(solutionNo)[0], weight: weightN, molecularWeight: molecularWeightN }));
                     break;
                 case 'yes': // 포밀레이스 있으면 무게를 빼고 계산후 가장 앞에 'f' 붙여줌
-                    const solutionYes = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionYes = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature, preserveLength);
                     const seqsY = `f${Object.keys(solutionYes)[0]}`;
                     const weightY = this.getMonoisotopicWeightSum(seqsY);
                     const molecularWeightY = this.getMolecularWeightSum(seqsY);
                     bestSolutions.push(new AminoModel({ code: `f${Object.keys(solutionYes)[0]}`, weight: weightY, molecularWeight: molecularWeightY }));
                     break;
                 case 'unknown': // 포밀레이스 있는지 없는지 몰라서 둘다 계산해야함
-                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
-                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+                    const solutionUnknown1 = this.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature, preserveLength);
+                    const solutionUnknown2 = this.simulatedAnnealing(targetMass - CHEMICAL_CONSTANTS.FORMYLATION_WEIGHT, seqLength, proteinSequence, initialTemperature, absoluteTemperature, preserveLength);
                     const seqsU1 = Object.keys(solutionUnknown1)[0];
                     const seqsU2 = `f${Object.keys(solutionUnknown2)[0]}`;
                     const weightU1 = this.getMonoisotopicWeightSum(seqsU1);
@@ -186,13 +187,14 @@ export class MassFinderHelper {
     }
 
     // Static wrapper for backward compatibility
-    static calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS): AminoModel[] {
+    static calcByFType(fType: FormyType, targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, saIterations: number = SIMULATED_ANNEALING_CONFIG.DEFAULT_ITERATIONS, preserveLength: boolean = false): AminoModel[] {
         const instance = new MassFinderHelper();
-        return instance.calcByFType(fType, targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature, saIterations);
+        return instance.calcByFType(fType, targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature, saIterations, preserveLength);
     }
 
     /// 핵심로직으로 랜덤한 값과 그 랜던값에서 조금 바꾼 다른 값을 계속 비교해 나가면서 최적의 해를 찾음
-    simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE): { [key: string]: number } {
+    /// preserveLength=true 면 neighborSolution 의 트림을 건너뛰고 길이 고정 (template/gap 모드용).
+    simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, preserveLength: boolean = false): { [key: string]: number } {
         let temperature = initialTemperature;
         // 1차 비교군을 위한 조합 추출해서 목표값과의 차이 저장
         let currentSolution = proteinSequence ? this.proteinBasedSolution(proteinSequence, seqLength) : this.randomSolution(seqLength);
@@ -204,7 +206,7 @@ export class MassFinderHelper {
         // 초기온도에 계속해서 냉각률을 곱해서 최소온도가 될때까지 반복해서 최적의 해를 구함
         while (temperature > absoluteTemperature) {
             // 기존 조합을 기준으로 새로운 조합 추출
-            const newSolution = this.neighborSolution(currentSolution, targetMass);
+            const newSolution = this.neighborSolution(currentSolution, targetMass, preserveLength);
             const newEnergy = this.evaluate(newSolution, targetMass);
 
             // 새 조합이 합격되는지 체크
@@ -227,9 +229,9 @@ export class MassFinderHelper {
     }
 
     // Static wrapper for backward compatibility
-    static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE): { [key: string]: number } {
+    static simulatedAnnealing(targetMass: number, seqLength: number, proteinSequence?: string, initialTemperature: number = SIMULATED_ANNEALING_CONFIG.INITIAL_TEMPERATURE, absoluteTemperature: number = SIMULATED_ANNEALING_CONFIG.ABSOLUTE_TEMPERATURE, preserveLength: boolean = false): { [key: string]: number } {
         const instance = new MassFinderHelper();
-        return instance.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature);
+        return instance.simulatedAnnealing(targetMass, seqLength, proteinSequence, initialTemperature, absoluteTemperature, preserveLength);
     }
 
     // 초기에 사용될 기준이 되는 조합을 랜덤으로 만드는 함수 (다양성 개선, 선택된 아미노산만 사용)
@@ -336,7 +338,8 @@ export class MassFinderHelper {
     }
 
     // 기존 선택된 조합에서 아미노산을 새걸로 갈아치워서 새로운 조합 생성 (참조 시퀀스 고려, 다양성 개선)
-    neighborSolution(currentSolution: string[], targetMass: number): string[] {
+    // preserveLength=true 이면 길이 고정 (template/gap 모드용). 트림 단계 스킵.
+    neighborSolution(currentSolution: string[], targetMass: number, preserveLength: boolean = false): string[] {
         const newSolution = [...currentSolution];
         const availableAminos = Object.keys(this.dataMap);
 
@@ -369,7 +372,12 @@ export class MassFinderHelper {
 
         newSolution[index] = newAminoAcid;
 
-        // 질량이 목표값을 초과하는 경우 아미노산 제거
+        // Template/gap 모드 (preserveLength=true) 에서는 gapLen 이 정확히 유지돼야 하므로
+        // 트림 단계를 건너뛴다. 트림이 발생하면 SS->BS->BB 같은 경로의 중간 상태가
+        // saTargetMass 를 살짝 초과할 때 길이가 줄어들어 BB 에 도달할 수 없게 된다.
+        if (preserveLength) return newSolution;
+
+        // 질량이 목표값을 초과하는 경우 아미노산 제거 (가변 길이 모드 전용)
         let currentMass = newSolution.reduce((sum, amino) => sum + (this.dataMap[amino] ?? 0), 0);
         while (currentMass > targetMass && newSolution.length > 0) {
             newSolution.splice(Math.floor(Math.random() * newSolution.length), 1);
@@ -378,9 +386,9 @@ export class MassFinderHelper {
     }
 
     // Static wrapper for backward compatibility
-    static neighborSolution(currentSolution: string[], targetMass: number): string[] {
+    static neighborSolution(currentSolution: string[], targetMass: number, preserveLength: boolean = false): string[] {
         const instance = new MassFinderHelper();
-        return instance.neighborSolution(currentSolution, targetMass);
+        return instance.neighborSolution(currentSolution, targetMass, preserveLength);
     }
 
     // 도출된 솔루션의 전체 질량과 목표값의 차이 도출 (시퀀스 유사도 고려)
@@ -774,7 +782,8 @@ export class MassFinderHelper {
                 gapReferenceSequence,
                 initialTemperature,
                 absoluteTemperature,
-                saIterations
+                saIterations,
+                true  // preserveLength: gap 길이 고정
             );
             solutions = removeDuplicates(solutions);
             solutions = removeSingleFSequences(solutions);
