@@ -3,6 +3,8 @@
   import SAModeSelector from "$lib/components/SAModeSelector.svelte";
   import InitialRnaInput from "$lib/components/InitialRnaInput.svelte";
   import PeptideSequenceSelector from "$lib/components/PeptideSequenceSelector.svelte";
+  import FormylationSelector from "$lib/components/FormylationSelector.svelte";
+  import AdductSelector from "$lib/components/AdductSelector.svelte";
   import { onDestroy } from "svelte";
   import { showAlert } from "$lib/stores/alertStore.js";
   import { aminoMap, molecularWeightMap, codonTableRtoS } from "$lib/helper/amino_mapper";
@@ -50,10 +52,12 @@
   let averageWindow: number = 3;   // 앞 N개 runtime 평균 윈도우
 
   // ────────────────────────────────────────────────────────────────────────
-  // 고정값 (사양상 고정)
+  // Formylation / Adduct (사용자 선택 가능, selector 컴포넌트의 default 와 일치)
   // ────────────────────────────────────────────────────────────────────────
-  const FIXED_FORMYLATION = "unknown" as const;
-  const FIXED_ADDUCT = "+H" as const;
+  let formylation: string = "unknown";
+  let adduct: string = "+H";
+
+  // amino acid 표준 셋 (B/J/O/U/X/Z 슬롯에 ncAA 가 추가될 수 있음)
   const FIXED_AMINO_MAP = { ...aminoMap };
 
   // ────────────────────────────────────────────────────────────────────────
@@ -134,8 +138,8 @@
 
     const base: Record<string, unknown> = {
       detectedMass,
-      formylation: FIXED_FORMYLATION,
-      adduct: FIXED_ADDUCT,
+      formylation,
+      adduct,
       monoisotopicMap,
       molecularMap,
       initialTemperature: saConfig.initialTemperature,
@@ -224,17 +228,34 @@
       await showAlert("Please input Detected mass", "Validation Error", "warning");
       return false;
     }
-    if (detectedMass <= 0 || detectedMass > 10000) {
+    // 상한 10,000 제한 임시 해제 (사용자 요청)
+    // if (detectedMass <= 0 || detectedMass > 10000) {
+    //   await showAlert(
+    //     "Detected mass must be between 1 and 10,000",
+    //     "Validation Error",
+    //     "warning",
+    //   );
+    //   return false;
+    // }
+    if (!targetSequence || !isValidTargetSequence(targetSequence)) {
       await showAlert(
-        "Detected mass must be between 1 and 10,000",
+        "Please input a valid Target peptide sequence (letters only, optional 'f' prefix)",
         "Validation Error",
         "warning",
       );
       return false;
     }
-    if (!targetSequence || !isValidTargetSequence(targetSequence)) {
+    // Target 에 등장한 ncAA letter 가 NcAASelector 에서 슬롯이 비어있으면 SA 가 절대
+    // 그 letter 를 만들 수 없어 success rate 가 0 으로 떨어진다. 미리 막는다.
+    const NCAA_LETTERS = ["B", "J", "O", "U", "X", "Z"];
+    const targetBody = targetSequence.replace(/^f/, "");
+    const targetNcAALetters = Array.from(
+      new Set(targetBody.split("").filter((c) => NCAA_LETTERS.includes(c))),
+    );
+    const missingNcAA = targetNcAALetters.filter((l) => fullNcAA[l] === null);
+    if (missingNcAA.length > 0) {
       await showAlert(
-        "Please input a valid Target peptide sequence (letters only, optional 'f' prefix)",
+        `Target sequence contains ncAA letter(s) [${missingNcAA.join(", ")}] but the corresponding ncAA slot${missingNcAA.length > 1 ? "s are" : " is"} empty. Please assign an ncAA molecule to slot ${missingNcAA.join(", ")} below or remove ${missingNcAA.length > 1 ? "those letters" : "that letter"} from the target.`,
         "Validation Error",
         "warning",
       );
@@ -426,6 +447,14 @@
 
   function handleNcAAChange(e: CustomEvent) {
     fullNcAA = e.detail;
+  }
+
+  function handleFormylationChange(value: string) {
+    formylation = value;
+  }
+
+  function handleAdductChange(value: string) {
+    adduct = value;
   }
 
   function handleTargetInput(event: Event) {
@@ -626,6 +655,22 @@
     </div>
   {/if}
 
+  <!-- Formylation / Adduct (사용자 선택 가능) -->
+  <fieldset disabled={isRunning} class="mb-3">
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <FormylationSelector
+          on:change={(e) => handleFormylationChange(e.detail)}
+        />
+      </div>
+      <div class="col-12 col-md-6">
+        <AdductSelector
+          on:change={(e) => handleAdductChange(e.detail)}
+        />
+      </div>
+    </div>
+  </fieldset>
+
   <!-- SA Mode -->
   <div class="mb-3">
     <SAModeSelector customizable={true} on:change={handleSAModeChange} />
@@ -723,7 +768,7 @@
 
   <!-- ncAA (최대 6개) -->
   <div class="mb-3">
-    <NcAASelector on:changeNcAA={handleNcAAChange} />
+    <NcAASelector showLetterLabels={true} on:changeNcAA={handleNcAAChange} />
   </div>
 
   <!-- Benchmark variables -->
@@ -758,14 +803,9 @@
     </div>
   </div>
 
-  <!-- Fixed parameters info -->
-  <div class="alert alert-secondary mb-3">
-    <strong>Fixed parameters</strong>
-    <ul class="mb-0 small">
-      <li>Formylation: <code>{FIXED_FORMYLATION}</code></li>
-      <li>Adduct: <code>{FIXED_ADDUCT}</code></li>
-      <li>Amino acid set: All 20 standard amino acids</li>
-    </ul>
+  <!-- Amino acid set note -->
+  <div class="alert alert-secondary mb-3 small mb-3">
+    Amino acid set: <strong>All 20 standard amino acids</strong> (+ ncAA letters assigned in slots above).
   </div>
 
   <!-- Run / Cancel buttons -->
