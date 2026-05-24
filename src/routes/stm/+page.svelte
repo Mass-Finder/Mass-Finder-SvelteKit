@@ -1,7 +1,7 @@
 <script>
     import SeqConverter from "$lib/components/stm/SeqConverter.svelte";
     import AminoMapSelector from "$lib/components/AminoMapSelector.svelte";
-    import NcAACodonSelector from "$lib/components/stm/NcAACodonSelector.svelte";
+    import NcAACodonSelector from "$lib/components/NcAACodonSelector.svelte";
     import { aminoMap } from "$lib/helper/amino_mapper";
     import { writable, get } from "svelte/store";
     import { codonTableRtoS } from "$lib/helper/amino_mapper";
