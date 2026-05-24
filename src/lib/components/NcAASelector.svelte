@@ -25,7 +25,7 @@
       X: null,
       Z: null
     });
-  
+
     let showModal = writable(false);
     let selectedKey = 'B'; // Default key
   
