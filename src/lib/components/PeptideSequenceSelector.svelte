@@ -1,16 +1,35 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import NcAACandidatePopover from './NcAACandidatePopover.svelte';
 
   const dispatch = createEventDispatcher();
 
   /** @type {string} */
   export let aminoSequence = '';
 
+  // v2.1: ncAA codon 치환 결과 시각화 props.
+  /** @type {Set<number>} 자동 치환된 위치 (보라 테두리 표시) */
+  export let autoSubPositions = new Set();
+  /** @type {Set<number>} 후보 ≥ 2 위치 (↓ 화살표 + 팝오버 트리거) */
+  export let multiCandidatePositions = new Set();
+  /** @type {{ [i: number]: Array<{letter: string, name?: string}> }} */
+  export let candidatesByPosition = {};
+  /** @type {{ [i: number]: string }} 위치별 자연 AA letter (팝오버에 표시) */
+  export let naturalByPosition = {};
+  /** @type {{ [aa: string]: boolean }} Amino acids set 체크박스 상태 (자연 라디오 disabled 결정) */
+  export let selectedAminoSet = {};
+
   /** @type {import('../../type/SequenceTemplate').PositionState[]} */
   let positionStates = [];
 
   /** @type {import('../../type/SequenceTemplate').NcAAZone[]} */
   let ncaaZones = [];
+
+  // 팝오버 상태
+  /** @type {number | null} 현재 열린 팝오버의 위치 인덱스 */
+  let popoverPosition = null;
+  /** @type {{ top: number, left: number }} */
+  let popoverAnchor = { top: 0, left: 0 };
 
   // 드래그 상태
   let dragging = false;
@@ -38,12 +57,18 @@
     dispatchChange();
   }
 
-  // 아미노산 클릭: 빨간색 토글
-  function handleAminoClick(index) {
+  // 아미노산 클릭: 빨간색 토글 (또는 v2.1: 다중 후보 자리면 팝오버)
+  function handleAminoClick(index, event) {
     if (dragging) return;
     if (dragMoved) {
       // 드래그 직후 발생한 click 이벤트는 무시 (실제 이동이 있었던 경우)
       dragMoved = false;
+      return;
+    }
+
+    // v2.1: 후보 ≥ 2 인 자리는 팝오버를 열고 manual-zone 토글은 건너뜀.
+    if (multiCandidatePositions.has(index)) {
+      openPopover(index, event);
       return;
     }
 
@@ -299,6 +324,29 @@
     });
   }
 
+  // 팝오버 열기: 클릭된 타일 아래에 floating 으로 배치.
+  function openPopover(index, event) {
+    const target = event && event.currentTarget instanceof HTMLElement
+      ? event.currentTarget
+      : null;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      popoverAnchor = { top: rect.bottom + 6, left: rect.left };
+    } else {
+      popoverAnchor = { top: 0, left: 0 };
+    }
+    popoverPosition = index;
+  }
+
+  function closePopover() {
+    popoverPosition = null;
+  }
+
+  function handleOverride(e) {
+    // 상위로 forward — 페이지에서 positionOverrides 갱신
+    dispatch('override', e.detail);
+  }
+
   // 반응형 세그먼트 정보
   // positionStates/aminoSequence를 직접 참조해야 Svelte가 의존성으로 추적함
   $: segments = (positionStates, aminoSequence, computeSegments());
@@ -319,23 +367,43 @@
       {#each aminoSequence.split('') as amino, index}
         {@const state = positionStates[index] || 'green'}
         {@const handle = getDragHandle(index)}
+        {@const isAutoSub = autoSubPositions.has(index)}
+        {@const isMulti = multiCandidatePositions.has(index)}
         <div
           class="tile tile-{state}"
           class:tile-drag-handle={handle !== null}
+          class:tile-auto-sub={isAutoSub && state === 'green'}
+          class:tile-multi={isMulti}
           data-index={index}
           role="button"
           tabindex="0"
-          aria-label="Position {index + 1}: {amino} ({state})"
-          on:click={() => handleAminoClick(index)}
-          on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAminoClick(index); }}
+          aria-label="Position {index + 1}: {amino} ({state}{isAutoSub ? ', auto-substituted' : ''}{isMulti ? ', multiple candidates' : ''})"
+          on:click={(e) => handleAminoClick(index, e)}
+          on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAminoClick(index, e); }}
           on:mousedown={(e) => { if (handle) handleDragStart(e, handle.zoneIndex, handle.side); }}
           on:touchstart={(e) => { if (handle) handleDragStart(e, handle.zoneIndex, handle.side); }}
         >
           <span class="tile-index">{index + 1}</span>
           <span class="tile-amino">{amino}</span>
+          {#if isMulti}
+            <span class="tile-arrow" aria-hidden="true">▾</span>
+          {/if}
         </div>
       {/each}
     </div>
+
+    {#if popoverPosition !== null}
+      <NcAACandidatePopover
+        position={popoverPosition}
+        natural={naturalByPosition[popoverPosition] || ''}
+        naturalInSet={!!selectedAminoSet[naturalByPosition[popoverPosition]]}
+        candidates={candidatesByPosition[popoverPosition] || []}
+        currentChoice={aminoSequence[popoverPosition] || ''}
+        anchor={popoverAnchor}
+        on:override={handleOverride}
+        on:close={closePopover}
+      />
+    {/if}
 
     <!-- 범례 -->
     <div class="legend mt-2">
@@ -421,6 +489,31 @@
     background-color: #fff9c4;
     border-color: #fff176;
     color: #f57f17;
+  }
+
+  /* v2.1: 자동 치환된 자리 (보라 테두리). green 타일에만 덧입혀짐 (manual red/yellow 우선) */
+  .tile-auto-sub {
+    background-color: #e1bee7;
+    border-color: #8e24aa;
+    color: #4a148c;
+  }
+
+  .tile-arrow {
+    position: absolute;
+    bottom: -2px;
+    right: 2px;
+    font-size: 9px;
+    line-height: 1;
+    color: #6a1b9a;
+    pointer-events: none;
+  }
+
+  .tile-multi {
+    cursor: pointer;
+  }
+
+  .tile {
+    position: relative;
   }
 
   .tile-drag-handle {

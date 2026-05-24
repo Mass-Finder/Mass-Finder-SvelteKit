@@ -2,7 +2,7 @@
   import AdductSelector from "$lib/components/AdductSelector.svelte";
   import FormylationSelector from "$lib/components/FormylationSelector.svelte";
   import AminoMapSelector from "$lib/components/AminoMapSelector.svelte";
-  import NcAASelector from "$lib/components/NcAASelector.svelte";
+  import NcAACodonSelector from "$lib/components/NcAACodonSelector.svelte";
   import ResultTable from "$lib/components/ResultTable.svelte";
   import InitialRnaInput from "$lib/components/InitialRnaInput.svelte";
   import SAModeSelector from "$lib/components/SAModeSelector.svelte";
@@ -29,7 +29,10 @@
   };
   /** @type {{ [key: string]: number }} */
   let selectedMonoisotopicAminos = { ...aminoMap };
-  let fullNcAA = { B: null, J: null, O: null, U: null, X: null, Z: null };
+  // NcAACodonSelector 가 dispatch 하는 selectedData. 빈 슬롯은 0.0 (number) 으로 표시됨 — STM 패턴.
+  let fullNcAA = { B: 0.0, J: 0.0, O: 0.0, U: 0.0, X: 0.0, Z: 0.0 };
+  // 슬롯별 codon 매핑 (배열). STM 의 NcAACodonSelector 가 bind 로 갱신.
+  let codonTitles = writable({ B: [], J: [], O: [], U: [], X: [], Z: [] });
   const loading = getContext("loading");
   let bestSolutions = [];
   let allSolutions = []; // 전체 결과를 저장할 배열
@@ -38,6 +41,14 @@
 
   // Template 상태 (PeptideSequenceSelector에서 전달)
   let sequenceTemplate = null;
+
+  // v2.1: position override (사용자가 팝오버에서 직접 선택한 letter). 메모리 only.
+  /** @type {{ [position: number]: string }} */
+  let positionOverrides = {};
+
+  // 슬롯 letter 순서 (B→J→O→U→X→Z) — "더 먼저 선택된 ncAA" 정의
+  const SLOT_ORDER = ['B', 'J', 'O', 'U', 'X', 'Z'];
+  const STANDARD_AA_LETTERS = ['G','A','S','T','C','V','L','I','M','P','F','Y','W','D','E','N','Q','H','K','R'];
 
   onDestroy(() => {
     if (worker) {
@@ -54,9 +65,9 @@
     if (!(await validate())) return loading.set(false);
 
     try {
-      // 선택된 NCAA 값들
+      // 선택된 NCAA 값들. NcAACodonSelector 가 빈 슬롯을 0.0 으로 표시하므로 object 인 것만 추림.
       let filteredNcAA = Object.fromEntries(
-        Object.entries(fullNcAA).filter(([key, value]) => value !== null),
+        Object.entries(fullNcAA).filter(([, value]) => value && typeof value === "object"),
       );
 
       let filteredMonoisotopicWeights = Object.fromEntries(
@@ -140,9 +151,10 @@
         // Template 모드: ncAA 선택이 있어서 갭이 존재하는 경우
         workerData.sequenceTemplate = sequenceTemplate;
       } else {
-        // ncAA 미선택 또는 RNA 미입력: 기존 방식 (RNA를 참조 시퀀스로 사용)
+        // ncAA 미선택 또는 RNA 미입력: 기존 방식 (RNA를 참조 시퀀스로 사용).
+        // v2.1: 치환이 적용된 convertedAminoSequence 를 reference 로 사용. 비어있으면 raw 시퀀스 fallback.
         workerData.knownSequence = "";
-        workerData.proteinSequence = proteinSequence;
+        workerData.proteinSequence = convertedAminoSequence || proteinSequence;
       }
 
       worker.postMessage(workerData);
@@ -167,6 +179,11 @@
 
   function handleNcAAChange(e) {
     fullNcAA = e.detail;
+  }
+
+  // NcAACodonSelector 의 codonTitles 변경 콜백 (STM 패턴)
+  function onChangeCodonTitles(codonArray, key) {
+    $codonTitles[key] = codonArray;
   }
 
   function handleAminoMapChange(newAminos) {
@@ -215,21 +232,42 @@
     return true;
   }
 
-  function convertRnaToAminoAcids(rnaSequence) {
+  // v2.1: ncAA codon 치환 + position override + stop suppression 지원.
+  // helper 의 동일 함수와 시그니처 일치 (mass_finder_helper.ts:262 참조).
+  function convertRnaToAminoAcids(rnaSequence, options) {
     if (!rnaSequence) return "";
 
-    // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
     const codons = rnaSequence.match(/.{1,3}/g) || [];
+    const opts = options || {};
+    const excluded = opts.excludedAA || new Set();
+    const codonMap = opts.ncaaCodonMap || {};
+    const overrides = opts.positionOverrides || {};
+
     let aminoSequence = "";
 
-    for (const codon of codons) {
-      if (codon.length === 3) {
-        const amino = codonTableRtoS[codon];
-        if (amino && amino !== "[Stop]") {
-          aminoSequence += amino;
-        } else if (amino === "[Stop]") {
-          break; // Stop 코돈을 만나면 중단
+    for (let i = 0; i < codons.length; i++) {
+      const codon = codons[i];
+      if (codon.length !== 3) continue;
+
+      // 사용자 override 우선
+      if (overrides[i] !== undefined) {
+        aminoSequence += overrides[i];
+        continue;
+      }
+
+      const natural = codonTableRtoS[codon];
+      const candidates = codonMap[codon] || [];
+
+      if (natural === "[Stop]") {
+        if (candidates.length > 0) {
+          aminoSequence += candidates[0].letter; // amber/ochre/opal suppression
+        } else {
+          break;
         }
+      } else if (natural && excluded.has(natural) && candidates.length > 0) {
+        aminoSequence += candidates[0].letter; // 자동 치환 (첫 후보)
+      } else if (natural) {
+        aminoSequence += natural;
       }
     }
 
@@ -257,10 +295,127 @@
     return true;
   }
 
+  // 사용 가능한 아미노산 set 에서 제외된 표준 AA (Amino acids set 체크박스 해제분).
+  $: excludedAA = new Set(
+    STANDARD_AA_LETTERS.filter((a) => !selectedMonoisotopicAminos[a])
+  );
+
+  // ncaaCodonMap: codon → 후보 ncAA 배열 (슬롯 letter 순 정렬됨).
+  // v2.2: 슬롯당 다중 codon 지원 (codonTitles[letter] = string[]).
+  // 같은 codon 이 여러 슬롯에 들어가면 다중 후보 (팝오버 트리거 대상).
+  $: ncaaCodonMap = (() => {
+    const map = {};
+    const titles = $codonTitles;
+    for (const letter of SLOT_ORDER) {
+      const data = fullNcAA[letter];
+      const codons = titles[letter] || [];
+      if (!data || typeof data !== "object" || codons.length === 0) continue;
+      for (const codon of codons) {
+        if (!map[codon]) map[codon] = [];
+        map[codon].push({
+          letter,
+          name: data.title || data.name,
+          monoisotopicWeight: Number(data.monoisotopicWeight),
+        });
+      }
+    }
+    return map;
+  })();
+
+  // proteinSequence (RNA) / 옵션 변경 시 override 정합성 점검: codon 할당이 사라진 슬롯의
+  // letter 가 override 에 남아있으면 invalidate.
+  $: {
+    const validLetters = new Set([
+      ...STANDARD_AA_LETTERS,
+      ...Object.values(ncaaCodonMap)
+        .flat()
+        .map((c) => c.letter),
+    ]);
+    let changed = false;
+    const next = {};
+    for (const [k, v] of Object.entries(positionOverrides)) {
+      if (validLetters.has(v)) next[k] = v;
+      else changed = true;
+    }
+    if (changed) positionOverrides = next;
+  }
+
+  // 치환 적용된 시퀀스. PeptideSequenceSelector + initial peptide + similarity reference 모두 이를 사용.
   $: convertedAminoSequence = proteinSequence
-    ? convertRnaToAminoAcids(proteinSequence)
+    ? convertRnaToAminoAcids(proteinSequence, {
+        excludedAA,
+        ncaaCodonMap,
+        positionOverrides,
+      })
     : "";
+
+  // PeptideSequenceSelector 에 전달할 보조 정보:
+  //  - autoSubPositions: 자동 치환된 위치 (보라 테두리 대상)
+  //  - multiCandidatePositions: 후보 ≥ 2 인 위치 (↓ 화살표 + 팝오버 트리거)
+  //  - candidatesByPosition: 해당 위치의 후보 ncAA 배열
+  //  - naturalByPosition: 해당 위치의 자연 AA letter
+  //  - partialDropAA: 부분 드롭 경고 대상 자연 AA (예: L 제외 + UUA 만 할당)
+  $: substitutionInfo = (() => {
+    const result = {
+      autoSubPositions: new Set(),
+      multiCandidatePositions: new Set(),
+      candidatesByPosition: {},
+      naturalByPosition: {},
+      partialDropAA: new Set(),
+    };
+    if (!proteinSequence) return result;
+    const codons = proteinSequence.match(/.{1,3}/g) || [];
+    /** @type {{ [aa: string]: { hasNcAA: boolean, missingCodons: string[] } }} */
+    const aaCoverage = {};
+    for (let i = 0; i < codons.length; i++) {
+      const codon = codons[i];
+      if (codon.length !== 3) continue;
+      const natural = codonTableRtoS[codon];
+      if (!natural || natural === "[Stop]") {
+        // stop 도 ncAA suppression 가능
+        const candidates = ncaaCodonMap[codon] || [];
+        if (natural === "[Stop]" && candidates.length > 0) {
+          result.autoSubPositions.add(i);
+          if (candidates.length >= 2) result.multiCandidatePositions.add(i);
+          result.candidatesByPosition[i] = candidates;
+          result.naturalByPosition[i] = "*"; // stop 표시
+        }
+        continue;
+      }
+      const candidates = ncaaCodonMap[codon] || [];
+      const triggered =
+        excludedAA.has(natural) && candidates.length > 0;
+      const overridden = positionOverrides[i] !== undefined;
+      if (triggered || overridden) {
+        result.autoSubPositions.add(i);
+        if (candidates.length >= 2)
+          result.multiCandidatePositions.add(i);
+        result.candidatesByPosition[i] = candidates;
+        result.naturalByPosition[i] = natural;
+      }
+      // 부분 드롭 감지: 자연 제외됨 + 이 codon 엔 ncAA 없음 → 다른 같은 자연의 codon 도 비교
+      if (excludedAA.has(natural)) {
+        if (!aaCoverage[natural])
+          aaCoverage[natural] = { hasNcAA: false, missingCodons: [] };
+        if (candidates.length === 0)
+          aaCoverage[natural].missingCodons.push(codon);
+        else aaCoverage[natural].hasNcAA = true;
+      }
+    }
+    // 부분 드롭 = 일부 codon 은 치환, 일부는 드롭
+    for (const [aa, info] of Object.entries(aaCoverage)) {
+      if (info.hasNcAA && info.missingCodons.length > 0) result.partialDropAA.add(aa);
+    }
+    return result;
+  })();
+
   $: hasReferenceSequence = proteinSequence && proteinSequence.trim() !== "";
+
+  // 팝오버에서 override 선택 시 호출
+  function handleOverride(e) {
+    const { position, letter } = e.detail;
+    positionOverrides = { ...positionOverrides, [position]: letter };
+  }
 
   // maxResultCount가 변경될 때마다 결과를 다시 필터링
   $: if (allSolutions.length > 0) {
@@ -300,8 +455,23 @@
   <!-- RNA 번역 펩타이드 시퀀스 맵: ncAA 위치 선택 및 Fixed/Variable 영역 시각화 -->
   <PeptideSequenceSelector
     aminoSequence={convertedAminoSequence}
+    autoSubPositions={substitutionInfo.autoSubPositions}
+    multiCandidatePositions={substitutionInfo.multiCandidatePositions}
+    candidatesByPosition={substitutionInfo.candidatesByPosition}
+    naturalByPosition={substitutionInfo.naturalByPosition}
+    selectedAminoSet={selectedMonoisotopicAminos}
     on:change={handleTemplateChange}
+    on:override={handleOverride}
   />
+
+  <!-- 부분 드롭 경고 (P4): 자연 AA 제외했는데 일부 codon 만 ncAA 할당 -->
+  {#if substitutionInfo.partialDropAA.size > 0}
+    <div class="alert alert-warning mb-3 py-2 small">
+      <strong>Partial substitution:</strong>
+      {#each Array.from(substitutionInfo.partialDropAA) as aa, idx}{idx > 0 ? ', ' : ''}{aa}{/each}
+      — some codons of these excluded amino acids have no ncAA assignment and those positions will be dropped from the initial pool.
+    </div>
+  {/if}
 
   <div class="mb-3">
     <div class="selector-row">
@@ -325,9 +495,22 @@
     <AminoMapSelector on:changeAminos={(e) => handleAminoMapChange(e.detail)} />
   </div>
 
-  <!-- 커스텀 아미노산 선택 -->
+  <!-- 커스텀 아미노산 선택 (STM 과 동일한 UI: 분자 선택 + codon 다중 할당) -->
   <div class="mb-3">
-    <NcAASelector on:changeNcAA={handleNcAAChange} />
+    <NcAACodonSelector
+      showLetterLabels={true}
+      on:changeNcAA={handleNcAAChange}
+      bind:codonTitles
+      {onChangeCodonTitles}
+      rnaSeq={proteinSequence}
+    />
+    <div class="alert alert-info mt-2 py-2 small mb-0" role="note">
+      <strong>Codon assignment is optional in MTS.</strong>
+      Codons are used <em>only</em> to align the reference peptide sequence for similarity
+      scoring — they do not affect the mass calculation itself. Leave codons blank to use
+      the ncAA as a generic mass candidate without changing the reference sequence.
+      <span class="text-muted">(In STM, codons are required because translation depends on them.)</span>
+    </div>
   </div>
 
   <!-- 참조 시퀀스 정보 표시 -->
