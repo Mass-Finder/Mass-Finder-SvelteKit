@@ -258,22 +258,55 @@ export class MassFinderHelper {
         return instance.randomSolution(seqLength);
     }
 
-    // RNA 시퀀스를 아미노산으로 변환하는 함수
-    convertRnaToAminoAcids(rnaSequence: string): string {
+    // RNA 시퀀스를 아미노산으로 변환하는 함수.
+    // v2.1: ncAA codon 치환 + position override + stop suppression 지원.
+    //  - excludedAA: Amino acids set 에서 해제된 natural AA letter 집합. 해당 codon 의 natural 이 이 집합에 있고
+    //    ncaaCodonMap 에 후보가 있으면 자동 치환.
+    //  - ncaaCodonMap: codon → 후보 ncAA 배열 (슬롯 letter 순 정렬됨). 첫 후보가 기본 적용.
+    //  - positionOverrides: 사용자가 팝오버에서 직접 선택한 letter. 무조건 우선.
+    //  - stop codon 에 ncAA 가 할당된 경우: amber/ochre/opal suppression 패턴으로 break 우회.
+    convertRnaToAminoAcids(
+        rnaSequence: string,
+        options?: {
+            excludedAA?: Set<string>;
+            ncaaCodonMap?: { [codon: string]: Array<{ letter: string }> };
+            positionOverrides?: { [position: number]: string };
+        }
+    ): string {
         if (!rnaSequence) return '';
 
-        // RNA 시퀀스를 3개씩 나누어 코돈으로 변환
         const codons = rnaSequence.match(/.{1,3}/g) || [];
+        const excluded = options?.excludedAA ?? new Set<string>();
+        const codonMap = options?.ncaaCodonMap ?? {};
+        const overrides = options?.positionOverrides ?? {};
+
         let aminoSequence = '';
 
-        for (const codon of codons) {
-            if (codon.length === 3) {
-                const amino = codonTableRtoS[codon];
-                if (amino && amino !== '[Stop]') {
-                    aminoSequence += amino;
-                } else if (amino === '[Stop]') {
-                    break; // Stop 코돈을 만나면 중단
+        for (let i = 0; i < codons.length; i++) {
+            const codon = codons[i];
+            if (codon.length !== 3) continue;
+
+            // 사용자 override 가 있으면 무조건 우선
+            if (overrides[i] !== undefined) {
+                aminoSequence += overrides[i];
+                continue;
+            }
+
+            const natural = (codonTableRtoS as { [k: string]: string })[codon];
+            const candidates = codonMap[codon] ?? [];
+
+            if (natural === '[Stop]') {
+                if (candidates.length > 0) {
+                    // Suppression: stop 자리에 ncAA 치환 후 번역 계속
+                    aminoSequence += candidates[0].letter;
+                } else {
+                    break; // 기존 동작: stop 만나면 중단
                 }
+            } else if (natural && excluded.has(natural) && candidates.length > 0) {
+                // 자연 AA 가 set 에서 제외되었고 ncAA 후보 존재 → 자동 치환 (첫 후보)
+                aminoSequence += candidates[0].letter;
+            } else if (natural) {
+                aminoSequence += natural;
             }
         }
 
@@ -281,9 +314,16 @@ export class MassFinderHelper {
     }
 
     // Static wrapper for backward compatibility
-    static convertRnaToAminoAcids(rnaSequence: string): string {
+    static convertRnaToAminoAcids(
+        rnaSequence: string,
+        options?: {
+            excludedAA?: Set<string>;
+            ncaaCodonMap?: { [codon: string]: Array<{ letter: string }> };
+            positionOverrides?: { [position: number]: string };
+        }
+    ): string {
         const instance = new MassFinderHelper();
-        return instance.convertRnaToAminoAcids(rnaSequence);
+        return instance.convertRnaToAminoAcids(rnaSequence, options);
     }
 
     // 단백질/RNA 시퀀스를 기반으로 초기 솔루션을 생성하는 함수
